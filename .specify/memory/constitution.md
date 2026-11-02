@@ -46,18 +46,30 @@ Ningún modelo se declara válido sólo por su ajuste dentro de muestra.
 - Los escenarios de estrés y simulaciones MUST ser reproducibles mediante semilla
   explícita (`numpy.random.Generator`).
 
-### IV. Pertinencia actuarial y regulatoria
+### IV. Pertinencia actuarial, agnóstica de jurisdicción
 
-- El dominio central es el portafolio de inversiones de una aseguradora: renta fija
-  (curvas de tasas, duración, convexidad), renta variable, inmuebles y efectivo, y su
-  calce con los pasivos (ALM).
+- El dominio central es el portafolio de inversiones de una aseguradora: renta fija,
+  renta variable, inmuebles y efectivo, y su calce con los pasivos (ALM).
 - Las métricas de riesgo MUST ser compatibles con marcos de capital basados en riesgo
-  (Solvencia II / RBC local): VaR 99,5 % a un año, Expected Shortfall, escenarios de
-  choque de tasas y spreads.
-- Las curvas de tasas MUST modelarse con métodos estándar del sector
-  (Nelson-Siegel / Svensson y, para extrapolación regulatoria, Smith-Wilson).
+  (Solvencia II / RBC): VaR y Expected Shortfall a nivel y horizonte configurables,
+  escenarios de choque de tasas y spreads.
+- El paquete MUST ser agnóstico de país, moneda y regulador: todo parámetro de
+  jurisdicción (nivel, horizonte, choques, calendario, moneda) se inyecta mediante un
+  perfil explícito; ningún valor regulatorio se fija en el código.
+- La construcción, interpolación y extrapolación de curvas de rendimiento
+  (Nelson-Siegel, Svensson, Smith-Wilson) vive en un paquete hermano. Este paquete
+  consume nodos de tasas mediante un contrato de datos compartido y MUST mantener esa
+  interfaz estable para la interoperabilidad.
 - Supuestos de dominio (frecuencia, convención de días, moneda, horizonte) MUST ser
   explícitos en la API, nunca implícitos.
+
+### IV-bis. Datos reales, replicables y con contrato
+
+- Todo insumo MUST validarse contra un esquema versionado y publicado (contrato de
+  datos) que el paquete puede exportar y convertir en plantillas para el usuario.
+- Los ejercicios con datos reales MUST poder re-ejecutarse a partir de una instantánea
+  versionada con metadatos de fuente, consulta y hash.
+- Las pruebas automatizadas MUST NOT depender de la red.
 
 ### V. Biblioteca primero, API tipada y reproducible
 
@@ -120,8 +132,8 @@ Ningún modelo se declara válido sólo por su ajuste dentro de muestra.
   proyecto.
 - Versionado semántico de la constitución: MAJOR para eliminar o redefinir principios,
   MINOR para agregar principios o secciones, PATCH para aclaraciones.
-- Cada revisión de código verifica cumplimiento de los principios I-VII; toda
+- Cada revisión de código verifica cumplimiento de los principios I-VII (incluido IV-bis); toda
   excepción se registra en la tabla "Complexity Tracking" del plan correspondiente.
 - La guía operativa para agentes de IA está en `CLAUDE.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02
+**Version**: 1.1.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02

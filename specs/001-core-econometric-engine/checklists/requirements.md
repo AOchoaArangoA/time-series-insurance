@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,9 +31,7 @@
 
 ## Notes
 
-- Quedan 3 marcadores [NEEDS CLARIFICATION] (FR-018 mercado/moneda, FR-019 fuente de
-  datos, FR-020 curvas de rendimiento en v1). Resolver con `/speckit-clarify` antes de
-  `/speckit-plan`.
+- Clarificaciones resueltas el 2026-11-02 (ver sección Clarifications del spec).
 - Los nombres de pruebas estadísticas (ADF, KPSS, GARCH, Kupiec...) se consideran
   vocabulario del dominio econométrico, no detalles de implementación.
 - SC-003 menciona software de referencia como estándar de verificación, no como

@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-02
 
-**Status**: Draft
+**Status**: Clarified
 
 **Input**: User description: "Paquete en Python sobre la aplicación de modelos de series de
 tiempo centrado en el manejo de las inversiones de una aseguradora, con toda la lógica
@@ -223,18 +223,29 @@ reportes idénticos, y el reporte contiene todas las secciones requeridas.
   la misma semilla.
 - **FR-017**: Todo resultado MUST poder exportarse como reporte con huella de datos,
   versión del paquete, supuestos, parámetros, diagnósticos y conclusiones.
-- **FR-018**: El paquete MUST definir el alcance de mercado de la primera versión:
-  [NEEDS CLARIFICATION: ¿qué mercado y moneda priorizar en v1 (p. ej. Colombia/COP con
-  curvas TES y regulación de la Superfinanciera, otro país de Latinoamérica, o un marco
-  genérico tipo Solvencia II en EUR/USD)?]
-- **FR-019**: El sistema MUST obtener los datos de entrada desde
-  [NEEDS CLARIFICATION: ¿fuente de datos para v1 — sólo archivos locales CSV/Excel del
-  usuario, conectores a fuentes públicas (FRED, banco central, Yahoo Finance) o
-  proveedores comerciales (Bloomberg/Refinitiv)?]
-- **FR-020**: Los activos cubiertos por los modelos de la v1 MUST ser
-  [NEEDS CLARIFICATION: ¿incluir en v1 la modelación de curvas de rendimiento de renta
-  fija (Nelson-Siegel/Svensson) o dejarla para la especificación 002 y centrar la v1 en
-  retornos de activos y tasas individuales?]
+**Alcance, datos e interoperabilidad**
+
+- **FR-018**: El paquete MUST ser agnóstico de mercado, país y moneda en la v1: ningún
+  supuesto regulatorio, calendario, moneda o convención queda fijo en el código. Los
+  parámetros dependientes de jurisdicción (nivel y horizonte de capital, choques de
+  estrés, calendario de días hábiles, moneda base) MUST configurarse mediante un
+  "perfil" explícito; la v1 incluye un perfil genérico por defecto (99,5 % a un año).
+- **FR-019**: El sistema MUST leer datos desde archivos locales (CSV y Excel) y desde
+  fuentes públicas mediante conectores (al menos FRED y Yahoo Finance; otros bancos
+  centrales vía un mecanismo de conector extensible). Toda descarga MUST registrar
+  fuente, identificador de serie, fecha de consulta y rango para poder replicarla.
+- **FR-019a**: El paquete MUST incluir ejercicios con datos reales públicos que puedan
+  re-ejecutarse de punta a punta, guardando una instantánea de los datos usados para que
+  el resultado sea replicable aun si la fuente cambia.
+- **FR-019b**: El paquete MUST publicar el esquema de los insumos (contrato de datos):
+  columnas, tipos, unidades, frecuencia y reglas de validación para series de mercado y
+  portafolios, y MUST poder generar plantillas vacías (CSV/Excel) y validar archivos del
+  usuario contra ese esquema con mensajes de error claros.
+- **FR-020**: La v1 MUST centrarse en retornos de activos y tasas individuales. La
+  construcción, interpolación y extrapolación de curvas de rendimiento queda fuera del
+  paquete (será un paquete separado). El paquete MUST aceptar como entrada series de
+  tasas por plazo (p. ej. nodos de una curva ya construida) usando el mismo contrato de
+  datos, para permitir la comunicación futura entre ambos paquetes.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -249,6 +260,12 @@ reportes idénticos, y el reporte contiene todas las secciones requeridas.
   que lo generó.
 - **Medida de riesgo**: VaR/ES con nivel, horizonte, método y resultados de backtesting.
 - **Reporte reproducible**: agrupa los anteriores con huella de datos, versión y semilla.
+- **Contrato de datos (esquema de insumos)**: definición versionada de columnas, tipos,
+  unidades, frecuencia y reglas de validación de cada insumo; genera plantillas.
+- **Perfil de jurisdicción**: conjunto de parámetros regulatorios y de mercado (nivel,
+  horizonte, choques, calendario, moneda) que se inyecta en los cálculos.
+- **Fuente de datos**: origen (archivo, FRED, Yahoo, otro conector) con metadatos de
+  consulta para replicar la descarga.
 
 ## Success Criteria *(mandatory)*
 
@@ -270,14 +287,36 @@ reportes idénticos, y el reporte contiene todas las secciones requeridas.
   diagnóstico, modelo, pronóstico y riesgo en menos de 15 minutos siguiendo el tutorial.
 - **SC-007**: Ejecutar dos veces el mismo análisis con la misma semilla produce reportes
   idénticos en el 100 % de los casos.
+- **SC-008**: Un usuario puede generar la plantilla de insumos, llenarla con sus datos y
+  validarla; el 100 % de los errores de formato se reportan con fila, columna y regla
+  incumplida.
+- **SC-009**: Cada ejercicio con datos reales se re-ejecuta desde su instantánea y
+  reproduce exactamente los resultados publicados.
+
+## Clarifications
+
+### Session 2026-11-02
+
+- Q: ¿Qué mercado y moneda priorizar en v1? → A: Ninguno en particular; v1 muy general,
+  agnóstica de país y moneda, con parámetros de jurisdicción configurables por perfil.
+- Q: ¿Fuente de datos para v1? → A: Archivos locales + fuentes públicas (FRED, Yahoo,
+  bancos centrales), con ejercicios replicables con datos reales y entrega del esquema
+  (estructura) de los insumos futuros.
+- Q: ¿Curvas de rendimiento en v1? → A: No; interpolación/extrapolación de curvas irá
+  en un paquete separado. Este paquete sólo consume nodos de tasas con un contrato de
+  datos compatible para la comunicación futura.
 
 ## Assumptions
 
 - Los usuarios son analistas con formación cuantitativa básica que trabajan en Python o
   notebooks; no se requiere interfaz gráfica en v1.
 - Frecuencias soportadas en v1: diaria, semanal y mensual.
-- Nivel de confianza por defecto para riesgo de capital: 99,5 % a un año (estándar tipo
-  Solvencia II); configurable.
+- Nivel de confianza por defecto para riesgo de capital: 99,5 % a un año (perfil
+  genérico); cualquier jurisdicción se modela como un perfil configurable.
+- Los conectores a fuentes públicas pueden requerir clave de API del usuario (p. ej.
+  FRED); las claves se leen de variables de entorno y nunca se versionan.
+- Las pruebas automatizadas no dependen de la red: usan instantáneas de datos o
+  simulaciones; las descargas reales se prueban aparte con una marca específica.
 - La modelación multivariada (VAR/VECM, cointegración, correlaciones dinámicas DCC),
   los generadores de escenarios económicos (ESG) y el calce activo-pasivo (ALM) quedan
   fuera de esta especificación y se abordarán en especificaciones posteriores.
