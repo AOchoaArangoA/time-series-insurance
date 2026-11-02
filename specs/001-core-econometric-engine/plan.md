@@ -20,8 +20,9 @@ el futuro paquete de curvas. Detalle de decisiones en [research.md](./research.m
 **Language/Version**: Python >= 3.11
 
 **Primary Dependencies**: numpy, pandas, scipy, statsmodels (>=0.14), arch (>=7),
-pandera (contrato de datos), httpx (FRED). Extras: `[yahoo]` yfinance, `[excel]` openpyxl,
-`[parquet]` pyarrow, `[viz]` matplotlib.
+pandera (contrato de datos), pyarrow (snapshots Parquet). FRED vía `urllib` de la
+biblioteca estándar (sin dependencia extra). Extras: `[yahoo]` yfinance, `[excel]`
+openpyxl, `[viz]` matplotlib.
 
 **Storage**: Archivos: snapshots Parquet + metadatos JSON en `examples/data/`; sin base de datos.
 
@@ -82,10 +83,13 @@ specs/001-core-econometric-engine/
 src/tsinsurance/
 ├── __init__.py
 ├── _types.py               # alias de tipos, Frequency, etc.
-├── config.py               # JurisdictionProfile, carga TOML, perfil "generic"
-├── results.py              # TestResult y base de resultados con summary()/to_dict()
+├── errors.py               # jerarquía de excepciones y warnings
+├── config.py               # JurisdictionProfile, carga TOML
+├── profiles/generic.toml   # perfil por defecto
+├── results.py              # HypothesisTestResult y base de resultados con summary()/to_dict()
 ├── data/
 │   ├── schemas.py          # MarketSeriesSchema, PortfolioSchema, RateNodesSchema
+│   ├── validate.py         # validate, ValidationReport, load, to_wide
 │   ├── templates.py        # generación de plantillas CSV/Excel, export JSON Schema
 │   ├── prepare.py          # validación de índice, faltantes, retornos/diferencias
 │   ├── snapshot.py         # Snapshot (Parquet + metadatos + hash)
@@ -99,6 +103,7 @@ src/tsinsurance/
 │   ├── descriptive.py      # momentos, ACF/PACF, JB, ARCH-LM
 │   └── residuals.py        # ResidualDiagnostics
 ├── models/
+│   ├── base.py             # FittedModel, SelectionResult
 │   ├── arima.py            # fit_arima, select_arima
 │   └── volatility.py       # fit_garch, select_garch
 ├── forecast/
@@ -140,4 +145,4 @@ riesgo → reporte). Ejercicios con datos reales en `examples/` usando snapshots
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
 | Implementación propia de backtesting (Kupiec, Christoffersen, Acerbi-Szekely, DM) | No hay librería Python consolidada y mantenida que las cubra | Dependencias sueltas sin mantenimiento ni tipos; se valida contra ejemplos publicados |
-| Dependencia `pandera` | Contrato de datos con reporte de errores fila/columna (FR-019b, SC-008) | Validación manual: frágil y sin export de esquema |
+| Dependencias `pandera` y `pyarrow` | Contrato de datos con reporte fila/columna (FR-019b, SC-008); snapshots Parquet replicables (FR-019a) | Validación manual: frágil y sin export de esquema |

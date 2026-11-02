@@ -272,8 +272,11 @@ reportes idénticos, y el reporte contiene todas las secciones requeridas.
 ### Measurable Outcomes
 
 - **SC-001**: En simulaciones con procesos generadores conocidos (al menos 500
-  réplicas), el diagnóstico identifica correctamente el orden de integración en al menos
-  el 90 % de los casos para muestras de 500 observaciones.
+  réplicas, muestras de 500 observaciones, α = 5 %), el diagnóstico identifica el orden
+  de integración correcto en al menos el 90 % de las series I(0) y el 85 % de las series
+  I(1), y concluye un orden *incorrecto* en no más del 7 % de los casos (el resto se
+  reporta como inconcluso). El límite para I(1) refleja el tamaño α de las pruebas de
+  raíz unitaria combinado con la potencia de KPSS (≈ 0,95 × 0,94).
 - **SC-002**: Los parámetros estimados de modelos ARMA-GARCH sobre datos simulados caen
   dentro de 2 errores estándar del valor verdadero en al menos el 95 % de las réplicas.
 - **SC-003**: Los resultados de las pruebas estadísticas coinciden con implementaciones

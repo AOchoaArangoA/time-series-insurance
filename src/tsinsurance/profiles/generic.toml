@@ -1,0 +1,9 @@
+# Perfil genérico (agnóstico de jurisdicción). Estándar tipo capital basado en riesgo:
+# VaR / ES al 99,5 % a un año (252 días hábiles).
+name = "generic"
+confidence_level = 0.995
+horizon_days = 252
+business_calendar = "weekdays"
+
+[stress_shocks]
+# Se consumen en la especificación 004 (generador de escenarios económicos).

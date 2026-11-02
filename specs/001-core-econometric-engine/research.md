@@ -86,7 +86,7 @@ Fase 0 del plan. Cada decisión: **Decision / Rationale / Alternatives considere
 ## R8. Conectores de datos públicos y replicabilidad
 
 - **Decision**: Interfaz `DataSource` (protocolo) con implementaciones `CSVSource`,
-  `ExcelSource`, `FredSource` (endpoint REST oficial, clave en `FRED_API_KEY`) y
+  `ExcelSource`, `FredSource` (endpoint REST oficial vía `urllib`, clave en `FRED_API_KEY`) y
   `YahooSource` (`yfinance`, extra opcional). Registro de conectores por *entry points*
   (`tsinsurance.sources`) para añadir bancos centrales sin tocar el núcleo. Cada
   descarga produce un `Snapshot` (Parquet + metadatos JSON: fuente, ids, rango, fecha de
@@ -102,6 +102,12 @@ Fase 0 del plan. Cada decisión: **Decision / Rationale / Alternatives considere
   Perfil `generic` por defecto (99,5 %, 1 año, 252 días). Ningún módulo lee constantes
   regulatorias fuera del perfil.
 - **Rationale**: FR-018 (v1 agnóstica); permite añadir perfiles nacionales sin código.
+
+## R9-bis. Diferidos explícitos
+
+- **Giacomini-White** (Principio II, "cuando aplique"): diferido a la spec 003; en v1 se
+  usa Diebold-Mariano con corrección HLN.
+- **`stress_shocks`** del perfil: se define en v1 pero se consume en la spec 004 (ESG).
 
 ## R10. Reportes reproducibles
 

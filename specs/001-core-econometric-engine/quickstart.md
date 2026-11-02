@@ -7,7 +7,7 @@ Escenarios ejecutables que prueban la funcionalidad de punta a punta. API en
 
 ```bash
 uv sync --all-extras
-export FRED_API_KEY=...        # sólo para refrescar snapshots (opcional)
+export FRED_API_KEY=...        # sólo para refrescar snapshots o `pytest -m network`
 ```
 
 ## Escenario 1 — Contrato de insumos (US1, FR-019b, SC-008)
@@ -24,9 +24,9 @@ Esperado: el archivo malo reporta cada error con fila, columna y regla; exit cod
 ```bash
 uv run python examples/01_diagnostico_tasas_fred.py
 ```
-Esperado: carga el snapshot `examples/data/fred_dgs10/`, reporta ADF/PP/KPSS/ZA,
-concluye `I(1)` para el nivel de la tasa a 10 años e `I(0)` para su diferencia, con
-fecha candidata de quiebre.
+Esperado: carga el snapshot `examples/data/fred_gs10/` (GS10 mensual 1990-2025),
+reporta ADF/PP/KPSS/ZA, concluye `I(1)` (la diferencia es estacionaria) y una fecha
+candidata de quiebre (2020-08). Con `--refresh` vuelve a descargar de FRED.
 
 ## Escenario 3 — ARMA-GARCH sobre índice accionario (US2, US3)
 

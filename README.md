@@ -31,11 +31,35 @@ Flujo por funcionalidad, dentro de Claude Code:
 /speckit-implement implementación con TDD
 ```
 
+## Uso rápido (v0.1 — preparación y diagnóstico)
+
+```bash
+uv sync --all-extras
+uv run tsinsurance template market --format xlsx -o mis_series.xlsx   # plantilla de insumos
+uv run tsinsurance validate market mis_series.csv                     # valida contra el contrato
+uv run tsinsurance schema market --format json-schema                 # contrato publicado
+uv run python examples/01_diagnostico_tasas_fred.py                   # ejercicio con datos reales
+```
+
+```python
+from tsinsurance.data import Snapshot, prepare, to_wide
+from tsinsurance.data.sources import get_source
+from tsinsurance.diagnostics import describe, stationarity
+
+snap = get_source("fred").fetch(["GS10"], "1990-01-01", "2025-12-31")  # requiere FRED_API_KEY
+snap.save("data/gs10")                       # instantánea replicable (Parquet + metadatos + hash)
+serie = prepare(to_wide(snap.data)["GS10"], freq="M").data
+print(stationarity(serie).summary())         # ADF + PP + KPSS + Zivot-Andrews, regla confirmatoria
+```
+
+Las claves de API (p. ej. `FRED_API_KEY`) se leen de variables de entorno y nunca se versionan.
+
 ## Desarrollo
 
 ```bash
-uv sync
-uv run pytest
+uv sync --all-extras
+uv run pytest                 # rápido + simulaciones; sin red
+uv run pytest -m network      # descargas reales (requiere FRED_API_KEY)
 uv run ruff check src tests && uv run mypy
 ```
 

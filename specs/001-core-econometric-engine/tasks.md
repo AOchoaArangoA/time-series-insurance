@@ -17,22 +17,22 @@ de su implementación y debe fallar primero.
 
 ## Phase 1: Setup
 
-- [ ] T001 Actualizar dependencias en pyproject.toml: núcleo `pandera>=0.20`, `httpx>=0.27`; extras `yahoo` (yfinance), `excel` (openpyxl), `parquet` (pyarrow), `viz` (matplotlib); script `tsinsurance = "tsinsurance.cli:main"`; marcas pytest `slow` y `network` con `-m "not network"` por defecto
-- [ ] T002 [P] Crear estructura de subpaquetes vacíos según plan.md en src/tsinsurance/{data,data/sources,diagnostics,models,forecast,validation,risk,reporting}/__init__.py
-- [ ] T003 [P] Crear tests/conftest.py con fixtures de `numpy.random.Generator(seed)` y simuladores de DGP: random walk, AR(1), ARMA(1,1), ARMA(1,1)-GARCH(1,1) con innovaciones t
-- [ ] T004 [P] Crear estructura de tests: tests/{unit,reference,simulation,integration,fixtures}/
+- [X] T001 Actualizar dependencias en pyproject.toml: núcleo `pandera>=0.20`, `pyarrow>=15`; extras `yahoo` (yfinance), `excel` (openpyxl), `viz` (matplotlib); eliminar extra `data` (pandas-datareader); script `tsinsurance = "tsinsurance.cli:main"`; marcas pytest `slow` y `network` con `-m "not network"` por defecto
+- [X] T002 [P] Crear estructura de subpaquetes vacíos según plan.md en src/tsinsurance/{data,data/sources,diagnostics,models,forecast,validation,risk,reporting}/__init__.py
+- [X] T003 [P] Crear tests/conftest.py con fixtures de `numpy.random.Generator(seed)` y simuladores de DGP: random walk, AR(1), ARMA(1,1), ARMA(1,1)-GARCH(1,1) con innovaciones t
+- [X] T004 [P] Crear estructura de tests: tests/{unit,reference,simulation,integration,fixtures}/
 
 ---
 
 ## Phase 2: Foundational (bloquea todas las historias)
 
-- [ ] T005 [P] Prueba de jerarquía de errores y warnings en tests/unit/test_errors.py
-- [ ] T006 [P] Implementar `TSInsuranceError`, `DataValidationError`, `InsufficientDataError`, `ConvergenceError`, `InadequateModelWarning` en src/tsinsurance/errors.py
-- [ ] T007 [P] Prueba de `TestResult` (`summary()`, `to_dict()` JSON canónico, `reject_at`) en tests/unit/test_results.py
-- [ ] T008 Implementar `TestResult` y base `ResultMixin` (frozen dataclass, `summary`, `to_dict`) en src/tsinsurance/results.py
-- [ ] T009 [P] Prueba de `JurisdictionProfile`: perfil `generic` = `confidence_level 0.995`, `horizon_days 252`; carga desde TOML; inmutabilidad, en tests/unit/test_config.py
-- [ ] T010 Implementar `JurisdictionProfile` y `load_profile` en src/tsinsurance/config.py y perfil por defecto src/tsinsurance/profiles/generic.toml
-- [ ] T011 [P] Implementar alias de tipos (`Frequency = Literal["D","B","W","M"]`, `SeriesLike`) en src/tsinsurance/_types.py
+- [X] T005 [P] Prueba de jerarquía de errores y warnings en tests/unit/test_errors.py
+- [X] T006 [P] Implementar `TSInsuranceError`, `DataValidationError`, `InsufficientDataError`, `ConvergenceError`, `InadequateModelWarning` en src/tsinsurance/errors.py
+- [X] T007 [P] Prueba de `HypothesisTestResult` (`summary()`, `to_dict()` JSON canónico, `reject_at`) en tests/unit/test_results.py
+- [X] T008 Implementar `HypothesisTestResult` y base `ResultMixin` (frozen dataclass, `summary`, `to_dict`) en src/tsinsurance/results.py
+- [X] T009 [P] Prueba de `JurisdictionProfile`: perfil `generic` = `confidence_level 0.995`, `horizon_days 252`; carga desde TOML; inmutabilidad, en tests/unit/test_config.py
+- [X] T010 Implementar `JurisdictionProfile` y `load_profile` en src/tsinsurance/config.py y perfil por defecto src/tsinsurance/profiles/generic.toml
+- [X] T011 [P] Implementar alias de tipos (`Frequency = Literal["D","B","W","M"]`, `SeriesLike`) en src/tsinsurance/_types.py
 
 **Checkpoint**: fundación lista.
 
@@ -45,33 +45,33 @@ de su implementación y debe fallar primero.
 
 ### Tests (escribir primero)
 
-- [ ] T012 [P] [US1] Pruebas de esquemas en tests/unit/test_schemas.py: `MarketSeries` (`date` única por `series_id` y monótona; `series_id` `^[A-Za-z0-9_.:-]+$`; `kind` ∈ {price, return, rate, index}; `unit` ∈ {level, percent, decimal, bps}; `currency` ISO 4217; `frequency` ∈ {D,B,W,M}; `price` > 0), `Portfolio` (`sum(weight) == 1 ± 1e-8`; `amount` requerido si no hay `weight`; `asset_class` ∈ {fixed_income, equity, real_estate, cash, other}), `RateNodes` (`tenor_years` > 0; `compounding` ∈ {continuous, annual, semiannual, simple})
-- [ ] T013 [P] [US1] Prueba de validación lazy: archivo con 3 errores reporta 3 filas con `row`, `column`, `check`, `failure_case` en tests/unit/test_validate.py y fixture tests/fixtures/market_bad.csv
-- [ ] T014 [P] [US1] Pruebas de plantillas CSV/XLSX y export JSON Schema / Frictionless en tests/unit/test_templates.py
-- [ ] T015 [P] [US1] Pruebas de `Snapshot` (round-trip Parquet+JSON, SHA-256 estable, `schema_version`) en tests/unit/test_snapshot.py
-- [ ] T016 [P] [US1] Pruebas de fuentes con respuestas HTTP simuladas (sin red) para FRED y Yahoo, y CSV/Excel locales en tests/unit/test_sources.py
-- [ ] T017 [P] [US1] Pruebas de `prepare`: índice no monótono/duplicado → error; log de precio ≤ 0 → error; registro de imputaciones en tests/unit/test_prepare.py
-- [ ] T018 [P] [US1] Pruebas de referencia ADF/KPSS/PP/ZA contra statsmodels/arch y valores publicados (Nelson-Plosser) en tests/reference/test_unit_roots.py
-- [ ] T019 [P] [US1] Prueba de regla confirmatoria (I(0), I(1), inconcluso) y quiebre detectado en serie con cambio de nivel en tests/unit/test_stationarity.py
-- [ ] T020 [P] [US1] Simulación SC-001 (500 réplicas, n=500, acierto ≥ 90 %) en tests/simulation/test_integration_order_power.py (marca `slow`)
+- [X] T012 [P] [US1] Pruebas de esquemas en tests/unit/test_schemas.py: `MarketSeries` (`date` única por `series_id` y monótona; `series_id` `^[A-Za-z0-9_.:-]+$`; `kind` ∈ {price, return, rate, index}; `unit` ∈ {level, percent, decimal, bps}; `currency` ISO 4217; `frequency` ∈ {D,B,W,M}; `price` > 0), `Portfolio` (`sum(weight) == 1 ± 1e-8`; `amount` requerido si no hay `weight`; `asset_class` ∈ {fixed_income, equity, real_estate, cash, other}), `RateNodes` (`tenor_years` > 0; `compounding` ∈ {continuous, annual, semiannual, simple}); incluir propiedades `hypothesis` (filas válidas generadas siempre pasan)
+- [X] T013 [P] [US1] Prueba de validación lazy: archivo con 3 errores reporta 3 filas con `row`, `column`, `check`, `failure_case` en tests/unit/test_validate.py y fixture tests/fixtures/market_bad.csv
+- [X] T014 [P] [US1] Pruebas de plantillas CSV/XLSX y export JSON Schema / Frictionless en tests/unit/test_templates.py
+- [X] T015 [P] [US1] Pruebas de `Snapshot` (round-trip Parquet+JSON, SHA-256 estable, `schema_version`) en tests/unit/test_snapshot.py
+- [X] T016 [P] [US1] Pruebas de fuentes con respuestas HTTP simuladas (sin red) para FRED y Yahoo, y CSV/Excel locales en tests/unit/test_sources.py
+- [X] T017 [P] [US1] Pruebas de `prepare` y `to_wide`: índice no monótono/duplicado → error; log de precio ≤ 0 → error; registro de imputaciones; conversión largo→ancho con `DatetimeIndex` y frecuencia; propiedades `hypothesis` (retorno log invertible) en tests/unit/test_prepare.py
+- [X] T018 [P] [US1] Pruebas de referencia ADF/KPSS/PP/ZA contra statsmodels/arch y valores publicados (Nelson-Plosser) en tests/reference/test_unit_roots.py
+- [X] T019 [P] [US1] Prueba de regla confirmatoria (I(0), I(1), inconcluso), quiebre detectado en serie con cambio de nivel y `InsufficientDataError` con mínimo requerido en series cortas en tests/unit/test_stationarity.py
+- [X] T020 [P] [US1] Simulación SC-001 (500 réplicas, n=500, acierto ≥ 90 %) en tests/simulation/test_integration_order_power.py (marca `slow`)
 
 ### Implementation
 
-- [ ] T021 [P] [US1] Implementar `MarketSeriesSchema`, `PortfolioSchema`, `RateNodesSchema` y `SCHEMA_VERSION = "1.0"` en src/tsinsurance/data/schemas.py
-- [ ] T022 [US1] Implementar `validate`, `ValidationReport` y `load` en src/tsinsurance/data/validate.py (depende de T021)
-- [ ] T023 [P] [US1] Implementar `write_template` y `export_schema` en src/tsinsurance/data/templates.py
-- [ ] T024 [P] [US1] Implementar `Snapshot` (save/load, hash) en src/tsinsurance/data/snapshot.py
-- [ ] T025 [US1] Implementar protocolo `DataSource` y registro por entry points `tsinsurance.sources` en src/tsinsurance/data/sources/base.py
-- [ ] T026 [P] [US1] Implementar `CSVSource` y `ExcelSource` en src/tsinsurance/data/sources/files.py
-- [ ] T027 [P] [US1] Implementar `FredSource` (API REST, clave en `FRED_API_KEY`) en src/tsinsurance/data/sources/fred.py
-- [ ] T028 [P] [US1] Implementar `YahooSource` (extra `yahoo`) en src/tsinsurance/data/sources/yahoo.py
-- [ ] T029 [US1] Implementar `prepare` y `PreparedSeries` en src/tsinsurance/data/prepare.py
-- [ ] T030 [P] [US1] Implementar `adf`, `pp`, `kpss`, `zivot_andrews` envolviendo statsmodels/arch en src/tsinsurance/diagnostics/stationarity.py
-- [ ] T031 [US1] Implementar `stationarity` (regla confirmatoria, recursión hasta `max_d`, `StationarityReport`) en src/tsinsurance/diagnostics/stationarity.py
-- [ ] T032 [P] [US1] Implementar `describe` (momentos, ACF/PACF, JB, ARCH-LM) en src/tsinsurance/diagnostics/descriptive.py
-- [ ] T033 [US1] Implementar CLI `template`, `validate`, `schema` en src/tsinsurance/cli.py
-- [ ] T034 [US1] Crear snapshot FRED DGS10 en examples/data/fred_dgs10/ y ejercicio examples/01_diagnostico_tasas_fred.py
-- [ ] T035 [P] [US1] Nota metodológica docs/methodology/stationarity.md (referencias: Dickey-Fuller 1979, Phillips-Perron 1988, KPSS 1992, Zivot-Andrews 1992, MacKinnon 1996)
+- [X] T021 [P] [US1] Implementar `MarketSeriesSchema`, `PortfolioSchema`, `RateNodesSchema` y `SCHEMA_VERSION = "1.0"` en src/tsinsurance/data/schemas.py
+- [X] T022 [US1] Implementar `validate`, `ValidationReport`, `load` y `to_wide` en src/tsinsurance/data/validate.py (depende de T021)
+- [X] T023 [P] [US1] Implementar `write_template` y `export_schema` en src/tsinsurance/data/templates.py
+- [X] T024 [P] [US1] Implementar `Snapshot` (save/load, hash) en src/tsinsurance/data/snapshot.py
+- [X] T025 [US1] Implementar protocolo `DataSource` y registro por entry points `tsinsurance.sources` en src/tsinsurance/data/sources/base.py
+- [X] T026 [P] [US1] Implementar `CSVSource` y `ExcelSource` en src/tsinsurance/data/sources/files.py
+- [X] T027 [P] [US1] Implementar `FredSource` (API REST vía `urllib`, clave en `FRED_API_KEY`) en src/tsinsurance/data/sources/fred.py
+- [X] T028 [P] [US1] Implementar `YahooSource` (extra `yahoo`) en src/tsinsurance/data/sources/yahoo.py
+- [X] T029 [US1] Implementar `prepare` y `PreparedSeries` en src/tsinsurance/data/prepare.py
+- [X] T030 [P] [US1] Implementar `adf`, `pp`, `kpss`, `zivot_andrews` envolviendo statsmodels/arch en src/tsinsurance/diagnostics/stationarity.py
+- [X] T031 [US1] Implementar `stationarity` (regla confirmatoria, recursión hasta `max_d`, `StationarityReport`) en src/tsinsurance/diagnostics/stationarity.py
+- [X] T032 [P] [US1] Implementar `describe` (momentos, ACF/PACF, JB, ARCH-LM) en src/tsinsurance/diagnostics/descriptive.py
+- [X] T033 [US1] Implementar CLI `template`, `validate`, `schema` en src/tsinsurance/cli.py
+- [X] T034 [US1] Crear snapshot FRED GS10 (mensual) en examples/data/fred_gs10/ y ejercicio examples/01_diagnostico_tasas_fred.py
+- [X] T035 [P] [US1] Nota metodológica docs/methodology/stationarity.md (referencias: Dickey-Fuller 1979, Phillips-Perron 1988, KPSS 1992, Zivot-Andrews 1992, MacKinnon 1996)
 
 **Checkpoint**: US1 funcional y demostrable sola.
 
@@ -85,7 +85,7 @@ de su implementación y debe fallar primero.
 ### Tests
 
 - [ ] T036 [P] [US2] Pruebas de `residual_diagnostics` (Ljung-Box con `model_df`, ARCH-LM, JB, CUSUM, `is_adequate`) en tests/unit/test_residuals.py
-- [ ] T037 [P] [US2] Pruebas de `fit_arima` / `select_arima` (recupera orden de ARMA(1,1); tabla de candidatos con AIC/BIC/HQIC) en tests/unit/test_arima.py
+- [ ] T037 [P] [US2] Pruebas de `fit_arima` / `select_arima` (recupera orden de ARMA(1,1); tabla de candidatos con AIC/BIC/HQIC; `cov_type` robusto reportado en `se_type`) en tests/unit/test_arima.py
 - [ ] T038 [P] [US2] Pruebas de `fit_garch` / `select_garch` (convergencia, reintentos, SE robustos, `skewt`) en tests/unit/test_garch.py
 - [ ] T039 [P] [US2] Prueba de advertencia `InadequateModelWarning` al pronosticar modelo no apto y error con `converged=False` en tests/unit/test_model_states.py
 - [ ] T040 [P] [US2] Simulación SC-002 (cobertura ±2 SE ≥ 95 %) en tests/simulation/test_parameter_recovery.py (marca `slow`)
@@ -134,7 +134,7 @@ de su implementación y debe fallar primero.
 
 ### Tests
 
-- [ ] T058 [P] [US4] Pruebas de `value_at_risk` / `expected_shortfall` (tres métodos; pesos; nivel/horizonte desde perfil cuando son `None`) en tests/unit/test_risk_measures.py
+- [ ] T058 [P] [US4] Pruebas de `value_at_risk` / `expected_shortfall` (tres métodos; pesos; nivel/horizonte desde perfil cuando son `None`; historias de distinta longitud → período común reportado en `assumptions`) en tests/unit/test_risk_measures.py
 - [ ] T059 [P] [US4] Pruebas de escalado `sqrt_time` (incluye advertencia de supuesto i.i.d.) y `simulation` reproducible en tests/unit/test_horizon.py
 - [ ] T060 [P] [US4] Referencia Kupiec/Christoffersen contra ejemplos publicados (Jorion; Christoffersen 1998) y zonas semáforo de Basilea en tests/reference/test_var_backtests.py
 - [ ] T061 [P] [US4] Pruebas de Acerbi-Szekely Z2 en tests/unit/test_es_backtest.py
@@ -167,6 +167,7 @@ de su implementación y debe fallar primero.
 - [ ] T072 [P] Prueba de contrato de API (nombres y firmas exportadas) en tests/integration/test_public_api.py
 - [ ] T073 Ejecutar subagente `econometrics-reviewer` y resolver hallazgos bloqueantes
 - [ ] T074 [P] Tutorial de punta a punta (SC-006) en docs/tutorial.md
+- [ ] T076 [P] Pruebas de rendimiento (diagnóstico 5.000 obs < 2 s; backtesting VaR 2.500 días < 5 s) en tests/simulation/test_performance.py (marca `slow`)
 - [ ] T075 Verificar cobertura ≥ 90 %, `mypy --strict` y `ruff` limpios; validar quickstart.md
 
 ---

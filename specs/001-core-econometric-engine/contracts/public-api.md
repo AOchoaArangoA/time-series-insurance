@@ -23,7 +23,7 @@ tsinsurance.data.prepare(series, *, freq, transform: Literal["none","simple","lo
 ```python
 tsinsurance.diagnostics.stationarity(series, *, trend: Literal["c","ct"]="c",
                                      alpha=0.05, max_d=2, breaks=True) -> StationarityReport
-tsinsurance.diagnostics.adf / pp / kpss / zivot_andrews(series, ...) -> TestResult
+tsinsurance.diagnostics.adf / pp / kpss / zivot_andrews(series, ...) -> HypothesisTestResult
 tsinsurance.diagnostics.describe(series, nlags=20) -> DescriptiveReport
 tsinsurance.diagnostics.residual_diagnostics(resid, *, model_df=0, lags=None,
                                              standardized=False) -> ResidualDiagnostics
@@ -49,7 +49,7 @@ FittedModel.forecast(horizon: int, levels=(0.80, 0.95), *, method="analytic",
 tsinsurance.validation.rolling_origin(series, model_factory: Callable[[Series], FittedModel],
         *, initial: int, horizon: int, step=1, scheme: Literal["expanding","rolling"]="expanding",
         refit_every=1, benchmarks=("random_walk","mean"), levels=(0.95,)) -> BacktestResult
-tsinsurance.validation.diebold_mariano(e1, e2, *, h=1, loss="mse") -> TestResult
+tsinsurance.validation.diebold_mariano(e1, e2, *, h=1, loss="mse") -> HypothesisTestResult
 ```
 
 ## Riesgo
@@ -61,7 +61,7 @@ tsinsurance.risk.value_at_risk(returns_or_model, *, level=None, horizon_days=Non
         scaling: Literal["sqrt_time","simulation"]="simulation", seed=None) -> RiskMeasure
 tsinsurance.risk.expected_shortfall(...)  # misma firma
 tsinsurance.risk.backtest_var(var_series, realized, *, level) -> VaRBacktest
-tsinsurance.risk.backtest_es(es_series, var_series, realized, *, level, n_sims=10_000, seed) -> TestResult
+tsinsurance.risk.backtest_es(es_series, var_series, realized, *, level, n_sims=10_000, seed) -> HypothesisTestResult
 ```
 `level`/`horizon_days` en `None` ⇒ se toman del perfil (por defecto `generic`).
 

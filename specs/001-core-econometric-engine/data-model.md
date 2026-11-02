@@ -53,10 +53,10 @@ Reglas de conjunto: `price` > 0; una sola `frequency`, `unit`, `currency` por
 
 ## Resultados
 
-- **TestResult**: `name`, `statistic`, `p_value`, `critical_values`, `null_hypothesis`,
+- **HypothesisTestResult**: `name`, `statistic`, `p_value`, `critical_values`, `null_hypothesis`,
   `specification` (constante/tendencia/rezagos), `reject_at: dict[level, bool]`,
   `reference` (cita).
-- **StationarityReport**: `series_id`, `tests: list[TestResult]`, `integration_order:
+- **StationarityReport**: `series_id`, `tests: list[HypothesisTestResult]`, `integration_order:
   int | None`, `conclusion: Literal["I(0)", "I(1)", "I(2)", "inconclusive"]`,
   `decision_rule: str`, `break_date: date | None`.
 - **DescriptiveReport**: momentos, cuantiles, ACF/PACF con bandas, JB, ARCH-LM.
@@ -70,13 +70,13 @@ Reglas de conjunto: `price` > 0; una sola `frequency`, `unit`, `currency` por
 - **Forecast**: `origin`, `horizon`, `mean: Series`, `intervals: dict[level, DataFrame]`,
   `method` (`analytic` \| `bootstrap` \| `simulation`), `model_ref`, `warnings`.
 - **BacktestResult** (pronóstico): `errors: DataFrame` por origen y horizonte,
-  `metrics: DataFrame`, `coverage: DataFrame`, `dm_tests: list[TestResult]`, `scheme`
+  `metrics: DataFrame`, `coverage: DataFrame`, `dm_tests: list[HypothesisTestResult]`, `scheme`
   (`expanding` \| `rolling`), `window`, `refit_every`.
 - **RiskMeasure**: `measure` (`VaR` \| `ES`), `level`, `horizon_days`, `method`,
   `value`, `by_asset: Series | None`, `scaling_method`, `assumptions: list[str]`.
 - **VaRBacktest**: `n_obs`, `n_exceptions`, `kupiec`, `christoffersen_ind`,
   `christoffersen_cc`, `traffic_light: Literal["green","yellow","red"]`,
-  `es_test: TestResult | None`.
+  `es_test: HypothesisTestResult | None`.
 - **Snapshot**: `path`, `source`, `query` (ids, rango), `retrieved_at`, `sha256`,
   `schema_version`.
 - **AnalysisReport**: `package_version`, `dependency_versions`, `profile`, `seed`,
