@@ -21,6 +21,8 @@ import pandas as pd
 
 from tsinsurance.backtest import (
     ExecutionConfig,
+    Trial,
+    TrialRegistry,
     calibrate_validate,
     check_lookahead,
     dtb3_to_daily,
@@ -71,6 +73,9 @@ def main() -> None:
     etfs, rf = load()
     tlt = etfs[["TLT"]].dropna()
     report: dict[str, object] = {}
+    # Registro único: cada idea y configuración probada cuenta para el ajuste por pruebas
+    # múltiples de los pasos siguientes.
+    registry = TrialRegistry()
 
     print("=" * 88)
     print("1) Prueba de anticipación de las señales (sobre TLT)")
@@ -81,6 +86,8 @@ def main() -> None:
 
     print("=" * 88)
     print("2) TLT: tres ideas frente a comprar y mantener (retornos en exceso de rf)")
+    print("   EXPLORATORIO: valores p sin ajuste; las 3 ideas quedan en el registro y se")
+    print("   descuentan en el Sharpe deflactado del barrido (paso 3).")
     for name, fn in {"tendencia": trend, "momentum": momentum, "momentum+vol": trend_vol}.items():
         res = run_backtest(tlt, fn(tlt), CONFIG, risk_free=rf, name=f"TLT {name}")
         window = res.evaluation_window()
@@ -88,6 +95,7 @@ def main() -> None:
         bench = res.benchmark_excess_returns.loc[window.index]
         inf = sharpe_inference(window, res.periods_per_year, reps=500, seed=0)
         diff = sharpe_difference(window, bench, reps=500, seed=0)
+        registry.add(Trial("TLT", {"idea": name}, window, bench))
         print(res.summary())
         print(f"   Inferencia: {inf.summary()}")
         print(f"   vs comprar y mantener: {diff.summary()}\n")
@@ -101,20 +109,48 @@ def main() -> None:
     print("=" * 88)
     print("3) Barrido sobre 8 ETFs con ajuste por pruebas múltiples")
     grid_trend = {"fast": [20, 50, 100], "slow": [150, 200, 250]}
-    sw = sweep(etfs, trend, grid_trend, CONFIG, risk_free=rf, reps=500, seed=0)
+    sw = sweep(
+        etfs,
+        trend,
+        grid_trend,
+        CONFIG,
+        risk_free=rf,
+        reps=500,
+        seed=0,
+        registry=registry,
+        name="tendencia",
+    )
     print(sw.summary())
     grid_mom = {"lookback": [63, 126, 252], "skip": [0, 21]}
-    sw2 = sweep(etfs, momentum, grid_mom, CONFIG, risk_free=rf, reps=500, seed=0)
+    sw2 = sweep(
+        etfs,
+        momentum,
+        grid_mom,
+        CONFIG,
+        risk_free=rf,
+        reps=500,
+        seed=0,
+        registry=registry,
+        name="momentum",
+    )
     print(sw2.summary())
-    report["sweep_trend"] = sw.selection[["best", "sharpe", "dsr", "spa_p"]].round(10).to_dict()
-    report["sweep_momentum"] = sw2.selection[["best", "sharpe", "dsr", "spa_p"]].round(10).to_dict()
+    cols = ["best", "sharpe", "info_ratio", "n_trials", "dsr", "spa_p"]
+    report["sweep_trend"] = sw.selection[cols].round(10).to_dict()
+    report["sweep_momentum"] = sw2.selection[cols].round(10).to_dict()
 
     print("=" * 88)
     print("4) Calibración 2003-2016 y validación única 2017-2025 (tendencia)")
     cal = calibrate_validate(
-        etfs[["TLT", "IEF", "LQD", "SPY"]], trend, grid_trend, "2016-12-30", CONFIG,
-        risk_free=rf, reps=500,
+        etfs[["TLT", "IEF", "LQD", "SPY"]],
+        trend,
+        grid_trend,
+        "2016-12-30",
+        CONFIG,
+        risk_free=rf,
+        reps=500,
+        registry=registry,
     )
+    print(f"Registro total de pruebas: {registry.n_trials}")
     print(cal.summary())
     report["calibration"] = cal.table.round(10).to_dict()
 

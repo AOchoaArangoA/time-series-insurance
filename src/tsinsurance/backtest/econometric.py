@@ -37,6 +37,7 @@ from tsinsurance.backtest.inference import (
     evaluate_forecasts,
     sharpe_difference,
 )
+from tsinsurance.backtest.pit import monthly_decision_dates
 from tsinsurance.backtest.verdict import Verdict, make_verdict
 from tsinsurance.diagnostics import StationarityReport, arch_lm, jarque_bera, ljung_box
 from tsinsurance.diagnostics import stationarity as stationarity_report
@@ -72,6 +73,8 @@ class WalkForwardForecast(ResultMixin):
 
     forecasts: pd.Series
     forecast_se: pd.Series
+    """Error estándar de la media pronosticada por incertidumbre de parámetros
+    (covarianza OLS homocedástica); no incluye la varianza del error ni es robusto a ARCH."""
     benchmark_forecasts: pd.Series
     realized: pd.Series
     coefficient_path: pd.DataFrame
@@ -407,7 +410,24 @@ def backtest_econometric(
     """
     if alpha not in ALPHAS:
         raise DataValidationError(f"alpha debe ser uno de {ALPHAS}.")
-    cfg = config or ExecutionConfig()
+    notes: list[str] = []
+    # Decisiones mensuales: por defecto se mantiene la posición hasta la próxima decisión.
+    cfg = config or ExecutionConfig(rebalance="M")
+    if cfg.rebalance == "every_bar":
+        notes.append(
+            "rebalance='every_bar' con decisiones periódicas: la posición se re-ajusta cada "
+            "día al peso objetivo (rotación y costos mayores que mantenerla)."
+        )
+    outside = y.index.difference(monthly_decision_dates(prices, complete_only=False))
+    if len(outside):
+        raise DataValidationError(
+            f"y tiene {len(outside)} fecha(s) que no son fechas de decisión (último día con "
+            f"precio del mes), p. ej. {outside[0].date()}; use monthly_returns(prices)."
+        )
+    not_pit = list(X.attrs.get("not_point_in_time", []))
+    point_in_time = point_in_time and bool(X.attrs.get("point_in_time", True))
+    if not_pit:
+        notes.append(f"Variables no punto-en-el-tiempo: {', '.join(not_pit)}.")
     wf = model.walk_forward(y, X)
     validation = model.validate(y, X, alpha=alpha)
     mask = wf.forecasts.notna() & wf.realized.notna()
@@ -437,7 +457,13 @@ def backtest_econometric(
         if stat_test.p_value is None:
             stat_test = evaluation.clark_west
     statistical = stat_test.p_value is not None and stat_test.rejects(alpha)
-    notes = []
+    cw_ok = evaluation.clark_west.p_value is not None and evaluation.clark_west.rejects(alpha)
+    if stat_test is evaluation.pesaran_timmermann and statistical and not cw_ok:
+        notes.append(
+            "Pesaran-Timmermann detecta capacidad direccional, pero Clark-West no rechaza y "
+            f"el R² fuera de muestra es {evaluation.oos_r2:+.1%}: el pronóstico no mejora a la "
+            "media histórica en error cuadrático."
+        )
     if position != "proportional" and stat_test is evaluation.clark_west:
         notes.append("Pesaran-Timmermann no aplicable (un solo signo); se usa Clark-West.")
     verdict = make_verdict(

@@ -82,4 +82,5 @@ def test_sc004c_persistent_regressor_size_is_reported(capsys: pytest.CaptureFixt
     rng = np.random.default_rng(8)
     size = float(np.mean([_cw_rejects(rng, 300, 0.0, 0.98, -0.9, model) for _ in range(reps)]))
     print(f"SC-004(c) tamaño empírico de Clark-West con regresor persistente: {size:.3f}")
-    assert 0.0 <= size <= 1.0
+    # Medido 2,6 %; umbral documentado: no superar el doble del nominal.
+    assert size <= 0.10

@@ -64,6 +64,6 @@ def test_monthly_decision_dates_and_returns() -> None:
 def test_dtb3_conversion() -> None:
     dtb3 = pd.Series([5.0], index=pd.to_datetime(["2024-01-02"]))
     daily = dtb3_to_daily(dtb3)
-    y = 365 * 0.05 / (360 - 91 * 0.05)
-    assert daily.iloc[0] == pytest.approx((1 + y) ** (1 / 252) - 1)
+    holding = 0.05 * 91 / (360 - 0.05 * 91)
+    assert daily.iloc[0] == pytest.approx((1 + holding) ** (365 / 91 / 252) - 1)
     assert daily.index[0] == pd.Timestamp("2024-01-03")

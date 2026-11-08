@@ -12,7 +12,8 @@ Variables explicativas (FRED, punto en el tiempo, con rezago de publicación dec
   serie sin desestacionalizar porque la ajustada se revisa hacia atrás.
 
 Flujo: decisión el último día hábil de cada mes; regresión predictiva re-estimada cada
-mes con ventana expansiva (mínimo 60 meses); ejecución al cierre siguiente; costo 5 pb.
+mes con ventana expansiva (mínimo 60 meses); ejecución al cierre siguiente y posición
+mantenida hasta la próxima decisión; costo 5 pb.
 
     uv run python examples/backtest_02_macro_tlt.py [--report r.json]
 """
@@ -42,7 +43,7 @@ from tsinsurance.data import Snapshot, to_wide
 
 DATA = Path(__file__).parent / "data"
 MODEL = PredictiveRegression(min_train=60, scheme="expanding", refit_every=1)
-CONFIG = ExecutionConfig(cost_bps=5.0)
+CONFIG = ExecutionConfig(cost_bps=5.0, rebalance="M")  # mantener hasta la próxima decisión
 
 
 def load() -> tuple[pd.Series, pd.Series, list[Exogenous]]:
@@ -73,9 +74,12 @@ def build_inputs(
     r = monthly_returns(prices)
     rf_daily = rf.reindex(prices.index.union(rf.index)).ffill().reindex(prices.index).shift(1)
     rf_month = (1 + rf_daily.fillna(0.0)).groupby(prices.index.to_period("M")).prod() - 1
+    rf_month = rf_month.loc[[d.to_period("M") for d in dates]]
     rf_month.index = dates
     y = (r - rf_month.reindex(r.index)).rename("TLT_excess")
-    return y, x.loc[y.index].dropna()
+    out = x.loc[y.index].dropna()
+    out.attrs = dict(x.attrs)  # indicadores punto-en-el-tiempo de las variables
+    return y, out
 
 
 def pipeline(data: dict[str, object]) -> pd.DataFrame:
@@ -112,8 +116,16 @@ def main() -> None:
         print("=" * 88)
         print(f"2) Validación doble — regla '{rule}'")
         res = backtest_econometric(
-            tlt, y, x, MODEL, position=rule, config=CONFIG, risk_free=rf,
-            n_specifications=2, reps=1000, seed=0,
+            tlt,
+            y,
+            x,
+            MODEL,
+            position=rule,
+            config=CONFIG,
+            risk_free=rf,
+            n_specifications=2,
+            reps=1000,
+            seed=0,
         )
         print(res.summary())
         ev = res.forecast_evaluation

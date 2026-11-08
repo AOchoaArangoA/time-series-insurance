@@ -19,7 +19,10 @@ from tsinsurance.backtest.pit import Exogenous
 from tsinsurance.errors import LookaheadBiasError, TSInsuranceError
 from tsinsurance.results import ResultMixin
 
-__all__ = ["LookaheadReport", "check_lookahead"]
+__all__ = ["MIN_VALID_CUTS", "LookaheadReport", "check_lookahead"]
+
+MIN_VALID_CUTS = 5
+"""Cortes evaluados mínimos para certificar ausencia de anticipación."""
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -32,16 +35,32 @@ class LookaheadReport(ResultMixin):
     max_abs_diff: float
     skipped_cuts: int = 0
 
+    @property
+    def valid_cuts(self) -> int:
+        """Cortes efectivamente evaluados."""
+        return len(self.cuts) - self.skipped_cuts
+
+    @property
+    def conclusive(self) -> bool:
+        """``True`` si se evaluaron al menos ``MIN_VALID_CUTS`` cortes."""
+        return self.has_lookahead or self.valid_cuts >= MIN_VALID_CUTS
+
     def raise_if_biased(self) -> None:
-        """Lanza :class:`LookaheadBiasError` si se detectó anticipación."""
-        if self.has_lookahead:
+        """Lanza :class:`LookaheadBiasError` si hay anticipación o la prueba no concluye."""
+        if self.has_lookahead or not self.conclusive:
             raise LookaheadBiasError(self.summary())
 
     def summary(self) -> str:
         """Resumen legible."""
         if not self.has_lookahead:
+            if not self.conclusive:
+                return (
+                    f"NO CONCLUYENTE: sólo {self.valid_cuts} corte(s) evaluable(s) de "
+                    f"{len(self.cuts)} (mínimo {MIN_VALID_CUTS}); la señal falló con datos "
+                    "truncados. No se puede certificar ausencia de anticipación."
+                )
             return (
-                f"Sin anticipación detectada en {len(self.cuts)} cortes "
+                f"Sin anticipación detectada en {self.valid_cuts} cortes evaluados "
                 f"({self.skipped_cuts} omitidos por datos insuficientes)."
             )
         first = ", ".join(str(d.date()) for d in self.affected_dates[:5])
@@ -96,8 +115,10 @@ def check_lookahead(
         Entradas de la señal. Un ``Mapping`` puede contener DataFrames, Series,
         :class:`Exogenous` o listas de ellas.
     n_cuts : int
-        Cortes aleatorios adicionales a los deterministas (posiciones 5, 20, 60, 250,
-        n/4, n/2, n−3 y n−2 del índice principal).
+        Cortes aleatorios (dentro del tramo con señal) adicionales a los deterministas:
+        fin del calentamiento de la señal y +1, +5, +20; posiciones 5, 20, 60, 250, n/4,
+        n/2, n−3 y n−2 del índice principal. Si se evalúan menos de ``MIN_VALID_CUTS``
+        cortes el resultado es no concluyente.
     seed : int
         Semilla de los cortes aleatorios.
     tol : float
@@ -106,10 +127,13 @@ def check_lookahead(
     full = _as_frame(signal_fn(data))
     index = _index_of(data)
     n = len(index)
-    positions = {p for p in (5, 20, 60, 250, n // 4, n // 2, n - 3, n - 2) if 0 <= p < n - 1}
+    first_valid = full.dropna(how="all").index.min()
+    fv = int(index.searchsorted(first_valid)) if not pd.isna(first_valid) else 0
+    fixed = (5, 20, 60, 250, n // 4, n // 2, n - 3, n - 2, fv, fv + 1, fv + 5, fv + 20)
+    positions = {p for p in fixed if 0 <= p < n - 1}
     rng = np.random.default_rng(seed)
-    if n > 3:
-        positions |= set(rng.integers(1, n - 1, size=n_cuts).tolist())
+    if n - 1 > max(fv, 1):
+        positions |= set(rng.integers(max(fv, 1), n - 1, size=n_cuts).tolist())
     cuts = sorted(index[p] for p in positions)
     affected: set[pd.Timestamp] = set()
     max_diff = 0.0
@@ -117,8 +141,8 @@ def check_lookahead(
     for cut in cuts:
         try:
             part = _as_frame(signal_fn(_truncate(data, cut)))
-        except (TSInsuranceError, ValueError):
-            skipped += 1
+        except Exception:  # noqa: BLE001 - la señal del usuario puede fallar con pocos datos
+            skipped += 1  # se cuenta; si quedan pocos cortes el resultado es no concluyente
             continue
         ref = full.loc[:cut].reindex(columns=part.columns)
         part = part.loc[:cut].reindex(ref.index)

@@ -56,6 +56,13 @@ class Trial:
         """Etiqueta legible de los parámetros."""
         return ", ".join(f"{k}={v}" for k, v in self.params.items())
 
+    @property
+    def active_returns(self) -> pd.Series:
+        """Retorno activo frente a comprar y mantener del mismo activo."""
+        return (
+            self.excess_returns - self.benchmark_excess.reindex(self.excess_returns.index)
+        ).rename(self.label)
+
 
 @dataclass(eq=False)
 class TrialRegistry:
@@ -93,12 +100,24 @@ class SweepResult(ResultMixin):
 
     def summary(self) -> str:
         """Resumen legible."""
-        cols = ["best", "sharpe", "n_trials", "n_effective", "dsr", "spa_p", "significant"]
+        cols = [
+            "best",
+            "sharpe",
+            "info_ratio",
+            "n_trials",
+            "n_effective",
+            "dsr",
+            "spa_p",
+            "significant",
+        ]
         return "\n".join(
             [
-                f"Barrido: {self.registry.n_trials} pruebas ({self.config.describe()})",
-                "Mejor configuración por activo, ajustada por pruebas múltiples "
-                "(DSR = P[SR verdadero > máximo esperado por azar]; SPA vs comprar y mantener):",
+                f"Barrido: {len(self.table)} configuraciones; registro acumulado "
+                f"{self.registry.n_trials} pruebas ({self.config.describe()})",
+                "Mejor configuración por activo (por ratio de información frente a comprar y "
+                "mantener). Nula común: sin habilidad de timing. DSR = P[IR verdadero > máximo "
+                "esperado por azar con n_trials pruebas del activo]; SPA = valor p de Hansen "
+                "sobre retornos activos medios (sin ajuste por riesgo):",
                 self.selection[cols].to_string(float_format=lambda v: f"{v:.3f}"),
             ]
         )
@@ -139,51 +158,78 @@ def sweep(
     alpha: float = 0.05,
     reps: int = 500,
     seed: int = 0,
+    registry: TrialRegistry | None = None,
+    name: str = "idea",
 ) -> SweepResult:
     """Evalúa ``signal_fn`` con cada combinación de ``grid`` sobre cada activo.
 
     Todas las configuraciones de un activo se comparan en la misma ventana (desde el
     calentamiento más largo). ``signal_fn(prices_frame, **params)`` debe devolver pesos
     objetivo causales.
+
+    La significancia se mide sobre el **retorno activo** frente a comprar y mantener
+    (``r_estrategia − r_benchmark``), así ambas pruebas tienen la misma nula ("no hay
+    habilidad de *timing*"):
+
+    - DSR del ratio de información del mejor, deflactado con **todas** las pruebas del
+      activo registradas en ``registry`` (comparta el registro entre barridos para que
+      cuenten todas las ideas probadas);
+    - SPA de Hansen sobre los retornos activos de todas esas pruebas (valor p consistente;
+      compara retornos medios, sin ajuste por riesgo).
     """
     cfg = config or ExecutionConfig()
     combos = _grid(grid)
-    registry = TrialRegistry()
+    registry = registry if registry is not None else TrialRegistry()
     rows: list[dict[str, Any]] = []
     selection: list[dict[str, Any]] = []
     for asset in prices.columns:
         px = prices[asset].dropna()
         runs, start = _run_asset(px, signal_fn, combos, cfg, risk_free)
-        sharpes = []
+        current: list[Trial] = []
         for params, res in runs:
             ex = res.excess_returns.loc[start:]
             bex = res.benchmark_excess_returns
             assert bex is not None
-            trial = Trial(str(asset), params, ex, bex.loc[start:])
+            trial = Trial(str(asset), {"idea": name, **params}, ex, bex.loc[start:])
             registry.add(trial)
+            current.append(trial)
             m = performance_metrics(ex, res.periods_per_year, turnover=res.turnover.loc[start:])
-            sharpes.append(sharpe_per_period(ex))
-            rows.append({"asset": asset, **params, **m.to_dict()})
-        trials = registry.for_asset(str(asset))
-        best_i = int(np.nanargmax(sharpes))
-        best = trials[best_i]
-        frame = registry.returns_frame(str(asset))
-        var_sr = float(np.nanvar(sharpes, ddof=1)) if len(sharpes) > 1 else 0.0
-        n_eff = effective_number_of_trials(frame)
-        # N bruto para decidir: el N efectivo por autovalores subestima las pruebas
-        # independientes cuando comparten un factor común e infla el tamaño (SC-003).
-        dsr = deflated_sharpe(best.excess_returns, len(trials), var_sr)
-        spa = spa_test(best.benchmark_excess, frame, reps=reps, seed=seed)
+            rows.append({"asset": asset, "idea": name, **params, **m.to_dict()})
+        ppy = runs[0][1].periods_per_year
+        all_trials = registry.for_asset(str(asset))
+        active_all = pd.concat({t.label: t.active_returns for t in all_trials}, axis=1)
+        irs_all = [sharpe_per_period(t.active_returns) for t in all_trials]
+        irs_now = [sharpe_per_period(t.active_returns) for t in current]
+        # Retorno activo idéntico a 0 (estrategia = benchmark): IR indefinido ⇒ 0.
+        irs_all = [0.0 if np.isnan(v) else v for v in irs_all]
+        irs_now = [0.0 if np.isnan(v) else v for v in irs_now]
+        best_i = int(np.argmax(irs_now))
+        best = current[best_i]
+        var_ir = float(np.var(irs_all, ddof=1)) if len(irs_all) > 1 else 0.0
+        common = active_all.dropna()
+        if float(best.active_returns.std()) > 0:
+            # N bruto para decidir: el N efectivo por autovalores subestima las pruebas
+            # independientes cuando comparten un factor común e infla el tamaño (SC-003).
+            dsr_value = deflated_sharpe(best.active_returns, len(all_trials), var_ir).dsr
+        else:
+            dsr_value = float("nan")
+        if float(common.std().max()) > 0:
+            spa_p = spa_test(
+                np.zeros(len(common)), common, reps=reps, seed=seed, relative=False
+            ).pvalue_consistent
+        else:
+            spa_p = 1.0
         selection.append(
             {
                 "asset": asset,
                 "best": best.label,
-                "sharpe": sharpes[best_i] * np.sqrt(runs[best_i][1].periods_per_year),
-                "n_trials": len(trials),
-                "n_effective": n_eff,
-                "dsr": dsr.dsr,
-                "spa_p": spa.pvalue_consistent,
-                "significant": bool(dsr.dsr > 1 - alpha and spa.pvalue_consistent < alpha),
+                "sharpe": sharpe_per_period(best.excess_returns) * np.sqrt(ppy),
+                "info_ratio": irs_now[best_i] * np.sqrt(ppy),
+                "n_trials": len(all_trials),
+                "n_effective": effective_number_of_trials(active_all),
+                "dsr": dsr_value,
+                "spa_p": spa_p,
+                "significant": bool(dsr_value > 1 - alpha and spa_p < alpha),
                 "eval_start": start,
             }
         )
@@ -228,6 +274,7 @@ def calibrate_validate(
     risk_free: pd.Series | None = None,
     reps: int = 500,
     seed: int = 0,
+    registry: TrialRegistry | None = None,
 ) -> CalibrationResult:
     """Elige parámetros con datos hasta ``train_end`` y evalúa una vez después.
 
@@ -246,6 +293,18 @@ def calibrate_validate(
         in_sample = [sharpe_per_period(r.excess_returns.loc[start:cut]) for _, r in runs]
         best_i = int(np.nanargmax(in_sample))
         params, res = runs[best_i]
+        if registry is not None:
+            for p_, r_ in runs:
+                bex_ = r_.benchmark_excess_returns
+                assert bex_ is not None
+                registry.add(
+                    Trial(
+                        str(asset),
+                        {"idea": "calibracion", **p_},
+                        r_.excess_returns.loc[start:cut],
+                        bex_.loc[start:cut],
+                    )
+                )
         after = res.excess_returns.loc[cut:].iloc[1:]
         bench = res.benchmark_excess_returns
         assert bench is not None

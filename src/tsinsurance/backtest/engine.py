@@ -66,6 +66,7 @@ class BacktestResult(ResultMixin):
     periods_per_year: int
     warmup_end: pd.Timestamp | None
     notes: tuple[str, ...] = ()
+    has_risk_free: bool = False
 
     @property
     def equity(self) -> pd.Series:
@@ -85,6 +86,10 @@ class BacktestResult(ResultMixin):
             f"({self.returns.index[0].date()} a {self.returns.index[-1].date()})",
             f"Supuestos: {self.config.describe()}",
             f"Fin del calentamiento: {self.warmup_end.date() if self.warmup_end else 'n/d'}",
+            "Métricas sobre retornos "
+            + ("en exceso de rf" if self.has_risk_free else "totales (sin rf)")
+            + "; benchmark = "
+            + ("comprar y mantener" if self.weights.shape[1] == 1 else "igual ponderado diario"),
             f"Estrategia : {self.metrics.summary()}",
         ]
         if self.benchmark_metrics is not None:
@@ -184,10 +189,18 @@ def run_backtest(
             f"{int(over.sum())} decisión(es) recortada(s) a exposición bruta {cfg.max_gross}."
         )
 
-    rets = px.pct_change()
-    no_price = px.isna().to_numpy()
-    if (decided.to_numpy()[no_price] != 0).any():
-        decided = decided.mask(px.isna(), 0.0)
+    before_start = px.notna().cumsum() == 0
+    internal_gaps = px.isna() & ~before_start
+    if internal_gaps.to_numpy().any():
+        px = px.ffill()
+        notes.append(
+            f"{int(internal_gaps.to_numpy().sum())} precio(s) faltante(s) dentro de la historia "
+            "rellenado(s) hacia adelante: retorno 0 ese día y el movimiento se registra al "
+            "reaparecer el precio."
+        )
+    rets = px.pct_change(fill_method=None)
+    if (decided.to_numpy()[before_start.to_numpy()] != 0).any():
+        decided = decided.mask(before_start, 0.0)
         notes.append("Pesos en activos aún sin precio fijados en 0 (inicio por activo).")
     r = rets.fillna(0.0).to_numpy()
 
@@ -287,4 +300,5 @@ def run_backtest(
         periods_per_year=ppy,
         warmup_end=warmup_end,
         notes=tuple(notes),
+        has_risk_free=risk_free is not None,
     )

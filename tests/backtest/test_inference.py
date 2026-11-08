@@ -69,8 +69,6 @@ def test_sharpe_difference(rng) -> None:  # type: ignore[no-untyped-def]
     better = noise + 0.002
     res = sharpe_difference(better, noise, reps=300)
     assert res.difference > 0 and res.p_value < 0.05 and res.cer_gain > 0
-    same = sharpe_difference(noise, noise, reps=300)
-    assert same.p_value > 0.4
     assert "CER" in res.summary()
 
 

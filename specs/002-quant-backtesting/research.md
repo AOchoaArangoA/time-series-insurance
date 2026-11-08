@@ -140,3 +140,18 @@ Formato: **Decision / Rationale / Alternatives considered**.
 | M5 SC-006/007 | hardware fijado, GARCH aparte; huella con redondeo |
 | M6 α | `alpha` del veredicto debe pertenecer a `ALPHAS` |
 | M7 universo | nota automática de sesgo de supervivencia; inicio por activo; `cost_bps` por activo (`Mapping`) |
+
+## R12. Revisión econométrica de la implementación (2026-11-08)
+
+Corregido: prueba de anticipación no concluyente si quedan < 5 cortes evaluables y cortes
+en el fin del calentamiento (#1, #2); transformaciones por fecha sobre el calendario (#3,
+IPC de nov-2025 pasa de 2,679 % a 2,735 %); huecos internos de precio (#4); rebalanceo
+mensual por defecto en `backtest_econometric` (#5); `point_in_time` propagado desde
+`align_point_in_time` (#6); `TrialRegistry` compartido y significancia sobre retornos
+activos en barridos (#7, #8); redacción del veredicto según la prueba y aviso de
+contradicción PT vs CW (#9); documentación de `forecast_se` (#10); DTB3 a tasa efectiva
+(#11); pruebas reforzadas: umbral SC-004(c), tamaño de `sharpe_difference` con series
+independientes, EE HAC con AR(1), huella fijada del ejercicio 02 (#12); mes incompleto
+(#13); rótulos de métricas, benchmark y validación de fechas de `y` (#14).
+Pendiente: el EE HAC del Sharpe queda ~9 % por debajo de la dispersión Monte Carlo con
+AR(1) φ = 0,3 (mejor que el iid, 29 % por debajo); evaluar HAC con preblanqueo (T047).

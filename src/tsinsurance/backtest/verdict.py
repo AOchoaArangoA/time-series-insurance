@@ -13,10 +13,10 @@ Quadrant = Literal["estadistica_y_economica", "solo_estadistica", "solo_economic
 MIN_OOS_FORECASTS = 60
 
 _EXPLAIN = {
-    "estadistica_y_economica": "El modelo pronostica mejor que la media histórica y la señal "
+    "estadistica_y_economica": "La prueba estadística indica capacidad predictiva y la señal "
     "agrega valor económico neto de costos frente a la misma regla con la media histórica.",
-    "solo_estadistica": "Hay capacidad predictiva estadística, pero no se traduce en valor "
-    "económico neto de costos (ajuste sin valor económico).",
+    "solo_estadistica": "La prueba estadística indica capacidad predictiva, pero no se "
+    "traduce en valor económico neto de costos (ajuste sin valor económico).",
     "solo_economica": "La señal mejora el desempeño sin respaldo estadístico del pronóstico: "
     "posible suerte, no linealidad o dependencia del periodo; no apta sin más evidencia.",
     "sin_evidencia": "Ni evidencia estadística ni valor económico frente al benchmark.",
@@ -88,6 +88,13 @@ def make_verdict(
     exploratory = n_specifications > 1 or not point_in_time
     inconclusive = n_forecasts < MIN_OOS_FORECASTS
     explanation = _EXPLAIN[quadrant]
+    if statistical:
+        explanation += (
+            " (Clark-West: mejor error cuadrático que la media histórica.)"
+            if statistical_test == "Clark-West"
+            else " (Pesaran-Timmermann: acierta la dirección más que el azar; no compara "
+            "contra la media histórica.)"
+        )
     if not point_in_time:
         explanation += " Hay variables no punto-en-el-tiempo (revisadas)."
     if n_specifications > 1:

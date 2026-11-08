@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 EXAMPLES = Path(__file__).parents[2] / "examples"
+PINNED = {"oos_r2": -0.1411, "sharpe_model": 0.3736, "quadrant": "solo_estadistica"}
 
 
 def _run(script: str, report: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
@@ -25,6 +26,10 @@ def test_macro_tlt_is_reproducible(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert a == b
     long_cash = a["long_cash"]
     assert isinstance(long_cash, dict) and long_cash["exploratory"] is True
+    # Huella fijada de los resultados (redondeo a 4 decimales, portable entre plataformas).
+    assert round(float(long_cash["oos_r2"]), 4) == PINNED["oos_r2"]
+    assert round(float(long_cash["sharpe_model"]), 4) == PINNED["sharpe_model"]
+    assert long_cash["quadrant"] == PINNED["quadrant"]
     assert long_cash["quadrant"] in {
         "estadistica_y_economica",
         "solo_estadistica",

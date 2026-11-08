@@ -73,13 +73,14 @@
 - [ ] T044 Referencias externas de R (rugarch::DACTest, forecast::dm.test, Rapach-Zhou) cuando R esté disponible
 - [ ] T045 Inferencia IVX (Kostakis-Magdalinos-Stamatogiannis 2015) para regresores persistentes
 - [ ] T046 Soporte de vintages ALFRED en FredSource para variables revisables
+- [ ] T047 EE HAC del Sharpe con preblanqueo (Andrews-Monahan) para reducir el sesgo de ~9 % con autocorrelación
 - [X] T036 [P] [US5] Prueba de rendimiento SC-006 (8 activos × 20 configuraciones × 10 años diarios < 60 s) en tests/backtest/test_performance.py (marca `slow`)
 
 ## Phase 8: Polish
 
 - [X] T037 [P] Nota metodológica docs/methodology/backtesting.md con referencias
 - [X] T038 [P] Exportar API pública en src/tsinsurance/backtest/__init__.py según contracts/public-api.md
-- [ ] T039 Ejecutar `econometrics-reviewer` sobre la implementación y resolver bloqueantes
+- [X] T039 Ejecutar `econometrics-reviewer` sobre la implementación y resolver bloqueantes
 - [X] T040 Actualizar README, roadmap y CI (`--all-extras`); verificar cobertura ≥ 90 %, mypy y ruff
 
 ## Dependencies & Execution Order
