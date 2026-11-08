@@ -19,17 +19,26 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from statsmodels.stats.diagnostic import acorr_ljungbox, het_arch
+from statsmodels.tsa.ar_model import AutoReg, ar_select_order
 from statsmodels.tsa.stattools import acf, pacf
 
 from tsinsurance.diagnostics.stationarity import MIN_OBS, _clean
+from tsinsurance.errors import DataValidationError
 from tsinsurance.results import HypothesisTestResult, ResultMixin
 
 __all__ = ["DescriptiveReport", "arch_lm", "describe", "jarque_bera", "ljung_box"]
 
 
+def _finite(x: pd.Series | np.ndarray, procedure: str) -> np.ndarray:
+    arr = np.asarray(x, dtype=float)
+    if not np.isfinite(arr).all():
+        raise DataValidationError(f"{procedure}: la serie tiene faltantes o infinitos.")
+    return arr
+
+
 def jarque_bera(x: pd.Series | np.ndarray) -> HypothesisTestResult:
     """Prueba de normalidad de Jarque-Bera (H0: asimetría 0 y curtosis 3)."""
-    arr = np.asarray(x, dtype=float)
+    arr = _finite(x, "Jarque-Bera")
     res = stats.jarque_bera(arr)
     return HypothesisTestResult(
         name="Jarque-Bera",
@@ -48,7 +57,7 @@ def ljung_box(
 
     ``model_df`` resta grados de libertad por parámetros ARMA estimados.
     """
-    arr = np.asarray(x, dtype=float)
+    arr = _finite(x, name)
     if lags <= model_df:
         raise ValueError("lags debe ser mayor que model_df.")
     table = acorr_ljungbox(arr, lags=[lags], model_df=model_df, return_df=True)
@@ -63,16 +72,21 @@ def ljung_box(
 
 
 def arch_lm(x: pd.Series | np.ndarray, *, lags: int = 5) -> HypothesisTestResult:
-    """Prueba ARCH-LM de Engle (H0: sin heterocedasticidad condicional)."""
-    arr = np.asarray(x, dtype=float)
-    res = het_arch(arr, nlags=lags, result_object=True)
+    """Prueba ARCH-LM de Engle (H0: sin heterocedasticidad condicional).
+
+    Se aplica sobre la serie centrada: si la media no es cero, ``x²`` contendría el
+    término ``2μe`` y la autocorrelación de la media aparecería como falso ARCH.
+    Para residuos de un modelo de media, pase directamente los residuos.
+    """
+    arr = _finite(x, "ARCH-LM")
+    res = het_arch(arr - arr.mean(), nlags=lags, result_object=True)
     lm, lm_p = res.lm, res.lmpval
     return HypothesisTestResult(
         name="ARCH-LM",
         statistic=float(lm),
         p_value=float(lm_p),
         null_hypothesis=f"No hay efectos ARCH hasta el rezago {lags}.",
-        specification={"lags": lags, "df": lags},
+        specification={"lags": lags, "df": lags, "centered": True},
         reference="Engle (1982)",
     )
 
@@ -90,7 +104,14 @@ class DescriptiveReport(ResultMixin):
         Autocorrelaciones simple y parcial (rezagos 1..nlags).
     confidence_band : float
         Banda aproximada al 95 % (``1.96 / sqrt(n)``).
-    jarque_bera, ljung_box, ljung_box_squared, arch_lm : HypothesisTestResult
+    jarque_bera, ljung_box : HypothesisTestResult
+        Sobre la serie.
+    ljung_box_squared, arch_lm : HypothesisTestResult
+        Sobre los residuos de un AR(p) con p elegido por AIC (``mean_ar_order``), para
+        no confundir la dinámica de la media con heterocedasticidad condicional
+        (Engle 1982 formula la prueba sobre residuos).
+    mean_ar_order : int
+        Orden del AR usado para filtrar la media.
     """
 
     series_id: str
@@ -102,6 +123,7 @@ class DescriptiveReport(ResultMixin):
     ljung_box: HypothesisTestResult
     ljung_box_squared: HypothesisTestResult
     arch_lm: HypothesisTestResult
+    mean_ar_order: int = 0
 
     def summary(self) -> str:
         """Resumen legible."""
@@ -147,7 +169,13 @@ def describe(series: pd.Series, *, nlags: int = 20, arch_lags: int = 5) -> Descr
         }
     )
     lags = pd.RangeIndex(1, nlags + 1, name="lag")
-    centered = x - x.mean()
+    sel = ar_select_order(x, maxlag=min(10, nlags), ic="aic", trend="c")
+    order = max(sel.ar_lags) if sel.ar_lags else 0
+    if order:
+        resid = np.asarray(AutoReg(x, lags=order, trend="c").fit().resid, dtype=float)
+    else:
+        resid = x - x.mean()
+    centered = resid - resid.mean()
     return DescriptiveReport(
         series_id=str(s.name) if s.name is not None else "serie",
         stats=summary_stats,
@@ -156,6 +184,7 @@ def describe(series: pd.Series, *, nlags: int = 20, arch_lags: int = 5) -> Descr
         confidence_band=1.96 / float(np.sqrt(n)),
         jarque_bera=jarque_bera(x),
         ljung_box=ljung_box(x, lags=min(10, nlags)),
-        ljung_box_squared=ljung_box(centered**2, lags=min(10, nlags), name="Ljung-Box (x²)"),
-        arch_lm=arch_lm(x, lags=arch_lags),
+        ljung_box_squared=ljung_box(centered**2, lags=min(10, nlags), name="Ljung-Box (e²)"),
+        arch_lm=arch_lm(resid, lags=arch_lags),
+        mean_ar_order=order,
     )

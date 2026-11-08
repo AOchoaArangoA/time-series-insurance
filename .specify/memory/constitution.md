@@ -1,8 +1,9 @@
 # Constitución de `tsinsurance` (Time Series for Insurance Investments)
 
-Paquete Python para modelar, pronosticar y medir el riesgo de las inversiones de una
-aseguradora con series de tiempo, siguiendo una metodología econométrica y estadística
-robusta, reproducible y auditable.
+Paquete Python de series de tiempo para asistir decisiones cuantitativas de inversión
+—con foco en el portafolio de una aseguradora—: modelar, pronosticar, medir el riesgo y
+someter señales y modelos a backtesting, siguiendo una metodología econométrica y
+estadística robusta, reproducible y auditable.
 
 ## Core Principles
 
@@ -101,12 +102,37 @@ Ningún modelo se declara válido sólo por su ajuste dentro de muestra.
   MUST justificarse con mejora estadísticamente significativa fuera de muestra.
 - Sin "cajas negras": cada resultado expone supuestos, parámetros y diagnósticos.
 
+### VIII. Backtesting responsable (NO NEGOCIABLE)
+
+Un backtest es un experimento estadístico, no una demostración comercial.
+
+- **Punto en el tiempo**: toda señal en `t` MUST usar sólo información disponible en
+  `t`. Los modelos se re-estiman *walk-forward*; las variables macroeconómicas se
+  rezagan según su rezago de publicación declarado. El paquete MUST ofrecer una prueba
+  automática de sesgo de anticipación (*look-ahead*) para señales definidas por el
+  usuario.
+- **Ejecución explícita**: el retraso entre señal y operación, los costos de
+  transacción y el deslizamiento MUST declararse; nunca hay valores implícitos ocultos.
+- **Referencia y significancia**: toda estrategia se compara con un benchmark (comprar
+  y mantener y/o efectivo) y su desempeño se reporta con incertidumbre (errores
+  estándar HAC o bootstrap estacionario), no sólo con estimaciones puntuales.
+- **Pruebas múltiples**: el número de configuraciones probadas MUST registrarse y
+  ajustarse (Sharpe deflactado, prueba SPA de Hansen o equivalente). Un resultado sin
+  ese ajuste se marca como exploratorio.
+- **Fuera de muestra intocable**: la calibración de parámetros usa sólo el periodo de
+  entrenamiento; el periodo de validación final se evalúa una sola vez y se reporta.
+- **Validación doble de modelos econométricos**: una señal basada en un modelo MUST
+  reportar (a) la validación estadística del modelo (Principios I-III: estacionariedad de
+  regresores, diagnósticos de residuos, precisión de pronóstico fuera de muestra) y
+  (b) su desempeño económico en el backtest. Un buen ajuste sin valor económico, o
+  valor económico sin respaldo estadístico, se reportan explícitamente como tales.
+
 ## Restricciones técnicas
 
 - Python >= 3.11; gestión de entorno y dependencias con `uv`; empaquetado con
   `pyproject.toml` (hatchling).
 - Dependencias núcleo: `numpy`, `pandas`, `scipy`, `statsmodels`, `arch`.
-  Dependencias opcionales por extras (`[data]`, `[ml]`, `[viz]`).
+  Dependencias opcionales por extras (`[yahoo]`, `[excel]`, `[backtest]`, `[viz]`).
 - Calidad: `ruff` (lint + formato), `mypy --strict`, `pytest` + `pytest-cov` +
   `hypothesis`, `pre-commit`.
 - Datos: el paquete no incluye datos confidenciales; los ejemplos usan datos públicos
@@ -132,8 +158,8 @@ Ningún modelo se declara válido sólo por su ajuste dentro de muestra.
   proyecto.
 - Versionado semántico de la constitución: MAJOR para eliminar o redefinir principios,
   MINOR para agregar principios o secciones, PATCH para aclaraciones.
-- Cada revisión de código verifica cumplimiento de los principios I-VII (incluido IV-bis); toda
+- Cada revisión de código verifica cumplimiento de los principios I-VIII (incluido IV-bis); toda
   excepción se registra en la tabla "Complexity Tracking" del plan correspondiente.
 - La guía operativa para agentes de IA está en `CLAUDE.md`.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02
+**Version**: 1.2.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-08

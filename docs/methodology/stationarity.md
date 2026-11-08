@@ -17,13 +17,13 @@ pruebas formales y una regla explícita y auditable.
 | ADF (Dickey-Fuller aumentada) | raíz unitaria | `statsmodels.adfuller` | rezagos por AIC hasta `12·(n/100)^{1/4}`; valores p de MacKinnon |
 | Phillips-Perron (Z-tau) | raíz unitaria | `arch.unitroot.PhillipsPerron` | kernel Bartlett, ancho `12·(n/100)^{1/4}` |
 | KPSS | estacionariedad | `statsmodels.kpss` | ancho de banda automático (Hobijn et al. 1998) |
-| Zivot-Andrews | raíz unitaria sin quiebre | `statsmodels.zivot_andrews` | quiebre en intercepto, recorte 15 %, rezagos por AIC |
+| Zivot-Andrews | raíz unitaria sin quiebre | `statsmodels.zivot_andrews` | quiebre en intercepto (`trend="c"`) o en intercepto y tendencia (`trend="ct"`), recorte 15 %, rezagos por AIC |
 
 Mínimos: 25 observaciones (ADF, PP, KPSS) y 50 (Zivot-Andrews); por debajo se lanza
 `InsufficientDataError` con el mínimo requerido. El valor p de KPSS está acotado a
 [0,01; 0,10] por la tabla original; cuando cae fuera se registra una nota.
 
-## Regla de decisión (jerárquica confirmatoria)
+## Regla de decisión (jerárquica: ADF/PP deciden, KPSS desempata y confirma)
 
 En cada diferencia `d = 0, 1, …, max_d`:
 
@@ -34,7 +34,13 @@ En cada diferencia `d = 0, 1, …, max_d`:
 3. **Ninguna rechaza** → datos poco informativos (baja potencia): *inconcluso*.
 4. **ADF y PP discrepan** → *inconcluso*.
 
-Zivot-Andrews se ejecuta sobre el nivel y reporta la fecha candidata de quiebre. Si
+Niveles α admitidos: 1 %, 2,5 %, 5 % y 10 % (tabla de KPSS). El valor p de KPSS está
+acotado a [0,01; 0,10]; cuando cae en el borde (`p_value_bound`), la decisión usa los
+valores críticos tabulados.
+
+Zivot-Andrews se ejecuta sobre el nivel y reporta la fecha que minimiza su estadístico
+(convención: última observación antes del quiebre) junto con su significancia; si no
+rechaza, la fecha es sólo indicativa (bajo la nula el argmin no es consistente). Si
 rechaza la raíz unitaria cuando la regla concluye no estacionariedad, se agrega una nota:
 la persistencia aparente podría deberse a un cambio estructural.
 
@@ -47,17 +53,18 @@ Con α = 5 % y n = 500 (500 réplicas Monte Carlo, `tests/simulation/`):
 | AR(1), φ = 0,5 — I(0) | ≈ 100 % | ≈ 0 % |
 | Paseo aleatorio — I(1) | ≈ 89 % | ≈ 5 % |
 
-El techo para I(1) es estructural: ADF rechaza falsamente con probabilidad α (≈ 5 %) y
-KPSS tiene potencia ≈ 94 % frente a un paseo aleatorio de 500 observaciones. Una regla
-estricta que exija acuerdo de las tres pruebas en cada paso baja el acierto a ≈ 84 %,
-porque acumula los errores de tamaño; por eso se adoptó la regla jerárquica.
+El techo para I(1) es estructural: la regla exige que ni ADF ni PP rechacen en niveles
+(probabilidad entre 1 − 2α y 1 − α según la correlación de sus errores) y que KPSS
+rechace (potencia ≈ 94 % con n = 500). En la medición exploratoria inicial (200
+réplicas), una regla que exigía acuerdo de las tres pruebas en cada diferencia dio
+≈ 84 %; esa cifra no está respaldada por una prueba automatizada.
 
 ## Ejemplo con datos reales
 
 `examples/01_diagnostico_tasas_fred.py` (GS10 mensual, 1990-2025): ADF y PP no rechazan
 en niveles y KPSS sí ⇒ se diferencia; en la primera diferencia ADF y PP rechazan y KPSS no
-⇒ **I(1)**. Zivot-Andrews ubica un quiebre candidato en 2020-08, sin rechazar la raíz
-unitaria.
+⇒ **I(1)**. El estadístico de Zivot-Andrews se minimiza en 2020-08, pero la prueba no
+rechaza: la fecha es sólo indicativa.
 
 ## Referencias
 
@@ -68,4 +75,8 @@ unitaria.
 - MacKinnon, J. G. (1996, 2010). Valores críticos y funciones de distribución de pruebas de raíz unitaria.
 - Hobijn, B., Franses, P. H. & Ooms, M. (1998). Generalisations of the KPSS-test for stationarity. Econometric Institute Report 9802.
 - Maddala, G. S. & Kim, I.-M. (1998). *Unit Roots, Cointegration and Structural Change*. Cambridge University Press (análisis confirmatorio).
-- Nelson, C. R. & Plosser, C. I. (1982). *Journal of Monetary Economics*, 10(2), 139-162.
+- Nelson, C. R. & Plosser, C. I. (1982). *Journal of Monetary Economics*, 10(2), 139-162 (referencia clásica; sus datos aún no se usan en las pruebas, ver T082).
+- Dickey, D. A. & Pantula, S. G. (1987). Determining the order of differencing in autoregressive processes. *JBES*, 5(4), 455-461.
+- Dolado, J., Jenkinson, T. & Sosvilla-Rivero, S. (1990). Cointegration and unit roots. *Journal of Economic Surveys*, 4(3), 249-273.
+- Lee, J. & Strazicich, M. C. (2003). Minimum LM unit root test with two structural breaks. *REStat*, 85(4), 1082-1089.
+- Engle, R. F. (1982). *Econometrica*, 50(4), 987-1007 (ARCH-LM sobre residuos).

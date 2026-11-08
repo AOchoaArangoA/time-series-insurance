@@ -42,6 +42,9 @@ class PreparedSeries(ResultMixin):
         Observaciones eliminadas (faltantes o primera observación de la transformación).
     log : tuple[str, ...]
         Registro legible de cada paso.
+    uses_future_information : bool
+        ``True`` si algún valor se imputó con información posterior (``interpolate``);
+        la validación fuera de muestra y el backtesting rechazan estas series.
     """
 
     data: pd.Series
@@ -53,6 +56,7 @@ class PreparedSeries(ResultMixin):
     n_imputed: int
     n_dropped: int
     log: tuple[str, ...]
+    uses_future_information: bool = False
 
     def summary(self) -> str:
         """Resumen del procesamiento."""
@@ -95,7 +99,8 @@ def regular_index(index: pd.DatetimeIndex, freq: Frequency) -> pd.DatetimeIndex:
             raise DataValidationError(
                 "Frecuencia 'M' declarada pero hay dos observaciones en un mes."
             )
-        grid = pd.period_range(periods[0], periods[-1], freq="M").to_timestamp(how="start")
+        grid = pd.period_range(periods[0], periods[-1], freq="M").to_timestamp(how="end")
+        grid = grid.normalize()
     else:
         raise DataValidationError(f"Frecuencia '{freq}' no soportada. Use una de {FREQUENCIES}.")
     grid.name = index.name
@@ -131,7 +136,9 @@ def prepare(
 ) -> PreparedSeries:
     """Valida, alinea, trata faltantes y transforma una serie.
 
-    Pasos (en orden, sin usar información futura salvo en ``interpolate``):
+    Pasos (en orden, sin usar información futura salvo en ``interpolate``, que queda
+    marcado en ``uses_future_information``). Las series mensuales se fechan al **fin de
+    mes** (cuando el dato es conocido):
 
     1. Índice de fechas monótono creciente y sin duplicados.
     2. Alineación a una malla regular de la frecuencia ``freq``; las fechas
@@ -169,7 +176,8 @@ def prepare(
 
     idx = pd.DatetimeIndex(s.index)
     if freq == "M":
-        idx = idx.to_period("M").to_timestamp(how="start")
+        # Fin de mes: el dato de un mes sólo se conoce al cerrar el mes (Principio II).
+        idx = idx.to_period("M").to_timestamp(how="end").normalize()
         s.index = idx
     grid = regular_index(idx, freq)
     aligned = s.reindex(grid)
@@ -180,17 +188,14 @@ def prepare(
 
     n_imputed = 0
     n_dropped = 0
+    uses_future = False
     if n_missing:
         if missing == "error":
             raise DataValidationError(
                 f"La serie tiene {n_missing} faltante(s) sobre la malla '{freq}'; "
                 "elija missing='drop', 'ffill' o 'interpolate'."
             )
-        if missing == "drop":
-            aligned = aligned.dropna()
-            n_dropped += n_missing
-            log.append(f"{n_missing} faltante(s) eliminado(s).")
-        elif missing in {"ffill", "interpolate"}:
+        if missing in {"ffill", "interpolate"}:
             filled = aligned.ffill() if missing == "ffill" else aligned.interpolate(method="time")
             leading = int(filled.isna().sum())
             n_imputed = n_missing - leading
@@ -199,18 +204,26 @@ def prepare(
             log.append(f"{n_imputed} valor(es) imputado(s) con '{missing}'.")
             if leading:
                 log.append(f"{leading} faltante(s) inicial(es) eliminado(s) (sin valor previo).")
-        else:
+            if missing == "interpolate" and n_imputed:
+                uses_future = True
+                log.append(
+                    "ADVERTENCIA: 'interpolate' usa la observación siguiente (información "
+                    "futura); no use esta serie en validación fuera de muestra ni backtesting."
+                )
+        elif missing != "drop":
             raise DataValidationError(f"Método de faltantes desconocido: '{missing}'.")
 
+    if transform in {"simple", "log"} and (aligned.dropna() <= 0).any():
+        raise DataValidationError(
+            f"Retornos '{transform}' requieren valores estrictamente positivos (precios)."
+        )
+    # Con missing='drop' la transformación se calcula sobre la malla completa: después de
+    # cada hueco queda NaN y se descarta, en vez de crear retornos de varios periodos.
     if transform == "none":
         out = aligned
     elif transform == "simple":
         out = aligned / aligned.shift(1) - 1.0
     elif transform == "log":
-        if (aligned <= 0).any():
-            raise DataValidationError(
-                "Retornos logarítmicos requieren valores estrictamente positivos."
-            )
         out = pd.Series(np.log(aligned.to_numpy()), index=aligned.index, name=aligned.name).diff()
     elif transform == "diff":
         out = aligned.diff()
@@ -220,6 +233,15 @@ def prepare(
         out = out.iloc[1:]
         n_dropped += 1
         log.append(f"Transformación '{transform}' aplicada (se pierde la primera observación).")
+    if missing == "drop" and n_missing:
+        before = len(out)
+        out = out.dropna()
+        lost = before - len(out)
+        n_dropped += lost
+        log.append(
+            f"{lost} observación(es) eliminada(s) por faltantes"
+            + (" (incluye retornos posteriores a cada hueco)." if transform != "none" else ".")
+        )
     if len(out) < 2:
         raise InsufficientDataError("prepare", required=2, actual=len(out))
     out.name = s.name
@@ -241,4 +263,5 @@ def prepare(
         n_imputed=n_imputed,
         n_dropped=n_dropped,
         log=tuple(log),
+        uses_future_information=uses_future,
     )

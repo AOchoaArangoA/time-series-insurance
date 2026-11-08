@@ -8,7 +8,7 @@ import json
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -81,6 +81,11 @@ class ResultMixin:
 _LEVELS: tuple[float, ...] = (0.01, 0.05, 0.10)
 
 
+def _level_key(alpha: float) -> str:
+    """Clave de nivel de significancia: 0.05 -> '5%', 0.025 -> '2.5%'."""
+    return f"{alpha * 100:g}%"
+
+
 @dataclass(frozen=True, slots=True)
 class HypothesisTestResult(ResultMixin):
     """Resultado de una prueba de hipótesis.
@@ -103,6 +108,10 @@ class HypothesisTestResult(ResultMixin):
         Referencia bibliográfica del método.
     notes : tuple[str, ...]
         Advertencias o aclaraciones (p. ej. valor p acotado por tablas).
+    p_value_bound : {"below", "above"} or None
+        Si el valor p está acotado por una tabla: ``"below"`` indica que el verdadero
+        es menor o igual que el reportado; ``"above"``, mayor o igual. En ese caso la
+        decisión se toma con los valores críticos cuando el valor p no basta.
     """
 
     name: str
@@ -113,6 +122,7 @@ class HypothesisTestResult(ResultMixin):
     specification: Mapping[str, Any] = field(default_factory=dict)
     reference: str = ""
     notes: tuple[str, ...] = ()
+    p_value_bound: Literal["below", "above"] | None = None
 
     def rejects(self, alpha: float = 0.05) -> bool:
         """Indica si se rechaza la hipótesis nula al nivel ``alpha``.
@@ -120,10 +130,18 @@ class HypothesisTestResult(ResultMixin):
         Usa el valor p si existe; si no, compara con el valor crítico del nivel.
         """
         if self.p_value is not None and math.isfinite(self.p_value):
-            return self.p_value < alpha
-        key = f"{round(alpha * 100):d}%"
+            if self.p_value_bound is None:
+                return self.p_value < alpha
+            if self.p_value_bound == "below" and self.p_value <= alpha:
+                return True
+            if self.p_value_bound == "above" and self.p_value >= alpha:
+                return False
+        key = _level_key(alpha)
         if key not in self.critical_values:
-            raise ValueError(f"No hay valor p ni valor crítico para alpha={alpha}.")
+            raise ValueError(
+                f"Decisión indeterminada para alpha={alpha}: el valor p está acotado y no hay "
+                f"valor crítico '{key}'."
+            )
         crit = self.critical_values[key]
         lower_tail = bool(self.specification.get("lower_tail", True))
         return self.statistic < crit if lower_tail else self.statistic > crit
@@ -131,11 +149,19 @@ class HypothesisTestResult(ResultMixin):
     @property
     def reject_at(self) -> dict[str, bool]:
         """Decisión de rechazo a los niveles 1 %, 5 % y 10 %."""
-        return {f"{round(a * 100):d}%": self.rejects(a) for a in _LEVELS}
+        return {_level_key(a): self.rejects(a) for a in _LEVELS}
+
+    @property
+    def p_value_label(self) -> str:
+        """Valor p como texto, indicando si está acotado (``<0.0100`` / ``>0.1000``)."""
+        if self.p_value is None:
+            return "n/d"
+        prefix = {"below": "<", "above": ">"}.get(self.p_value_bound or "", "")
+        return f"{prefix}{self.p_value:.4f}"
 
     def summary(self) -> str:
         """Resumen de una línea más valores críticos."""
-        p = "n/d" if self.p_value is None else f"{self.p_value:.4f}"
+        p = self.p_value_label
         spec = ", ".join(f"{k}={v}" for k, v in self.specification.items() if k != "lower_tail")
         crit = ", ".join(f"{k}: {v:.3f}" for k, v in self.critical_values.items())
         lines = [

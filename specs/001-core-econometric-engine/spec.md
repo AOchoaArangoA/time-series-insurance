@@ -309,6 +309,21 @@ reportes idénticos, y el reporte contiene todas las secciones requeridas.
   en un paquete separado. Este paquete sólo consume nodos de tasas con un contrato de
   datos compatible para la comunicación futura.
 
+### Session 2026-11-08 (revisión econométrica independiente)
+
+- Q: El criterio SC-001 original (≥ 90 % para cualquier orden) ¿es alcanzable con α = 5 %?
+  → A: No para I(1): la regla exige que ADF y PP no rechacen en niveles (probabilidad
+  hasta 1 − 2α si sus errores no están perfectamente correlacionados) y que KPSS rechace
+  (potencia ≈ 0,94 con n = 500). Se redefine SC-001 con metas separadas para I(0) e I(1)
+  y un tope de conclusiones incorrectas. Medición: I(0) ≈ 100 %, I(1) ≈ 89 % (500
+  réplicas; error Monte Carlo ≈ 1,4 pp). Pendiente: ampliar los procesos generadores
+  (T080) y declarar el error Monte Carlo en el criterio. *Cambio registrado a posteriori:
+  el criterio se ajustó después de medir; queda pendiente de confirmación del usuario.*
+- Q: ¿Con qué niveles α opera la regla de estacionariedad? → A: {1 %, 2,5 %, 5 %, 10 %},
+  los de la tabla de KPSS; fuera de [1 %, 10 %] el valor p de KPSS está acotado y la
+  decisión usa valores críticos.
+- Q: ¿Qué fecha lleva un dato mensual? → A: el fin de mes (cuando el dato se conoce).
+
 ## Assumptions
 
 - Los usuarios son analistas con formación cuantitativa básica que trabajan en Python o

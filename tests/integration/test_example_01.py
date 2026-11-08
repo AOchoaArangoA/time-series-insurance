@@ -4,6 +4,7 @@ import runpy
 import sys
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from tsinsurance.data import Snapshot, prepare, to_wide
@@ -27,7 +28,8 @@ def test_gs10_diagnosis_is_reproducible() -> None:
     b = stationarity(level)
     assert a.to_json() == b.to_json()
     assert a.conclusion == "I(1)"
-    assert str(a.break_date.date()) == "2020-08-01"  # type: ignore[union-attr]
+    assert a.break_date is not None and not a.break_significant
+    assert a.break_date.to_period("M") == pd.Period("2020-08", "M")
 
 
 def test_example_runs_offline(

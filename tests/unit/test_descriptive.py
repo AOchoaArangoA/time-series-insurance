@@ -25,6 +25,27 @@ def test_describe_detects_heavy_tails_and_arch(rng, make_arma_garch) -> None:  #
     assert rep.ljung_box_squared.rejects(0.01)
 
 
+def test_arch_lm_no_false_positive_with_nonzero_mean() -> None:
+    # Revisión econométrica: sin centrar, un AR(1) homocedástico con media 100 "tenía" ARCH.
+    from tests.conftest import simulate_ar1
+
+    rng = np.random.default_rng(7)
+    # describe() aplica ARCH-LM sobre residuos de un AR(p): la dinámica de la media no se
+    # confunde con heterocedasticidad condicional.
+    rejections = sum(
+        describe(simulate_ar1(rng, 500, 0.5) + 100.0).arch_lm.rejects(0.05) for _ in range(100)
+    )
+    assert rejections <= 12
+
+
+def test_tests_reject_non_finite() -> None:
+    from tsinsurance.errors import DataValidationError
+
+    for fn in (jarque_bera, ljung_box, arch_lm):
+        with pytest.raises(DataValidationError):
+            fn(np.array([1.0, np.nan, 2.0] * 20))
+
+
 def test_individual_tests(rng) -> None:  # type: ignore[no-untyped-def]
     x = rng.normal(size=500)
     assert jarque_bera(x).specification["df"] == 2

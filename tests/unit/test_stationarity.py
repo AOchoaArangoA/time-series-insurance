@@ -20,6 +20,22 @@ def test_random_walk_is_i1(make_random_walk) -> None:  # type: ignore[no-untyped
     assert "I(1)" in text and "d=1" in text and "KPSS" in text
 
 
+@pytest.mark.parametrize("alpha", [0.01, 0.025, 0.05, 0.10])
+def test_rule_works_at_every_admitted_alpha(make_random_walk, alpha: float) -> None:  # type: ignore[no-untyped-def]
+    # Revisión econométrica: con alpha=0.01 el valor p acotado de KPSS anulaba la regla.
+    rep = stationarity(make_random_walk(np.random.default_rng(0), 500), alpha=alpha, breaks=False)
+    assert rep.conclusion == "I(1)"
+
+
+def test_kpss_bounded_pvalue_uses_critical_values(make_random_walk) -> None:  # type: ignore[no-untyped-def]
+    r = kpss(make_random_walk(np.random.default_rng(0), 1000) * 10)
+    assert r.p_value_bound == "below" and r.p_value_label == "<0.0100"
+    assert r.rejects(0.01)  # decide por valor crítico, no por p < alpha
+    wn = kpss(pd.Series(np.tile([1.0, -1.0], 250)))  # sumas parciales acotadas: p > 0,10
+    assert wn.p_value_bound == "above" and not wn.rejects(0.10)
+    assert "2.5%" in wn.critical_values
+
+
 def test_ar1_is_i0(rng, make_ar1) -> None:  # type: ignore[no-untyped-def]
     rep = stationarity(make_ar1(rng, 500, 0.5), breaks=False)
     assert rep.conclusion == "I(0)" and rep.integration_order == 0
@@ -38,8 +54,10 @@ def test_level_shift_reports_break(rng) -> None:  # type: ignore[no-untyped-def]
     e = rng.normal(scale=0.5, size=400)
     y = np.where(np.arange(400) < 250, 0.0, 6.0) + e
     rep = stationarity(pd.Series(y, index=idx, name="shift"))
-    assert rep.break_date is not None
-    assert abs(idx.get_loc(rep.break_date) - 250) <= 5
+    assert rep.break_date is not None and rep.break_significant
+    # Convención: la fecha es la última observación antes del quiebre (posición 249).
+    assert idx.get_loc(rep.break_date) == 249
+    assert "significativo" in rep.summary()
 
 
 def test_inconclusive_when_tests_disagree(monkeypatch: pytest.MonkeyPatch, rng) -> None:  # type: ignore[no-untyped-def]
@@ -93,8 +111,8 @@ def test_input_validation(rng) -> None:  # type: ignore[no-untyped-def]
         adf(x.replace(x.iloc[0], np.inf))
     with pytest.raises(ValueError):
         adf(x, trend="n")  # type: ignore[arg-type]
-    with pytest.raises(ValueError):
-        stationarity(x, alpha=0.7)
+    with pytest.raises(ValueError, match="alpha"):
+        stationarity(x, alpha=0.20)
     with pytest.raises(ValueError):
         stationarity(x, max_d=3)
     assert adf(rng.normal(size=100)).name == "ADF"  # type: ignore[arg-type]

@@ -53,7 +53,7 @@ de su implementación y debe fallar primero.
 - [X] T017 [P] [US1] Pruebas de `prepare` y `to_wide`: índice no monótono/duplicado → error; log de precio ≤ 0 → error; registro de imputaciones; conversión largo→ancho con `DatetimeIndex` y frecuencia; propiedades `hypothesis` (retorno log invertible) en tests/unit/test_prepare.py
 - [X] T018 [P] [US1] Pruebas de referencia ADF/KPSS/PP/ZA contra statsmodels/arch y valores publicados (Nelson-Plosser) en tests/reference/test_unit_roots.py
 - [X] T019 [P] [US1] Prueba de regla confirmatoria (I(0), I(1), inconcluso), quiebre detectado en serie con cambio de nivel y `InsufficientDataError` con mínimo requerido en series cortas en tests/unit/test_stationarity.py
-- [X] T020 [P] [US1] Simulación SC-001 (500 réplicas, n=500, acierto ≥ 90 %) en tests/simulation/test_integration_order_power.py (marca `slow`)
+- [X] T020 [P] [US1] Simulación SC-001 (500 réplicas, n=500; I(0) ≥ 90 %, I(1) ≥ 85 %, incorrectas ≤ 7 %) en tests/simulation/test_integration_order_power.py (marca `slow`)
 
 ### Implementation
 
@@ -171,6 +171,25 @@ de su implementación y debe fallar primero.
 - [ ] T075 Verificar cobertura ≥ 90 %, `mypy --strict` y `ruff` limpios; validar quickstart.md
 
 ---
+
+## Phase 9: Hallazgos de la revisión econométrica (2026-11-08)
+
+Corregidos en esta sesión: valor p acotado de KPSS y niveles α admitidos (#1, #15);
+`interpolate` marcado con `uses_future_information` y prueba de invariancia al truncamiento
+(#2); ARCH-LM centrado y aplicado sobre residuos AR(p) en `describe` (#3); fechas mensuales
+a fin de mes (#8); `drop` + transformación sin retornos de varios periodos (#9); fecha ZA
+etiquetada con su significancia y convención (#13); validación de entradas en JB/LB/ARCH-LM
+(#18); retorno simple con precio cero (#22); registro de SC-001 en Clarifications (#4).
+
+- [ ] T077 Selección secuencial de determinísticos (Dolado-Jenkinson-Sosvilla-Rivero 1990) o `trend` obligatorio en src/tsinsurance/diagnostics/stationarity.py (#5)
+- [ ] T078 Campo estructurado `confirmed`/`conflict` en StationarityReport y documentar la regla como jerárquica (#6)
+- [ ] T079 Secuencia descendente de Dickey-Pantula (1987) cuando `max_d = 2` (#7)
+- [ ] T080 [P] Ampliar DGP de simulación (AR φ=0,95, tendencia determinística, paseo con deriva, I(2), quiebre) con error Monte Carlo reportado en tests/simulation/ (#12, #20)
+- [ ] T081 Calendario de días hábiles con feriados inyectado desde JurisdictionProfile en src/tsinsurance/data/prepare.py (#10)
+- [ ] T082 [P] Referencias independientes de R (urca::ur.za con Nelson-Plosser, tseries::kpss.test/pp.test, Box.test, FinTS::ArchTest) en tests/reference/ (#11, #21)
+- [ ] T083 Registrar `realtime_end` (vintage) en FredSource y en la consulta de la instantánea (#14)
+- [ ] T084 Huella de instantánea con metadatos, compatibilidad de `schema_version` y versiones de dependencias (#19)
+- [ ] T085 Determinísticos coherentes en diferencias (`n` tras `c`) y corregir docs/methodology/stationarity.md (#16, #17)
 
 ## Dependencies & Execution Order
 

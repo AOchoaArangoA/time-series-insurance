@@ -41,6 +41,8 @@ def test_missing_methods_are_logged() -> None:
     assert list(dr.data) == [1.0, 3.0, 4.0] and dr.n_dropped == 2
     it = prepare(s, freq="B", missing="interpolate")
     assert it.data.iloc[1] == pytest.approx(2.0)
+    assert it.uses_future_information and not ff.uses_future_information
+    assert any("ADVERTENCIA" in entry for entry in it.log)
     assert "ffill" in ff.summary()
 
 
@@ -52,6 +54,17 @@ def test_transforms() -> None:
     assert prepare(s, freq="B", transform="diff").data.tolist() == [10.0, -11.0]
     with pytest.raises(DataValidationError, match="positivos"):
         prepare(bseries([1.0, 0.0, 2.0]), freq="B", transform="log")
+    with pytest.raises(DataValidationError, match="positivos"):
+        prepare(bseries([1.0, 0.0, 2.0]), freq="B", transform="simple")
+
+
+def test_drop_with_transform_never_spans_gaps() -> None:
+    s = bseries([100.0, 110.0, np.nan, 121.0, 133.1])
+    out = prepare(s, freq="B", missing="drop", transform="simple")
+    # El retorno 121/110 (dos días) no debe aparecer: tras el hueco queda NaN y se descarta.
+    assert out.data.tolist() == pytest.approx([0.1, 0.1])
+    assert list(out.data.index) == [s.index[1], s.index[4]]
+    assert out.n_dropped == 3
 
 
 def test_frequencies() -> None:
@@ -59,7 +72,9 @@ def test_frequencies() -> None:
         [1.0, 2.0, 3.0], index=pd.to_datetime(["2024-01-31", "2024-02-29", "2024-03-31"])
     )
     out = prepare(monthly, freq="M")
-    assert list(out.data.index.day) == [1, 1, 1] and out.data.index.freqstr == "MS"
+    assert list(out.data.index.day) == [31, 29, 31] and out.data.index.freqstr == "ME"
+    starts = pd.Series([1.0, 2.0], index=pd.to_datetime(["2024-01-01", "2024-02-01"]))
+    assert list(prepare(starts, freq="M").data.index.day) == [31, 29]  # fin de mes
     weekly = pd.Series([1.0, 2.0, 3.0], index=pd.date_range("2024-01-05", periods=3, freq="W-FRI"))
     assert prepare(weekly, freq="W").data.index.freqstr == "W-FRI"
     daily = pd.Series([1.0, 2.0, 3.0], index=pd.date_range("2024-01-06", periods=3, freq="D"))
@@ -79,6 +94,29 @@ def test_dataframe_input() -> None:
     assert len(prepare(df, freq="B").data) == 3
     with pytest.raises(DataValidationError, match="una sola serie"):
         prepare(df.assign(y=1.0), freq="B")
+
+
+@settings(max_examples=40, deadline=None)
+@given(
+    values=st.lists(
+        st.one_of(st.none(), st.floats(min_value=0.01, max_value=1e6)), min_size=6, max_size=40
+    ),
+    cut=st.integers(min_value=4, max_value=39),
+    transform=st.sampled_from(["none", "simple", "log", "diff"]),
+)
+def test_property_truncation_invariance_ffill(
+    values: list[float | None], cut: int, transform: str
+) -> None:
+    # Principio II: preparar la serie truncada en t da lo mismo que truncar la preparada.
+    s = bseries([np.nan if v is None else v for v in values])
+    cut = min(cut, len(s))
+    try:
+        full = prepare(s, freq="B", missing="ffill", transform=transform).data  # type: ignore[arg-type]
+        part = prepare(s.iloc[:cut], freq="B", missing="ffill", transform=transform).data  # type: ignore[arg-type]
+    except (DataValidationError, InsufficientDataError):
+        return
+    common = part.index
+    pd.testing.assert_series_equal(full.loc[common], part, check_freq=False)
 
 
 @settings(max_examples=50, deadline=None)

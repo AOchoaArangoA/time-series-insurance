@@ -50,6 +50,8 @@ __all__ = [
 
 MIN_OBS = 25
 """Observaciones mínimas para ADF, PP y KPSS."""
+ALPHAS: tuple[float, ...] = (0.01, 0.025, 0.05, 0.10)
+"""Niveles de significancia admitidos por :func:`stationarity` (tabla de KPSS)."""
 MIN_OBS_BREAK = 50
 """Observaciones mínimas para Zivot-Andrews (recorte del 15 % en cada extremo)."""
 
@@ -146,7 +148,8 @@ def kpss(
     """Prueba KPSS (H0: estacionariedad).
 
     El valor p se interpola en la tabla de KPSS (1992) y queda acotado a
-    [0.01, 0.10]; cuando cae fuera se registra una nota.
+    [0.01, 0.10]; cuando cae fuera se registra ``p_value_bound`` y la decisión a
+    niveles fuera de ese rango se toma con los valores críticos (10 %, 5 %, 2,5 %, 1 %).
     """
     _check_trend(trend)
     s = _clean(series, "KPSS", MIN_OBS)
@@ -155,10 +158,12 @@ def kpss(
         warnings.simplefilter("always", InterpolationWarning)
         res = sm_kpss(s.to_numpy(), regression=trend, nlags=nlags, result_object=True)
     stat, pvalue, lags, crit = res.statistic, res.pvalue, res.lags, res.critical_values
+    bound: Literal["below", "above"] | None = None
     if any(issubclass(w.category, InterpolationWarning) for w in caught):
-        bound = "menor" if pvalue <= 0.01 else "mayor"
-        notes.append(f"Valor p fuera de la tabla: el verdadero es {bound} que el reportado.")
-    crit_levels = {k: float(v) for k, v in crit.items() if k in {"1%", "5%", "10%"}}
+        bound = "below" if pvalue <= 0.01 else "above"
+        word = "menor" if bound == "below" else "mayor"
+        notes.append(f"Valor p fuera de la tabla: el verdadero es {word} que el reportado.")
+    crit_levels = {k: float(v) for k, v in crit.items()}
     return HypothesisTestResult(
         name="KPSS",
         statistic=float(stat),
@@ -173,6 +178,7 @@ def kpss(
         },
         reference="Kwiatkowski, Phillips, Schmidt & Shin (1992)",
         notes=tuple(notes),
+        p_value_bound=bound,
     )
 
 
@@ -242,7 +248,12 @@ class StationarityReport(ResultMixin):
     alpha : float
         Nivel de significancia.
     break_date : pandas.Timestamp or None
-        Fecha candidata de quiebre estructural (Zivot-Andrews).
+        Fecha que minimiza el estadístico de Zivot-Andrews (convención: última
+        observación antes del quiebre). Sólo es interpretable como quiebre si
+        ``break_significant``; bajo la nula el argmin no estima el quiebre de forma
+        consistente.
+    break_significant : bool
+        ``True`` si Zivot-Andrews rechaza al nivel ``alpha``.
     notes : tuple[str, ...]
         Observaciones (contradicciones, quiebres, límites de tablas).
     """
@@ -255,6 +266,7 @@ class StationarityReport(ResultMixin):
     alpha: float
     break_date: pd.Timestamp | None = None
     notes: tuple[str, ...] = ()
+    break_significant: bool = False
 
     def tests_at(self, difference: int) -> list[HypothesisTestResult]:
         """Pruebas aplicadas sobre la ``difference``-ésima diferencia."""
@@ -268,13 +280,18 @@ class StationarityReport(ResultMixin):
             f"Regla: {self.decision_rule}",
         ]
         if self.break_date is not None:
-            lines.append(f"Quiebre estructural candidato: {self.break_date.date()}")
+            status = (
+                "significativo" if self.break_significant else "no significativo, solo indicativo"
+            )
+            lines.append(
+                f"Fecha que minimiza el estadístico ZA: {self.break_date.date()} ({status})"
+            )
         diffs = sorted({int(t.specification.get("difference", 0)) for t in self.tests})
         for d in diffs:
             lines.append(f"-- Diferencia d={d} --")
             for t in self.tests_at(d):
                 decision = "rechaza H0" if t.rejects(self.alpha) else "no rechaza H0"
-                p = "n/d" if t.p_value is None else f"{t.p_value:.4f}"
+                p = t.p_value_label
                 lines.append(
                     f"  {t.name:<4} estad.={t.statistic:9.4f}  p={p:<7} {decision}"
                     f"  [{t.specification.get('deterministic', t.specification.get('break_in'))},"
@@ -296,6 +313,7 @@ def _with_difference(result: HypothesisTestResult, d: int) -> HypothesisTestResu
         specification=spec,
         reference=result.reference,
         notes=result.notes,
+        p_value_bound=result.p_value_bound,
     )
 
 
@@ -337,8 +355,11 @@ def stationarity(
     -------
     StationarityReport
     """
-    if not 0 < alpha < 0.5:
-        raise ValueError("alpha debe estar en (0, 0.5).")
+    if alpha not in ALPHAS:
+        raise ValueError(
+            f"alpha debe ser uno de {ALPHAS}: los valores p de KPSS están acotados a "
+            "[0,01; 0,10] y la decisión usa valores críticos tabulados."
+        )
     if max_d not in (1, 2):
         raise ValueError("max_d debe ser 1 o 2.")
     s = _clean(series, "stationarity", MIN_OBS + max_d)
@@ -382,11 +403,13 @@ def stationarity(
         break
 
     break_date: pd.Timestamp | None = None
+    break_significant = False
     if breaks:
         if len(s) >= MIN_OBS_BREAK:
             za, brk = zivot_andrews(s, trend="c" if trend == "c" else "ct")
             tests.append(_with_difference(za, 0))
             break_date = brk if isinstance(brk, pd.Timestamp) else None
+            break_significant = za.rejects(alpha)
             if za.rejects(alpha) and order != 0:
                 notes.append(
                     "Zivot-Andrews rechaza la raíz unitaria al permitir un quiebre en "
@@ -406,4 +429,5 @@ def stationarity(
         alpha=alpha,
         break_date=break_date,
         notes=tuple(notes),
+        break_significant=break_significant,
     )
