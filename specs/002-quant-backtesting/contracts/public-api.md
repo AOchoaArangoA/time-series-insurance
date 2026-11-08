@@ -7,7 +7,8 @@ from tsinsurance.backtest import (
     Exogenous, align_point_in_time, PredictiveRegression, backtest_econometric,
     check_lookahead, sweep, calibrate_validate, TrialRegistry,
     performance_metrics, sharpe_inference, probabilistic_sharpe, deflated_sharpe,
-    spa_test, pesaran_timmermann, clark_west, oos_r2, evaluate_forecasts, Verdict,
+    spa_test, sharpe_difference, pesaran_timmermann, clark_west, oos_r2,
+    evaluate_forecasts, Verdict,
 )
 from tsinsurance.validation import diebold_mariano
 ```
@@ -38,28 +39,36 @@ vol_target(base_weights, volatility, target=0.10, *, max_leverage=1.0) -> DataFr
 ## Punto en el tiempo y modelos econométricos
 
 ```python
-Exogenous(name, series, frequency, release_lag: str | DateOffset, transform="level")
+Exogenous(name, series, frequency, release_lag: str | DateOffset, transform="level",
+          point_in_time=True)
 align_point_in_time(exogs: Sequence[Exogenous], decision_dates: DatetimeIndex) -> DataFrame
 PredictiveRegression(ar_lags=0, scheme="expanding", window=None, min_train=60, refit_every=1)
     .walk_forward(y: Series, X: DataFrame) -> WalkForwardForecast
     .validate(y, X) -> ModelValidation              # muestra completa, HAC, diagnósticos
 backtest_econometric(prices, y, X, model: PredictiveRegression, *,
     position: Literal["long_cash", "long_short", "proportional"] = "long_cash",
-    config=ExecutionConfig(), risk_free=None, alpha=0.05, seed=0) -> EconometricBacktest
+    config=ExecutionConfig(), risk_free=None, alpha=0.05, n_specifications=1,
+    seed=0) -> EconometricBacktest            # alpha ∈ {0.01, 0.025, 0.05, 0.10}
+monthly_decision_dates(prices) -> DatetimeIndex   # último día hábil con precio de cada mes
+dtb3_to_daily(dtb3: Series) -> Series             # descuento → rendimiento → diario, rezago 1
 ```
 
 ## Validación
 
 ```python
-check_lookahead(signal_fn: Callable[[DataFrame], DataFrame | Series], data, *,
+check_lookahead(signal_fn: Callable[[Any], DataFrame | Series],
+                data: DataFrame | Mapping[str, DataFrame | Series | Exogenous | Sequence[Exogenous]], *,
                 n_cuts=10, seed=0, tol=1e-10) -> LookaheadReport
+# Exogenous se truncan por fecha de disponibilidad; cortes deterministas + aleatorios
 performance_metrics(returns, periods_per_year) -> PerformanceMetrics
 sharpe_inference(returns, periods_per_year, *, reps=1000, seed=0) -> SharpeInference
 probabilistic_sharpe(returns, sr_benchmark=0.0) -> float          # SR no anualizado
-deflated_sharpe(returns, n_trials, trials_sharpe_variance) -> DeflatedSharpe
+deflated_sharpe(returns, n_trials, trials_sharpe_variance, *, n_effective=None) -> DeflatedSharpe
+# trials_sharpe_variance POR PERIODO; curtosis no-exceso
+sharpe_difference(a, b, *, reps=1000, seed=0, gamma=3.0) -> SharpeDifference
 spa_test(benchmark_returns, strategy_returns: DataFrame, *, reps=1000, seed=0) -> SPAResult
 pesaran_timmermann(forecast, realized) -> HypothesisTestResult
-clark_west(realized, f_restricted, f_unrestricted, *, h=1) -> HypothesisTestResult
+clark_west(realized, f_restricted, f_unrestricted) -> HypothesisTestResult   # h = 1
 oos_r2(realized, f_restricted, f_unrestricted) -> float
 evaluate_forecasts(realized, f_restricted, f_unrestricted) -> ForecastEvaluation
 diebold_mariano(e1, e2, *, h=1, loss="mse") -> HypothesisTestResult

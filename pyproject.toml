@@ -23,6 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 yahoo = ["yfinance>=0.2.40"]
 excel = ["openpyxl>=3.1"]
+backtest = ["bt>=1.1"]
 viz = ["matplotlib>=3.8"]
 
 [project.scripts]
@@ -54,7 +55,9 @@ ignore = ["D105", "D107", "D401", "PD010", "PD901"]
 convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["D"]
+"tests/**" = ["D", "N803", "N806"]
+# Notación econométrica estándar (X, F, A matrices).
+"src/tsinsurance/backtest/econometric.py" = ["N803", "N806"]
 
 [tool.mypy]
 strict = true
@@ -62,7 +65,7 @@ python_version = "3.11"
 files = ["src"]
 
 [[tool.mypy.overrides]]
-module = ["statsmodels.*", "arch.*", "scipy.*", "yfinance.*", "pyarrow.*", "openpyxl.*"]
+module = ["statsmodels.*", "arch.*", "scipy.*", "yfinance.*", "pyarrow.*", "openpyxl.*", "bt.*", "ffn.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

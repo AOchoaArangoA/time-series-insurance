@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-08
 
-**Status**: Clarified (decisiones por defecto pendientes de confirmación, ver Clarifications)
+**Status**: Implemented v0.1 (decisiones por defecto pendientes de confirmación: TFT → TLT, subpaquete)
 
 **Input**: User description: "Agregar una parte de backtesting basada en modelos
 econométricos de series de tiempo y enfocada en estrategias cuantitativas: ingresar una
@@ -220,6 +220,10 @@ pruebas múltiples incluido.
 
 - **FR-015**: Los ejercicios MUST usar instantáneas versionadas de datos reales (ETFs
   vía Yahoo, macro y tasa libre de riesgo vía FRED) y re-ejecutarse sin red.
+- **FR-017**: El veredicto MUST incluir además: diagnósticos superados o no, número de
+  especificaciones probadas, marca "exploratorio" (más de una especificación sin ajuste o
+  variables no punto-en-el-tiempo) y "no concluyente" (menos de 60 pronósticos fuera de
+  muestra).
 - **FR-016**: Todo resultado de backtest MUST ser exportable con supuestos, parámetros,
   configuraciones probadas, versión del paquete y huella de los datos.
 
@@ -243,27 +247,41 @@ pruebas múltiples incluido.
 
 ### Measurable Outcomes
 
-- **SC-001**: El motor reproduce el retorno total de una librería de backtesting
-  independiente con diferencia absoluta menor a 1e-6 en estrategias de referencia.
-- **SC-002**: La prueba de anticipación detecta el 100 % de las señales sintéticas con
-  fuga de información (desplazamiento de −1 barra o uso de estadísticas de muestra
-  completa) y no marca señales causales.
-- **SC-003**: Sobre 100 configuraciones de señales aleatorias, el mejor Sharpe ajustado
-  por pruebas múltiples no es significativo al 5 % en al menos el 90 % de 200 réplicas.
-- **SC-004**: Con un proceso generador en el que un regresor explica al menos el 5 % de
-  la varianza del retorno, la prueba de Clark-West detecta la capacidad predictiva en al
-  menos el 80 % de las réplicas (n = 300 meses); con un regresor irrelevante su tamaño
-  empírico es como máximo 8 %.
-- **SC-005**: Las pruebas estadísticas implementadas reproducen ejemplos publicados o
-  equivalencias analíticas: Sharpe deflactado del ejemplo de Bailey y López de Prado
-  (2014) con diferencia absoluta menor a 1e-4; Pesaran-Timmermann equivalente
-  asintóticamente a la prueba chi-cuadrado de independencia 2×2 (diferencia relativa del
-  estadístico al cuadrado menor a 2 % con n ≥ 2000); Clark-West y R² fuera de muestra
-  idénticos (1e-10) a su cálculo directo por definición.
-- **SC-006**: Un barrido de 8 activos × 20 configuraciones con 10 años de datos diarios
-  termina en menos de 60 segundos.
+- **SC-001**: El motor reproduce los retornos por periodo de una librería de backtesting
+  independiente (configurada con posiciones fraccionarias y comisión proporcional): sin
+  costos, diferencia absoluta máxima por periodo < 1e-10; con costos, < 1e-5 por periodo
+  (diferencia de segundo orden ≈ costo × rotación × retorno: bt descuenta la comisión
+  después de fijar posiciones; el motor la descuenta antes y mantiene pesos exactos).
+- **SC-002**: La prueba de anticipación detecta el 100 % de un catálogo de fugas
+  sintéticas (desplazamiento de −1 barra, estadística de muestra completa, `bfill`
+  inicial, rezago de publicación omitido en una variable macro, fuga puntual al final)
+  y no marca ninguna señal causal incluida en el paquete ni el flujo econométrico
+  completo.
+- **SC-003**: Con 100 configuraciones de señales sin capacidad predictiva (proceso de
+  deriva cero, 10 años diarios, 500 réplicas, semilla fija) el Sharpe deflactado del
+  mejor rechaza al 5 % en como máximo 5 % + 2 errores estándar Monte Carlo de las
+  réplicas (tamaño); y si una de las 100 tiene Sharpe anual verdadero de 1,5 se detecta
+  en al menos el 80 % de las réplicas (potencia). El DSR usa el número bruto de pruebas:
+  con el número efectivo por autovalores el tamaño medido fue 22 % (ver research R11).
+  Medido: tamaño 1,6 %, potencia 88,2 %.
+- **SC-004**: Clark-West (unilateral, α = 5 %, ventana expansiva, `min_train` = 60,
+  n = 300 meses, 1000 réplicas, semilla fija): (a) regresor iid que explica el 5 % de la
+  varianza → potencia ≥ 80 %; (b) regresor iid irrelevante → tamaño ≤ 5 % + 2 EE;
+  (c) regresor persistente (ρ = 0,98, δ = −0,9) irrelevante → el tamaño empírico se mide
+  y se documenta como advertencia (sesgo de Stambaugh), sin umbral de aprobación.
+- **SC-005**: Las pruebas propias reproducen el ejemplo publicado del Sharpe deflactado
+  (Bailey y López de Prado 2014, DSR = 0,9004 ± 1e-4), la equivalencia asintótica de
+  Pesaran-Timmermann con la chi-cuadrado 2×2 (diferencia relativa del estadístico al
+  cuadrado < 2 % con n ≥ 2000) y la invariancia de Clark-West/R² fuera de muestra a
+  la escala de los datos. La comparación con implementaciones de R (rugarch::DACTest,
+  forecast::dm.test, código de Rapach-Zhou) queda pendiente porque R no está disponible
+  en el entorno (tarea T044).
+- **SC-006**: Un barrido de 8 activos × 20 configuraciones de señales de tendencia y
+  volatilidad EWMA (sin GARCH) con 10 años diarios termina en menos de 60 segundos en un
+  contenedor de 4 vCPU de 2,1 GHz; el costo de GARCH walk-forward se mide y reporta
+  aparte.
 - **SC-007**: Cada ejercicio con ETFs reales se re-ejecuta desde sus instantáneas y
-  reproduce exactamente su reporte.
+  produce la misma huella SHA-256 del reporte con métricas redondeadas a 10 decimales.
 
 ## Clarifications
 
@@ -281,7 +299,26 @@ pruebas múltiples incluido.
   desacoplado (sólo depende de `data` y `diagnostics`), extraíble a un paquete propio
   si se decide más adelante. *Decisión por defecto, confirmar.*
 - Q: ¿Precios? → A: Precios ajustados por dividendos (retorno total) de Yahoo; tasa
-  libre de riesgo: letra del Tesoro a 3 meses de FRED (DTB3).
+  libre de riesgo: letra del Tesoro a 3 meses de FRED (DTB3), convertida de tasa de
+  descuento a rendimiento equivalente y a tasa diaria, rezagada un día hábil.
+
+### Session 2026-11-08 (revisión econométrica del diseño)
+
+- Q: ¿Qué es "valor económico"? → A: Mejora del Sharpe neto de costos frente al
+  benchmark relevante —la misma regla de posición aplicada al pronóstico de la media
+  histórica—, con prueba de diferencia de Sharpe por bootstrap estacionario (Ledoit-Wolf
+  2008, unilateral) y ganancia de equivalente cierto (γ = 3, Campbell-Thompson 2008).
+  Comprar y mantener y efectivo se reportan como referencias adicionales. La SPA se usa
+  en barridos con pérdidas = −(r_estrategia − r_benchmark).
+- Q: ¿Variables macro revisables? → A: Sólo series sin revisiones o con revisiones
+  despreciables: datos de mercado de FRED (DGS10, T10Y2Y, BAA10Y, DTB3) e IPC sin
+  desestacionalizar (CPIAUCNS, variación anual). UNRATE se excluye hasta tener
+  instantáneas de ALFRED. Toda variable declara `point_in_time`; si alguna no lo es, el
+  veredicto se marca "exploratorio".
+- Q: ¿Fechas mensuales? → A: Decisión al último día hábil del mes `t` (cierre), retorno
+  objetivo = del cierre de fin de mes `t` al de `t+1`; la decisión se ejecuta al cierre
+  siguiente (retraso 1) en el motor diario y se mantiene hasta la próxima decisión.
+- Q: ¿Horizonte? → A: Sólo h = 1 en v0.1.
 
 ## Assumptions
 
@@ -290,8 +327,8 @@ pruebas múltiples incluido.
 - Frecuencias de decisión: diaria, semanal o mensual.
 - El universo de ETFs se toma tal como existe hoy (sesgo de supervivencia declarado en
   los reportes; los ETFs elegidos siguen vigentes).
-- Los datos macro de FRED se toman en su versión actual (no en *vintages*), con rezago
-  de publicación declarado; el uso de *vintages* (ALFRED) queda para una versión futura
-  y se señala como limitación.
+- Los datos macro usados en los ejercicios no se revisan (mercado) o casi no se revisan
+  (IPC sin desestacionalizar); el soporte de *vintages* (ALFRED) queda para una versión
+  futura y toda variable revisable se marca `point_in_time=False`.
 - Los modelos ARIMA/GARCH completos de la spec 001 (US2) se reutilizarán cuando estén
   disponibles; en esta spec el pronóstico GARCH usa `arch` directamente.

@@ -58,7 +58,11 @@ instalado (CI instala `--all-extras`).
 | VII. Simplicidad | Señales clásicas, OLS; sin ML | PASS |
 | VIII. Backtesting responsable | Ejecución explícita, benchmark, pruebas múltiples (DSR/SPA), calibración/validación, veredicto doble | PASS |
 
-**Re-check post-diseño (Fase 1)**: sin violaciones.
+**Re-check post-diseño (Fase 1)**: la revisión econométrica independiente encontró 3
+bloqueantes (valor económico, anticipación en el flujo econométrico, vintages) y 10
+importantes que contradecían el PASS inicial de I, II, III, VI y VIII. Se resolvieron en
+el diseño (research.md R11, spec.md Clarifications y SC reescritos); las limitaciones
+restantes (IVX, vintages ALFRED, referencias de R) quedan como T044-T046.
 
 ## Project Structure
 

@@ -12,6 +12,7 @@ __all__ = [
     "DataValidationError",
     "InadequateModelWarning",
     "InsufficientDataError",
+    "LookaheadBiasError",
     "TSInsuranceError",
 ]
 
@@ -64,3 +65,7 @@ class ConvergenceError(TSInsuranceError, RuntimeError):
 
 class InadequateModelWarning(UserWarning):
     """Se usa un modelo que no superó los diagnósticos de residuos."""
+
+
+class LookaheadBiasError(TSInsuranceError):
+    """Una señal usa información no disponible en la fecha de decisión."""
