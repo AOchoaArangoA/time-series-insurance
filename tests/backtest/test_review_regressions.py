@@ -130,7 +130,7 @@ def test_shared_registry_accumulates_trials() -> None:
     )
     assert first.selection["n_trials"].iloc[0] == 2
     assert second.selection["n_trials"].iloc[0] == 5 and reg.n_trials == 5
-    assert "info_ratio" in second.selection and "Nula común" in second.summary()
+    assert "timing_ir" in second.selection and "Nula común" in second.summary()
 
 
 def test_dtb3_effective_annual_rate() -> None:
@@ -184,4 +184,4 @@ def test_sweep_strategy_identical_to_benchmark() -> None:
     prices = make_prices(assets=1)
     res = sweep(prices, lambda p, k: p.notna().astype(float) * k, {"k": [1.0, 2.0]}, reps=50)
     row = res.selection.iloc[0]
-    assert row["info_ratio"] == 0.0 and row["spa_p"] == 1.0 and not row["significant"]
+    assert row["timing_ir"] == 0.0 and row["spa_p"] == 1.0 and not row["significant"]

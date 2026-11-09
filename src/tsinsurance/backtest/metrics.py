@@ -13,13 +13,19 @@ __all__ = ["PerformanceMetrics", "performance_metrics", "sharpe_per_period"]
 
 
 def sharpe_per_period(returns: pd.Series | np.ndarray) -> float:
-    """Sharpe por periodo (media / desviación muestral); NaN si la desviación es 0."""
+    """Sharpe por periodo (media / desviación muestral).
+
+    Una serie idénticamente 0 (p. ej. retornos en exceso de estar siempre en efectivo)
+    tiene Sharpe 0; otra serie constante no nula es indefinida (``NaN``).
+    """
     x = np.asarray(returns, dtype=float)
     x = x[np.isfinite(x)]
     if x.size < 2:
         return float("nan")
     sd = float(np.std(x, ddof=1))
-    return float(np.mean(x)) / sd if sd > 0 else float("nan")
+    if sd > 0:
+        return float(np.mean(x)) / sd
+    return 0.0 if abs(float(np.mean(x))) < 1e-14 else float("nan")
 
 
 @dataclass(frozen=True, slots=True)

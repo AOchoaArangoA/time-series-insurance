@@ -95,7 +95,8 @@ def main() -> None:
         bench = res.benchmark_excess_returns.loc[window.index]
         inf = sharpe_inference(window, res.periods_per_year, reps=500, seed=0)
         diff = sharpe_difference(window, bench, reps=500, seed=0)
-        registry.add(Trial("TLT", {"idea": name}, window, bench))
+        exposure = float(res.weights.abs().sum(axis=1).loc[window.index].mean())
+        registry.add(Trial("TLT", {"idea": name}, window, bench, exposure))
         print(res.summary())
         print(f"   Inferencia: {inf.summary()}")
         print(f"   vs comprar y mantener: {diff.summary()}\n")
@@ -134,7 +135,7 @@ def main() -> None:
         name="momentum",
     )
     print(sw2.summary())
-    cols = ["best", "sharpe", "info_ratio", "n_trials", "dsr", "spa_p"]
+    cols = ["best", "sharpe", "ir_vs_bh", "timing_ir", "n_trials", "dsr", "spa_p_holm"]
     report["sweep_trend"] = sw.selection[cols].round(10).to_dict()
     report["sweep_momentum"] = sw2.selection[cols].round(10).to_dict()
 

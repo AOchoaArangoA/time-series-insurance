@@ -7,6 +7,7 @@ Cada fila se convierte en una especificación con `/speckit-specify`.
 | 001 | Motor econométrico núcleo | Contrato de datos, conectores replicables, estacionariedad, ARIMA/GARCH, pronóstico, validación temporal, VaR/ES | US1 implementada; US2-US5 pendientes |
 | 002 | Backtesting responsable | Señales de tendencia/volatilidad, modelos econométricos con macro punto-en-el-tiempo, anticipación, PSR/DSR/SPA, Clark-West, veredicto doble, ETFs reales | Implementada (v0.1) |
 | — | Curvas de rendimiento (paquete hermano) | Nelson-Siegel, Svensson, Smith-Wilson; se comunica vía `RateNodesSchema` | Fuera de este repo |
+| 003b | Experimentos registrados, insumo base y entrega a agentes | Paquete de insumos, `experiment.toml`, bitácora, AGENTS.md | Implementada (v0.1) |
 | 003 | Dinámica de tasas por plazo | Diebold-Li dinámico sobre nodos, duración y convexidad del portafolio | Pendiente |
 | 004 | Modelos multivariados | VAR/VECM, cointegración de Johansen, funciones impulso-respuesta, DCC-GARCH | Pendiente |
 | 005 | Generador de escenarios económicos (ESG) | Simulación conjunta de tasas, inflación, renta variable; escenarios de estrés regulatorios | Pendiente |

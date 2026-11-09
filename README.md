@@ -88,6 +88,18 @@ Metodología: `docs/methodology/backtesting.md`.
 
 Las claves de API (p. ej. `FRED_API_KEY`) se leen de variables de entorno y nunca se versionan.
 
+## Experimentos registrados y entrega a agentes (spec 003)
+
+```bash
+uv run tsinsurance bundle template mi_exp/data          # formato base de insumos (sin depender de la fuente)
+uv run tsinsurance bundle fetch recipe.toml mi_exp/data  # o descargar con una receta (Yahoo, FRED, CSV)
+uv run tsinsurance experiment run mi_exp/experiment.toml # ejecuta y registra en experiments/registry.jsonl
+```
+
+- Guía para agentes: [`AGENTS.md`](AGENTS.md) · habilidad `.claude/skills/tsinsurance-experiment`.
+- Ejemplo registrado: [`experiments/inverse_treasury/`](experiments/inverse_treasury/README.md) (TBT, TBX, TBF).
+- Proceso completo: [`docs/propuesta-proceso.md`](docs/propuesta-proceso.md) · publicación: [`docs/politica-datos-y-publicacion.md`](docs/politica-datos-y-publicacion.md).
+
 ## Resumen de procesos y resultados
 
 Ver [`docs/resumen-procesos-y-resultados.md`](docs/resumen-procesos-y-resultados.md).

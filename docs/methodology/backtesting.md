@@ -83,11 +83,14 @@ marca las señales incluidas ni el flujo econométrico completo.
 | Diferencia de Sharpe | bootstrap estacionario pareado, unilateral (versión no estudentizada de Ledoit-Wolf 2008) y ganancia CER γ = 3 |
 | SPA | Hansen (2005) vía `arch.bootstrap.SPA`, pérdidas −(r_estrategia − r_benchmark), valor p consistente |
 
-**Barridos.** La significancia se mide sobre el **retorno activo** frente a comprar y
-mantener (nula común: sin habilidad de timing): DSR del ratio de información del mejor,
-deflactado con todas las pruebas del activo en un `TrialRegistry` **compartido** entre
-barridos e ideas, y SPA sobre los retornos activos de todas ellas. Así la prima de riesgo
-del activo (p. ej. SPY) no se confunde con habilidad.
+**Barridos.** La significancia se mide sobre el **retorno de timing**: estrategia menos
+la **misma exposición media mantenida constante** en el activo (nula común: sin
+habilidad de timing). Así ni la prima de riesgo del activo (p. ej. SPY) ni el decaimiento
+de un activo con deriva negativa (p. ej. ETFs inversos, donde estar menos invertido "gana"
+a comprar y mantener) se confunden con habilidad. DSR del ratio de timing del mejor,
+deflactado con todas las pruebas del activo (registro compartido y bitácora permanente),
+y SPA sobre los retornos de timing, con ajuste de Holm entre activos. La selección se
+calcula al final, de modo que no depende del orden de las ideas.
 
 **N efectivo.** El número efectivo de pruebas por autovalores `(Σλ)²/Σλ²` dio ≈ 4 para
 100 estrategias de timing sobre el mismo activo, porque todas comparten el factor del

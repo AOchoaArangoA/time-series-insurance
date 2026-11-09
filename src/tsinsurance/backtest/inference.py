@@ -66,8 +66,9 @@ def _clean(x: pd.Series | np.ndarray, name: str, minimum: int = 10) -> np.ndarra
 
 
 def _sr(x: np.ndarray) -> float:
-    sd = float(np.std(x, ddof=1))
-    return float(np.mean(x)) / sd if sd > 0 else float("nan")
+    from tsinsurance.backtest.metrics import sharpe_per_period
+
+    return sharpe_per_period(x)
 
 
 def _block(x: np.ndarray) -> int:

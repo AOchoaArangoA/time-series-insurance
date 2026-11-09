@@ -15,6 +15,12 @@ inversiones de una aseguradora. Se desarrolla con **Spec-Driven Development**
 - TDD: escribe la prueba (proceso generador conocido o valor de referencia) antes del
   código.
 
+## Uso del paquete por agentes
+
+- Para probar ideas o modelos sobre series: seguir `AGENTS.md` y la habilidad
+  `tsinsurance-experiment` (paquete de insumos → `experiment.toml` → `tsinsurance
+  experiment run`). Nunca editar ni borrar `experiments/registry.jsonl`.
+
 ## Comandos
 
 ```bash

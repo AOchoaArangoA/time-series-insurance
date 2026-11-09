@@ -15,3 +15,6 @@ data/raw/
 data/private/
 .env
 .claude/settings.local.json
+
+# Paquetes de insumos con datos de terceros no redistribuibles (se regeneran con su receta)
+experiments/*/data/
