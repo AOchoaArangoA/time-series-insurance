@@ -145,9 +145,19 @@ de costos.
 
 ---
 
+### 3.4 Experimento registrado: ETFs inversos del Tesoro (spec 003)
+
+TBT, TBX y TBF ("TFT" no existe; se asumió TBT), 2008-2025, selección 2008-2018 y
+validación única 2019-2025, ejecución confirmatoria registrada en la bitácora. Frente a
+comprar y mantener las reglas parecen ganar (ratio +0,16 a +0,52) sólo porque están
+invertidas ~1/3 del tiempo en activos que decaen; frente a la misma exposición constante
+**no hay habilidad de timing** (DSR máximo 0,35; ninguna significativa) y los modelos
+macro tienen R² fuera de muestra negativo. Detalle: `experiments/inverse_treasury/README.md`.
+
 ## 4. Decisiones pendientes de confirmar
 
-1. "TFT" no existe en Yahoo Finance; se usó **TLT**.
+1. "TFT" no existe en Yahoo Finance: en la spec 002 se usó **TLT** y en la 003 **TBT**
+   (familia de inversos con TBX y TBF).
 2. El backtesting es el subpaquete `tsinsurance.backtest` (extraíble si se prefiere un
    paquete aparte).
 3. Criterio SC-001 redefinido (I(0) ≥ 90 %, I(1) ≥ 85 %, incorrectas ≤ 7 %).

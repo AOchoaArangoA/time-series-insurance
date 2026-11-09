@@ -103,8 +103,8 @@ mi_paquete/
 - **Especificación primero** (Spec Kit): cada capacidad nueva pasa por
   `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`.
 - **Revisión independiente**: el subagente `econometrics-reviewer` revisa diseño e
-  implementación antes de integrar (en este proyecto encontró 8 bloqueantes y 29
-  importantes en tres revisiones; todos corregidos o registrados como tareas).
+  implementación antes de integrar (en este proyecto encontró 11 bloqueantes y 35
+  importantes en cuatro revisiones; todos corregidos o registrados como tareas).
 - **Bitácora**: única fuente de verdad de lo probado; respaldarla junto con el código.
 - **Publicación**: ver `docs/politica-datos-y-publicacion.md`.
 

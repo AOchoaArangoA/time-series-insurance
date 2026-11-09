@@ -1,0 +1,1394 @@
+{
+  "assumptions": {
+    "alpha": 0.05,
+    "asset_start": {
+      "TBF": "2009-08-20",
+      "TBT": "2008-05-22",
+      "TBX": "2011-04-05"
+    },
+    "execution": "retraso=1 barra(s), costo=5.0 pb, deslizamiento=2.0 pb, rebalanceo=every_bar, bruto máx.=1.0, cortos=no, financiación=rf+0.0 pb",
+    "risk_free": [
+      "DTB3"
+    ],
+    "selection_window_end": "2018-12-31",
+    "train_end": "2018-12-31",
+    "window": [
+      "2008-05-22",
+      "2025-12-31"
+    ]
+  },
+  "calibration": {
+    "momentum": {
+      "assets": [
+        {
+          "asset": "TBT",
+          "buy_hold_sharpe_oos": 0.1435038256,
+          "ci95": [
+            -0.580516711,
+            0.8319673472
+          ],
+          "exposure_oos": 0.59375,
+          "p_vs_cash": 0.317296422,
+          "params": {
+            "lookback": 252,
+            "skip": 21
+          },
+          "sharpe_oos": 0.179994939,
+          "timing_p": 0.39,
+          "timing_sharpe_diff": 0.0364911134
+        },
+        {
+          "asset": "TBX",
+          "buy_hold_sharpe_oos": -0.0570153743,
+          "ci95": [
+            -0.6734113543,
+            0.5980437579
+          ],
+          "exposure_oos": 0.5278409091,
+          "p_vs_cash": 0.5955974385,
+          "params": {
+            "lookback": 126,
+            "skip": 0
+          },
+          "sharpe_oos": -0.0915474668,
+          "timing_p": 0.59,
+          "timing_sharpe_diff": -0.0345320925
+        },
+        {
+          "asset": "TBF",
+          "buy_hold_sharpe_oos": 0.1109367483,
+          "ci95": [
+            -0.7343796369,
+            0.6508845056
+          ],
+          "exposure_oos": 0.5153409091,
+          "p_vs_cash": 0.5195537962,
+          "params": {
+            "lookback": 63,
+            "skip": 0
+          },
+          "sharpe_oos": -0.0185583242,
+          "timing_p": 0.66,
+          "timing_sharpe_diff": -0.1294950726
+        }
+      ],
+      "key": "86cacdee7c90406e51d8a9fb8d41c7c5",
+      "times_opened_before": 0,
+      "train_end": "2018-12-31"
+    },
+    "momentum_vol": {
+      "assets": [
+        {
+          "asset": "TBT",
+          "buy_hold_sharpe_oos": 0.1435038256,
+          "ci95": [
+            -0.581689877,
+            0.8414184205
+          ],
+          "exposure_oos": 0.2452721933,
+          "p_vs_cash": 0.3731471825,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.12
+          },
+          "sharpe_oos": 0.1224804109,
+          "timing_p": 0.484,
+          "timing_sharpe_diff": -0.0210234147
+        },
+        {
+          "asset": "TBX",
+          "buy_hold_sharpe_oos": -0.0570153743,
+          "ci95": [
+            -0.6493223853,
+            0.5679298286
+          ],
+          "exposure_oos": 0.5748787122,
+          "p_vs_cash": 0.5215801412,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.08
+          },
+          "sharpe_oos": -0.0204820031,
+          "timing_p": 0.404,
+          "timing_sharpe_diff": 0.0365333712
+        },
+        {
+          "asset": "TBF",
+          "buy_hold_sharpe_oos": 0.1109367483,
+          "ci95": [
+            -0.6126397859,
+            0.7481801732
+          ],
+          "exposure_oos": 0.4925645963,
+          "p_vs_cash": 0.4472458452,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.12
+          },
+          "sharpe_oos": 0.0501975496,
+          "timing_p": 0.562,
+          "timing_sharpe_diff": -0.0607391987
+        }
+      ],
+      "key": "eab583fe4881653cff287e9fca9c3aa9",
+      "times_opened_before": 0,
+      "train_end": "2018-12-31"
+    },
+    "tendencia": {
+      "assets": [
+        {
+          "asset": "TBT",
+          "buy_hold_sharpe_oos": 0.1435038256,
+          "ci95": [
+            -0.548865461,
+            0.8058268553
+          ],
+          "exposure_oos": 0.5028409091,
+          "p_vs_cash": 0.3937740924,
+          "params": {
+            "fast": 100,
+            "slow": 200
+          },
+          "sharpe_oos": 0.1020584369,
+          "timing_p": 0.546,
+          "timing_sharpe_diff": -0.0414453886
+        },
+        {
+          "asset": "TBX",
+          "buy_hold_sharpe_oos": -0.0570153743,
+          "ci95": [
+            -0.4447440439,
+            0.7581537339
+          ],
+          "exposure_oos": 0.5602272727,
+          "p_vs_cash": 0.3624283151,
+          "params": {
+            "fast": 20,
+            "slow": 200
+          },
+          "sharpe_oos": 0.1333316397,
+          "timing_p": 0.172,
+          "timing_sharpe_diff": 0.190347014
+        },
+        {
+          "asset": "TBF",
+          "buy_hold_sharpe_oos": 0.1109367483,
+          "ci95": [
+            -0.4575552543,
+            0.8851958467
+          ],
+          "exposure_oos": 0.5215909091,
+          "p_vs_cash": 0.277379279,
+          "params": {
+            "fast": 20,
+            "slow": 150
+          },
+          "sharpe_oos": 0.2237001407,
+          "timing_p": 0.308,
+          "timing_sharpe_diff": 0.1127633924
+        }
+      ],
+      "key": "7818dd6e4138cde83af582bdafc1785a",
+      "times_opened_before": 0,
+      "train_end": "2018-12-31"
+    }
+  },
+  "econometric": {
+    "macro_tbf": {
+      "asset": "TBF",
+      "benchmark_rule_is_cash": true,
+      "clark_west_p": 0.2516323257,
+      "diagnostics_passed": false,
+      "economic_p": 0.746,
+      "hit_rate": 0.4518518519,
+      "lookahead": "Sin anticipación detectada en 15 cortes evaluados (0 omitidos por datos insuficientes).",
+      "lookahead_ok": true,
+      "n_forecasts": 135,
+      "n_specifications_counted": 1,
+      "notes": [
+        "La decisión de fin de mes se ejecuta al cierre siguiente (retraso 1): el periodo mantenido está desplazado un día respecto del retorno pronosticado."
+      ],
+      "oos_r2": -0.0972602317,
+      "pesaran_timmermann_p": 0.862825368,
+      "position": "long_cash",
+      "regressors": [
+        "T10Y2Y",
+        "d_DGS10",
+        "T10YIE",
+        "CPIAUCNS"
+      ],
+      "sharpe_benchmark_rule": 0.0,
+      "sharpe_model": -0.1938730929,
+      "timing_ir": -0.254850908,
+      "verdict": {
+        "alpha": 0.05,
+        "diagnostics_passed": false,
+        "economic": false,
+        "explanation": "Ni evidencia estadística ni valor económico frente al benchmark.",
+        "exploratory": false,
+        "inconclusive": false,
+        "n_specifications": 1,
+        "quadrant": "sin_evidencia",
+        "rule": "estadística = Pesaran-Timmermann rechaza H0 al nivel α; económica = prueba unilateral de diferencia de Sharpe (bootstrap estacionario) neto de costos y en exceso de rf frente a la misma regla aplicada a la media histórica rechaza al nivel α; no concluyente si hay menos de 60 pronósticos fuera de muestra; exploratorio si se probó más de una especificación o hay variables no punto-en-el-tiempo.",
+        "statistical": false,
+        "statistical_test": "Pesaran-Timmermann"
+      },
+      "warnings": [
+        "'T10Y2Y' es I(1): regresión desbalanceada (retorno I(0) sobre regresor no estacionario); inferencia HAC no válida.",
+        "'T10Y2Y' es muy persistente (ρ=0.982, δ=0.57): sesgo de Stambaugh ≈ -0.0028 en su coeficiente y t-estadísticos HAC sobredimensionados (IVX pendiente).",
+        "'CPIAUCNS' es I(1): regresión desbalanceada (retorno I(0) sobre regresor no estacionario); inferencia HAC no válida.",
+        "'CPIAUCNS' es muy persistente (ρ=0.967, δ=0.07): sesgo de Stambaugh ≈ -0.0128 en su coeficiente y t-estadísticos HAC sobredimensionados (IVX pendiente).",
+        "Diagnósticos rechazados: ARCH-LM."
+      ]
+    },
+    "macro_tbx": {
+      "asset": "TBX",
+      "benchmark_rule_is_cash": true,
+      "clark_west_p": 0.3381964781,
+      "diagnostics_passed": false,
+      "economic_p": 0.774,
+      "hit_rate": 0.4695652174,
+      "lookahead": "Sin anticipación detectada en 15 cortes evaluados (0 omitidos por datos insuficientes).",
+      "lookahead_ok": true,
+      "n_forecasts": 115,
+      "n_specifications_counted": 1,
+      "notes": [
+        "La decisión de fin de mes se ejecuta al cierre siguiente (retraso 1): el periodo mantenido está desplazado un día respecto del retorno pronosticado."
+      ],
+      "oos_r2": -0.0804111495,
+      "pesaran_timmermann_p": 0.7235016114,
+      "position": "long_cash",
+      "regressors": [
+        "T10Y2Y",
+        "d_DGS10",
+        "T10YIE",
+        "CPIAUCNS"
+      ],
+      "sharpe_benchmark_rule": 0.0,
+      "sharpe_model": -0.2520216584,
+      "timing_ir": -0.3209206764,
+      "verdict": {
+        "alpha": 0.05,
+        "diagnostics_passed": false,
+        "economic": false,
+        "explanation": "Ni evidencia estadística ni valor económico frente al benchmark.",
+        "exploratory": false,
+        "inconclusive": false,
+        "n_specifications": 1,
+        "quadrant": "sin_evidencia",
+        "rule": "estadística = Pesaran-Timmermann rechaza H0 al nivel α; económica = prueba unilateral de diferencia de Sharpe (bootstrap estacionario) neto de costos y en exceso de rf frente a la misma regla aplicada a la media histórica rechaza al nivel α; no concluyente si hay menos de 60 pronósticos fuera de muestra; exploratorio si se probó más de una especificación o hay variables no punto-en-el-tiempo.",
+        "statistical": false,
+        "statistical_test": "Pesaran-Timmermann"
+      },
+      "warnings": [
+        "'T10Y2Y' es I(1): regresión desbalanceada (retorno I(0) sobre regresor no estacionario); inferencia HAC no válida.",
+        "'T10Y2Y' es muy persistente (ρ=0.971, δ=0.42): sesgo de Stambaugh ≈ -0.0011 en su coeficiente y t-estadísticos HAC sobredimensionados (IVX pendiente).",
+        "'CPIAUCNS' es I(1): regresión desbalanceada (retorno I(0) sobre regresor no estacionario); inferencia HAC no válida.",
+        "'CPIAUCNS' es muy persistente (ρ=0.982, δ=0.06): sesgo de Stambaugh ≈ -0.0072 en su coeficiente y t-estadísticos HAC sobredimensionados (IVX pendiente).",
+        "Diagnósticos rechazados: ARCH-LM."
+      ]
+    }
+  },
+  "experiment": {
+    "author": "tsinsurance (ejemplo de la funcionalidad)",
+    "file": "/home/user/time-series-insurance/experiments/inverse_treasury/experiment.toml",
+    "hypothesis": "Los ETFs inversos del Tesoro pierden valor en el tiempo (tendencia de tasas, financiamiento y rebalanceo diario), de modo que superar a comprar y mantener es trivial (basta estar menos invertido). Hipótesis: las reglas de tendencia/momentum y un modelo macro tienen habilidad de TIMING, es decir, superan a mantener la misma exposición media constante (retorno de timing > 0), neto de costos y tras el ajuste por pruebas múltiples.",
+    "id": "inverse-treasury-etfs",
+    "sha256": "25596dd66da7c39bf8a8f06260e7ce0654cebdeeac412ac097122a4a9f0c5106",
+    "title": "Timing de ETFs inversos del Tesoro (TBT, TBX, TBF) frente a comprar y mantener"
+  },
+  "ideas": {
+    "momentum": {
+      "configurations": {
+        "annual_return": {
+          "0": -0.0625047338,
+          "1": -0.0799016536,
+          "10": -0.0206079521,
+          "11": -0.0234089524,
+          "12": -0.0268076667,
+          "13": -0.0435897715,
+          "14": -0.0405845243,
+          "15": -0.0519631049,
+          "16": -0.0306755348,
+          "17": -0.0322175835,
+          "2": -0.0992064746,
+          "3": -0.0909039303,
+          "4": -0.0574973543,
+          "5": -0.0518854242,
+          "6": -0.0235340265,
+          "7": -0.0292979472,
+          "8": -0.0062781445,
+          "9": -0.0135820044
+        },
+        "annual_volatility": {
+          "0": 0.1594876887,
+          "1": 0.1625000182,
+          "10": 0.0335784727,
+          "11": 0.0320046891,
+          "12": 0.0772531214,
+          "13": 0.0773517807,
+          "14": 0.0728344756,
+          "15": 0.0710191961,
+          "16": 0.0574640474,
+          "17": 0.0620854402,
+          "2": 0.1550255433,
+          "3": 0.1542659149,
+          "4": 0.1107702345,
+          "5": 0.1233642949,
+          "6": 0.0361940293,
+          "7": 0.0367666893,
+          "8": 0.0346998624,
+          "9": 0.0324679431
+        },
+        "asset": {
+          "0": "TBT",
+          "1": "TBT",
+          "10": "TBX",
+          "11": "TBX",
+          "12": "TBF",
+          "13": "TBF",
+          "14": "TBF",
+          "15": "TBF",
+          "16": "TBF",
+          "17": "TBF",
+          "2": "TBT",
+          "3": "TBT",
+          "4": "TBT",
+          "5": "TBT",
+          "6": "TBX",
+          "7": "TBX",
+          "8": "TBX",
+          "9": "TBX"
+        },
+        "avg_turnover": {
+          "0": 0.0591642532,
+          "1": 0.0703351262,
+          "10": 0.0182998819,
+          "11": 0.0135773318,
+          "12": 0.0580123633,
+          "13": 0.0727532097,
+          "14": 0.0261531146,
+          "15": 0.0375653828,
+          "16": 0.0223490252,
+          "17": 0.0128388017,
+          "2": 0.0330988829,
+          "3": 0.0335126189,
+          "4": 0.0235829541,
+          "5": 0.0219280099,
+          "6": 0.0584415584,
+          "7": 0.0767414404,
+          "8": 0.0289256198,
+          "9": 0.0348288076
+        },
+        "calmar": {
+          "0": -0.1168916657,
+          "1": -0.1381457658,
+          "10": -0.1305318199,
+          "11": -0.149332978,
+          "12": -0.0926564509,
+          "13": -0.1290756433,
+          "14": -0.1323078173,
+          "15": -0.1422610065,
+          "16": -0.0959353426,
+          "17": -0.1122707566,
+          "2": -0.1543355501,
+          "3": -0.1439595251,
+          "4": -0.1128146466,
+          "5": -0.109116411,
+          "6": -0.1503413414,
+          "7": -0.1600864915,
+          "8": -0.0644871429,
+          "9": -0.1457854637
+        },
+        "exposure": {
+          "0": 0.3438146463,
+          "1": 0.386015722,
+          "10": 0.3831168831,
+          "11": 0.3831168831,
+          "12": 0.343319068,
+          "13": 0.3804089396,
+          "14": 0.3689966714,
+          "15": 0.3594864479,
+          "16": 0.2971944841,
+          "17": 0.3152639087,
+          "2": 0.3719486967,
+          "3": 0.3719486967,
+          "4": 0.2825817129,
+          "5": 0.3086470832,
+          "6": 0.3713105077,
+          "7": 0.4179456907,
+          "8": 0.3441558442,
+          "9": 0.3406139315
+        },
+        "hit_rate": {
+          "0": 0.4301552106,
+          "1": 0.4292730845,
+          "10": 0.4406015038,
+          "11": 0.4432677761,
+          "12": 0.4240102171,
+          "13": 0.4161915621,
+          "14": 0.4427860697,
+          "15": 0.4221105528,
+          "16": 0.4314329738,
+          "17": 0.4416543575,
+          "2": 0.4355697551,
+          "3": 0.4393617021,
+          "4": 0.433988764,
+          "5": 0.446313066,
+          "6": 0.4115044248,
+          "7": 0.4100905563,
+          "8": 0.4481054366,
+          "9": 0.4398682043
+        },
+        "idea": {
+          "0": "momentum",
+          "1": "momentum",
+          "10": "momentum",
+          "11": "momentum",
+          "12": "momentum",
+          "13": "momentum",
+          "14": "momentum",
+          "15": "momentum",
+          "16": "momentum",
+          "17": "momentum",
+          "2": "momentum",
+          "3": "momentum",
+          "4": "momentum",
+          "5": "momentum",
+          "6": "momentum",
+          "7": "momentum",
+          "8": "momentum",
+          "9": "momentum"
+        },
+        "lookback": {
+          "0": 63,
+          "1": 63,
+          "10": 252,
+          "11": 252,
+          "12": 63,
+          "13": 63,
+          "14": 126,
+          "15": 126,
+          "16": 252,
+          "17": 252,
+          "2": 126,
+          "3": 126,
+          "4": 252,
+          "5": 252,
+          "6": 63,
+          "7": 63,
+          "8": 126,
+          "9": 126
+        },
+        "max_drawdown": {
+          "0": -0.5347236128,
+          "1": -0.5783865552,
+          "10": -0.1578768466,
+          "11": -0.1567567505,
+          "12": -0.289323263,
+          "13": -0.3377071803,
+          "14": -0.3067432075,
+          "15": -0.3652659729,
+          "16": -0.3197521788,
+          "17": -0.2869632707,
+          "2": -0.642797298,
+          "3": -0.6314547806,
+          "4": -0.5096621406,
+          "5": -0.4755052306,
+          "6": -0.1565372926,
+          "7": -0.1830132381,
+          "8": -0.0973549807,
+          "9": -0.0931643255
+        },
+        "n_periods": {
+          "0": 2417,
+          "1": 2417,
+          "10": 1694,
+          "11": 1694,
+          "12": 2103,
+          "13": 2103,
+          "14": 2103,
+          "15": 2103,
+          "16": 2103,
+          "17": 2103,
+          "2": 2417,
+          "3": 2417,
+          "4": 2417,
+          "5": 2417,
+          "6": 1694,
+          "7": 1694,
+          "8": 1694,
+          "9": 1694
+        },
+        "periods_per_year": {
+          "0": 252,
+          "1": 252,
+          "10": 252,
+          "11": 252,
+          "12": 252,
+          "13": 252,
+          "14": 252,
+          "15": 252,
+          "16": 252,
+          "17": 252,
+          "2": 252,
+          "3": 252,
+          "4": 252,
+          "5": 252,
+          "6": 252,
+          "7": 252,
+          "8": 252,
+          "9": 252
+        },
+        "sharpe": {
+          "0": -0.3251618422,
+          "1": -0.4312267449,
+          "10": -0.6033461468,
+          "11": -0.7240876855,
+          "12": -0.3131958388,
+          "13": -0.5374944967,
+          "14": -0.5324157383,
+          "15": -0.7158209239,
+          "16": -0.5134662843,
+          "17": -0.4964280423,
+          "2": -0.5963677441,
+          "3": -0.540602312,
+          "4": -0.479248945,
+          "5": -0.3701984688,
+          "6": -0.6398921378,
+          "7": -0.7903559455,
+          "8": -0.1641781771,
+          "9": -0.4049626933
+        },
+        "skip": {
+          "0": 0,
+          "1": 21,
+          "10": 0,
+          "11": 21,
+          "12": 0,
+          "13": 21,
+          "14": 0,
+          "15": 21,
+          "16": 0,
+          "17": 21,
+          "2": 0,
+          "3": 21,
+          "4": 0,
+          "5": 21,
+          "6": 0,
+          "7": 21,
+          "8": 0,
+          "9": 21
+        },
+        "sortino": {
+          "0": -0.4700100973,
+          "1": -0.6070697158,
+          "10": -0.847309344,
+          "11": -0.9786968283,
+          "12": -0.4563795321,
+          "13": -0.7523881334,
+          "14": -0.7468452455,
+          "15": -0.9934776183,
+          "16": -0.7261348807,
+          "17": -0.6937536829,
+          "2": -0.8296872564,
+          "3": -0.7534097076,
+          "4": -0.6731470501,
+          "5": -0.5164025566,
+          "6": -0.9035586505,
+          "7": -1.0866721835,
+          "8": -0.2407064931,
+          "9": -0.5704662884
+        }
+      },
+      "grid": {
+        "lookback": [
+          63,
+          126,
+          252
+        ],
+        "skip": [
+          0,
+          21
+        ]
+      },
+      "lookahead": {
+        "TBF": {
+          "combinations": 6,
+          "failed": []
+        },
+        "TBT": {
+          "combinations": 6,
+          "failed": []
+        },
+        "TBX": {
+          "combinations": 6,
+          "failed": []
+        }
+      },
+      "selection": {
+        "asset": {
+          "0": "TBT",
+          "1": "TBX",
+          "2": "TBF"
+        },
+        "best": {
+          "0": "idea=momentum, lookback=252, skip=21",
+          "1": "idea=momentum, lookback=126, skip=0",
+          "2": "idea=momentum, lookback=63, skip=0"
+        },
+        "dsr": {
+          "0": 0.2476731837,
+          "1": 0.23856078,
+          "2": 0.1864000509
+        },
+        "eval_end": {
+          "0": "2018-12-31T00:00:00",
+          "1": "2018-12-31T00:00:00",
+          "2": "2018-12-31T00:00:00"
+        },
+        "eval_start": {
+          "0": "2009-05-27T00:00:00",
+          "1": "2012-04-09T00:00:00",
+          "2": "2010-08-24T00:00:00"
+        },
+        "exposure": {
+          "0": 0.3086470832,
+          "1": 0.3441558442,
+          "2": 0.343319068
+        },
+        "ir_vs_bh": {
+          "0": 0.4420612105,
+          "1": 0.5160927367,
+          "2": 0.35702924
+        },
+        "n_effective": {
+          "0": 2.9348980178,
+          "1": 2.6484782179,
+          "2": 3.4042541124
+        },
+        "n_trials": {
+          "0": 14,
+          "1": 15,
+          "2": 15
+        },
+        "psr": {
+          "0": 0.126467943,
+          "1": 0.3360069828,
+          "2": 0.1845822768
+        },
+        "sharpe": {
+          "0": -0.3701984688,
+          "1": -0.1641781771,
+          "2": -0.3131958388
+        },
+        "significant": {
+          "0": false,
+          "1": false,
+          "2": false
+        },
+        "spa_p": {
+          "0": 0.872,
+          "1": 0.784,
+          "2": 0.66
+        },
+        "spa_p_holm": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0
+        },
+        "timing_ir": {
+          "0": 0.0207202783,
+          "1": 0.1699136545,
+          "2": -0.0306217644
+        }
+      },
+      "signal": "tsmom",
+      "status": "evaluada"
+    },
+    "momentum_vol": {
+      "configurations": {
+        "annual_return": {
+          "0": -0.0193211273,
+          "1": -0.0295951926,
+          "2": -0.0228024707,
+          "3": -0.0234063592,
+          "4": -0.0266176744,
+          "5": -0.0304633823
+        },
+        "annual_volatility": {
+          "0": 0.0458784355,
+          "1": 0.0688146744,
+          "2": 0.0313482904,
+          "3": 0.032004434,
+          "4": 0.0453715335,
+          "5": 0.0563109533
+        },
+        "asset": {
+          "0": "TBT",
+          "1": "TBT",
+          "2": "TBX",
+          "3": "TBX",
+          "4": "TBF",
+          "5": "TBF"
+        },
+        "avg_turnover": {
+          "0": 0.0118966429,
+          "1": 0.0177699039,
+          "2": 0.0135589058,
+          "3": 0.0135725018,
+          "4": 0.0150831816,
+          "5": 0.012370595
+        },
+        "calmar": {
+          "0": -0.0879842487,
+          "1": -0.0941760675,
+          "2": -0.1455268222,
+          "3": -0.1493164356,
+          "4": -0.1130084958,
+          "5": -0.1104406576
+        },
+        "exposure": {
+          "0": 0.1207596988,
+          "1": 0.1811395482,
+          "2": 0.3792565224,
+          "3": 0.3831144717,
+          "4": 0.2455000626,
+          "5": 0.3019561933
+        },
+        "hit_rate": {
+          "0": 0.446313066,
+          "1": 0.446313066,
+          "2": 0.4432677761,
+          "3": 0.4432677761,
+          "4": 0.4416543575,
+          "5": 0.4416543575
+        },
+        "idea": {
+          "0": "momentum_vol",
+          "1": "momentum_vol",
+          "2": "momentum_vol",
+          "3": "momentum_vol",
+          "4": "momentum_vol",
+          "5": "momentum_vol"
+        },
+        "lookback": {
+          "0": 252,
+          "1": 252,
+          "2": 252,
+          "3": 252,
+          "4": 252,
+          "5": 252
+        },
+        "max_drawdown": {
+          "0": -0.2195975715,
+          "1": -0.3142538587,
+          "2": -0.1566891269,
+          "3": -0.1567567505,
+          "4": -0.2355369321,
+          "5": -0.2758348507
+        },
+        "n_periods": {
+          "0": 2417,
+          "1": 2417,
+          "2": 1694,
+          "3": 1694,
+          "4": 2103,
+          "5": 2103
+        },
+        "periods_per_year": {
+          "0": 252,
+          "1": 252,
+          "2": 252,
+          "3": 252,
+          "4": 252,
+          "5": 252
+        },
+        "sharpe": {
+          "0": -0.4023066376,
+          "1": -0.4021289468,
+          "2": -0.7201104647,
+          "3": -0.7240107535,
+          "4": -0.5718968745,
+          "5": -0.521224723
+        },
+        "skip": {
+          "0": 21,
+          "1": 21,
+          "2": 21,
+          "3": 21,
+          "4": 21,
+          "5": 21
+        },
+        "sortino": {
+          "0": -0.5550850262,
+          "1": -0.5548576399,
+          "2": -0.9743361871,
+          "3": -0.9785997102,
+          "4": -0.7818133164,
+          "5": -0.7209044644
+        },
+        "target": {
+          "0": 0.08,
+          "1": 0.12,
+          "2": 0.08,
+          "3": 0.12,
+          "4": 0.08,
+          "5": 0.12
+        }
+      },
+      "grid": {
+        "lookback": [
+          252
+        ],
+        "skip": [
+          21
+        ],
+        "target": [
+          0.08,
+          0.12
+        ]
+      },
+      "lookahead": {
+        "TBF": {
+          "combinations": 2,
+          "failed": []
+        },
+        "TBT": {
+          "combinations": 2,
+          "failed": []
+        },
+        "TBX": {
+          "combinations": 2,
+          "failed": []
+        }
+      },
+      "selection": {
+        "asset": {
+          "0": "TBT",
+          "1": "TBX",
+          "2": "TBF"
+        },
+        "best": {
+          "0": "idea=momentum_vol, lookback=252, skip=21, target=0.12",
+          "1": "idea=momentum_vol, lookback=252, skip=21, target=0.08",
+          "2": "idea=momentum_vol, lookback=252, skip=21, target=0.12"
+        },
+        "dsr": {
+          "0": 0.2354065303,
+          "1": 0.0134417913,
+          "2": 0.0909064523
+        },
+        "eval_end": {
+          "0": "2018-12-31T00:00:00",
+          "1": "2018-12-31T00:00:00",
+          "2": "2018-12-31T00:00:00"
+        },
+        "eval_start": {
+          "0": "2009-05-27T00:00:00",
+          "1": "2012-04-09T00:00:00",
+          "2": "2010-08-24T00:00:00"
+        },
+        "exposure": {
+          "0": 0.1811395482,
+          "1": 0.3792565224,
+          "2": 0.3019561933
+        },
+        "ir_vs_bh": {
+          "0": 0.4999351926,
+          "1": 0.1580560129,
+          "2": 0.2873629279
+        },
+        "n_effective": {
+          "0": 2.9348980178,
+          "1": 2.6484782179,
+          "2": 3.4042541124
+        },
+        "n_trials": {
+          "0": 14,
+          "1": 15,
+          "2": 15
+        },
+        "psr": {
+          "0": 0.1065442228,
+          "1": 0.0310270106,
+          "2": 0.0668385276
+        },
+        "sharpe": {
+          "0": -0.4021289468,
+          "1": -0.7201104647,
+          "2": -0.521224723
+        },
+        "significant": {
+          "0": false,
+          "1": false,
+          "2": false
+        },
+        "spa_p": {
+          "0": 0.872,
+          "1": 0.784,
+          "2": 0.66
+        },
+        "spa_p_holm": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0
+        },
+        "timing_ir": {
+          "0": 0.0080106325,
+          "1": -0.4088026361,
+          "2": -0.1842668135
+        }
+      },
+      "signal": "tsmom_vol_target",
+      "status": "evaluada"
+    },
+    "tendencia": {
+      "configurations": {
+        "annual_return": {
+          "0": -0.0613930068,
+          "1": -0.0830549514,
+          "10": -0.0070053307,
+          "11": -0.0152279348,
+          "12": -0.018265294,
+          "13": -0.0285802392,
+          "14": -0.0358867628,
+          "15": -0.0376158108,
+          "16": -0.0294322127,
+          "17": -0.0207207905,
+          "2": -0.0757313857,
+          "3": -0.101010001,
+          "4": -0.087480638,
+          "5": -0.0568016565,
+          "6": -0.006046646,
+          "7": -0.0052966597,
+          "8": -0.0139905849,
+          "9": -0.0156237592
+        },
+        "annual_volatility": {
+          "0": 0.1552501445,
+          "1": 0.1408299103,
+          "10": 0.0314440132,
+          "11": 0.0294417953,
+          "12": 0.0728468651,
+          "13": 0.0681900759,
+          "14": 0.0677685437,
+          "15": 0.0680520056,
+          "16": 0.0693231417,
+          "17": 0.0686190319,
+          "2": 0.1452135041,
+          "3": 0.1377546782,
+          "4": 0.1514695805,
+          "5": 0.1419056399,
+          "6": 0.0354293577,
+          "7": 0.0336159859,
+          "8": 0.0319926801,
+          "9": 0.0321516228
+        },
+        "asset": {
+          "0": "TBT",
+          "1": "TBT",
+          "10": "TBX",
+          "11": "TBX",
+          "12": "TBF",
+          "13": "TBF",
+          "14": "TBF",
+          "15": "TBF",
+          "16": "TBF",
+          "17": "TBF",
+          "2": "TBT",
+          "3": "TBT",
+          "4": "TBT",
+          "5": "TBT",
+          "6": "TBX",
+          "7": "TBX",
+          "8": "TBX",
+          "9": "TBX"
+        },
+        "avg_turnover": {
+          "0": 0.0089068826,
+          "1": 0.0097165992,
+          "10": 0.0062965083,
+          "11": 0.0040068689,
+          "12": 0.0083487941,
+          "13": 0.0092764378,
+          "14": 0.0069573284,
+          "15": 0.0060296846,
+          "16": 0.0051020408,
+          "17": 0.004174397,
+          "2": 0.0076923077,
+          "3": 0.0068825911,
+          "4": 0.0060728745,
+          "5": 0.0060728745,
+          "6": 0.0103033772,
+          "7": 0.0057240985,
+          "8": 0.0062965083,
+          "9": 0.0051516886
+        },
+        "calmar": {
+          "0": -0.1111950336,
+          "1": -0.1373669907,
+          "10": -0.0678192088,
+          "11": -0.1222835524,
+          "12": -0.0820941788,
+          "13": -0.1083338,
+          "14": -0.1204251604,
+          "15": -0.1244451368,
+          "16": -0.1128672739,
+          "17": -0.1134299096,
+          "2": -0.1292877114,
+          "3": -0.1559150464,
+          "4": -0.1451237595,
+          "5": -0.1200905463,
+          "6": -0.0748408215,
+          "7": -0.0641268515,
+          "8": -0.1495952243,
+          "9": -0.1301944694
+        },
+        "exposure": {
+          "0": 0.348582996,
+          "1": 0.3307692308,
+          "10": 0.3308528907,
+          "11": 0.314825415,
+          "12": 0.3367346939,
+          "13": 0.3413729128,
+          "14": 0.3344155844,
+          "15": 0.3497217069,
+          "16": 0.349257885,
+          "17": 0.3682745826,
+          "2": 0.3392712551,
+          "3": 0.3319838057,
+          "4": 0.3615384615,
+          "5": 0.3506072874,
+          "6": 0.3526044648,
+          "7": 0.3428734974,
+          "8": 0.3262736119,
+          "9": 0.3434459073
+        },
+        "fast": {
+          "0": 20,
+          "1": 20,
+          "10": 100,
+          "11": 100,
+          "12": 20,
+          "13": 20,
+          "14": 50,
+          "15": 50,
+          "16": 100,
+          "17": 100,
+          "2": 50,
+          "3": 50,
+          "4": 100,
+          "5": 100,
+          "6": 20,
+          "7": 20,
+          "8": 50,
+          "9": 50
+        },
+        "hit_rate": {
+          "0": 0.4678899083,
+          "1": 0.4595898673,
+          "10": 0.4631217839,
+          "11": 0.4575045208,
+          "12": 0.462585034,
+          "13": 0.4557640751,
+          "14": 0.4458161866,
+          "15": 0.4480946124,
+          "16": 0.4492753623,
+          "17": 0.4605757196,
+          "2": 0.4528301887,
+          "3": 0.4463208685,
+          "4": 0.4472807991,
+          "5": 0.4576659039,
+          "6": 0.4608,
+          "7": 0.4701986755,
+          "8": 0.4548611111,
+          "9": 0.4545454545
+        },
+        "idea": {
+          "0": "tendencia",
+          "1": "tendencia",
+          "10": "tendencia",
+          "11": "tendencia",
+          "12": "tendencia",
+          "13": "tendencia",
+          "14": "tendencia",
+          "15": "tendencia",
+          "16": "tendencia",
+          "17": "tendencia",
+          "2": "tendencia",
+          "3": "tendencia",
+          "4": "tendencia",
+          "5": "tendencia",
+          "6": "tendencia",
+          "7": "tendencia",
+          "8": "tendencia",
+          "9": "tendencia"
+        },
+        "max_drawdown": {
+          "0": -0.5521200434,
+          "1": -0.604620884,
+          "10": -0.1032941969,
+          "11": -0.1245297055,
+          "12": -0.2224919512,
+          "13": -0.2638164565,
+          "14": -0.2980005396,
+          "15": -0.3022682265,
+          "16": -0.2607683489,
+          "17": -0.1826748393,
+          "2": -0.5857585757,
+          "3": -0.6478528105,
+          "4": -0.6028002465,
+          "5": -0.4729902417,
+          "6": -0.0807934205,
+          "7": -0.0825965962,
+          "8": -0.0935229384,
+          "9": -0.1200032481
+        },
+        "n_periods": {
+          "0": 2470,
+          "1": 2470,
+          "10": 1747,
+          "11": 1747,
+          "12": 2156,
+          "13": 2156,
+          "14": 2156,
+          "15": 2156,
+          "16": 2156,
+          "17": 2156,
+          "2": 2470,
+          "3": 2470,
+          "4": 2470,
+          "5": 2470,
+          "6": 1747,
+          "7": 1747,
+          "8": 1747,
+          "9": 1747
+        },
+        "periods_per_year": {
+          "0": 252,
+          "1": 252,
+          "10": 252,
+          "11": 252,
+          "12": 252,
+          "13": 252,
+          "14": 252,
+          "15": 252,
+          "16": 252,
+          "17": 252,
+          "2": 252,
+          "3": 252,
+          "4": 252,
+          "5": 252,
+          "6": 252,
+          "7": 252,
+          "8": 252,
+          "9": 252
+        },
+        "sharpe": {
+          "0": -0.330626133,
+          "1": -0.5452067485,
+          "10": -0.2078618362,
+          "11": -0.5064654276,
+          "12": -0.2166982253,
+          "13": -0.391149637,
+          "14": -0.505405202,
+          "15": -0.5293871448,
+          "16": -0.3963173589,
+          "17": -0.2708777114,
+          "2": -0.4697313471,
+          "3": -0.7040176057,
+          "4": -0.5286575845,
+          "5": -0.3411909204,
+          "6": -0.1534999416,
+          "7": -0.1412012808,
+          "8": -0.4244049496,
+          "9": -0.47370333
+        },
+        "slow": {
+          "0": 150,
+          "1": 200,
+          "10": 150,
+          "11": 200,
+          "12": 150,
+          "13": 200,
+          "14": 150,
+          "15": 200,
+          "16": 150,
+          "17": 200,
+          "2": 150,
+          "3": 200,
+          "4": 150,
+          "5": 200,
+          "6": 150,
+          "7": 200,
+          "8": 150,
+          "9": 200
+        },
+        "sortino": {
+          "0": -0.4718272651,
+          "1": -0.7531553525,
+          "10": -0.2953085627,
+          "11": -0.6828310934,
+          "12": -0.3138402087,
+          "13": -0.5509904336,
+          "14": -0.7109752793,
+          "15": -0.7419250979,
+          "16": -0.5699326379,
+          "17": -0.3890922551,
+          "2": -0.6603170655,
+          "3": -0.9683012129,
+          "4": -0.7433489134,
+          "5": -0.4818134048,
+          "6": -0.2232187994,
+          "7": -0.2045035802,
+          "8": -0.595266458,
+          "9": -0.6595313495
+        }
+      },
+      "grid": {
+        "fast": [
+          20,
+          50,
+          100
+        ],
+        "slow": [
+          150,
+          200
+        ]
+      },
+      "lookahead": {
+        "TBF": {
+          "combinations": 6,
+          "failed": []
+        },
+        "TBT": {
+          "combinations": 6,
+          "failed": []
+        },
+        "TBX": {
+          "combinations": 6,
+          "failed": []
+        }
+      },
+      "selection": {
+        "asset": {
+          "0": "TBT",
+          "1": "TBX",
+          "2": "TBF"
+        },
+        "best": {
+          "0": "idea=tendencia, fast=100, slow=200",
+          "1": "idea=tendencia, fast=20, slow=200",
+          "2": "idea=tendencia, fast=20, slow=150"
+        },
+        "dsr": {
+          "0": 0.2202157332,
+          "1": 0.2502467808,
+          "2": 0.3511126966
+        },
+        "eval_end": {
+          "0": "2018-12-31T00:00:00",
+          "1": "2018-12-31T00:00:00",
+          "2": "2018-12-31T00:00:00"
+        },
+        "eval_start": {
+          "0": "2009-03-11T00:00:00",
+          "1": "2012-01-23T00:00:00",
+          "2": "2010-06-09T00:00:00"
+        },
+        "exposure": {
+          "0": 0.3506072874,
+          "1": 0.3428734974,
+          "2": 0.3367346939
+        },
+        "ir_vs_bh": {
+          "0": 0.3640347457,
+          "1": 0.4930368118,
+          "2": 0.500721267
+        },
+        "n_effective": {
+          "0": 2.9348980178,
+          "1": 2.6484782179,
+          "2": 3.4042541124
+        },
+        "n_trials": {
+          "0": 14,
+          "1": 15,
+          "2": 15
+        },
+        "psr": {
+          "0": 0.1435819011,
+          "1": 0.355604418,
+          "2": 0.2640471969
+        },
+        "sharpe": {
+          "0": -0.3411909204,
+          "1": -0.1412012808,
+          "2": -0.2166982253
+        },
+        "significant": {
+          "0": false,
+          "1": false,
+          "2": false
+        },
+        "spa_p": {
+          "0": 0.872,
+          "1": 0.784,
+          "2": 0.66
+        },
+        "spa_p_holm": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0
+        },
+        "timing_ir": {
+          "0": -0.0055481917,
+          "1": 0.1881527221,
+          "2": 0.1474741378
+        }
+      },
+      "signal": "sma_crossover",
+      "status": "evaluada"
+    }
+  },
+  "provenance": {
+    "bundle": {
+      "name": "inverse_treasury",
+      "path": "/home/user/time-series-insurance/experiments/inverse_treasury/data",
+      "quality_warnings": [
+        "TBX 2025-05-23: retorno +3.91% y -4.09% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "TLT 2020-03-16: retorno +6.48% y -6.67% al día siguiente (> 8 desviaciones robustas): posible dato erróneo"
+      ],
+      "sha256": "953f4f2a6264d8f3195a927fb05d6c80668d95ea40d756f55afb50272d05b344"
+    },
+    "git": {
+      "commit": "eb02287cbd2eaea1eeecaafacf85defda573b6cf",
+      "dirty": false
+    },
+    "package_version": "0.0.1",
+    "prior_trials_by_asset": {},
+    "python": "3.13.18",
+    "registry": "/home/user/time-series-insurance/experiments/registry.jsonl",
+    "run_id": "20261109T155602Z-25596d",
+    "seed": 20261109,
+    "started_at": "2026-11-09T15:56:02+00:00"
+  },
+  "result_version": "1.1",
+  "status": {
+    "econometric_quadrants": {
+      "macro_tbf": "sin_evidencia",
+      "macro_tbx": "sin_evidencia"
+    },
+    "exploratory_reasons": [],
+    "lines_registered": 48,
+    "significant_by_idea": {
+      "momentum": [],
+      "momentum_vol": [],
+      "tendencia": []
+    }
+  }
+}
