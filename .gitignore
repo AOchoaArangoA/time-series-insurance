@@ -18,3 +18,7 @@ data/private/
 
 # Paquetes de insumos con datos de terceros no redistribuibles (se regeneran con su receta)
 experiments/*/data/
+
+# Instantáneas con datos de terceros no redistribuibles (regenerar: examples/fetch_data.py)
+examples/data/yahoo_etfs/
+examples/data/fred_daily/

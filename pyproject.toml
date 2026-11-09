@@ -4,11 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tsinsurance"
-version = "0.0.1"
+version = "0.1.0"
 description = "Modelos de series de tiempo con metodología econométrica robusta para la gestión de inversiones de aseguradoras."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
+keywords = ["time series", "econometrics", "backtesting", "insurance", "quantitative finance"]
 authors = [{ name = "A. Ochoa Arango" }]
 dependencies = [
     "numpy>=1.26",
@@ -25,6 +26,10 @@ yahoo = ["yfinance>=0.2.40"]
 excel = ["openpyxl>=3.1"]
 backtest = ["bt>=1.1"]
 viz = ["matplotlib>=3.8"]
+
+[project.urls]
+Homepage = "https://github.com/AOchoaArangoA/time-series-insurance"
+Documentation = "https://github.com/AOchoaArangoA/time-series-insurance/blob/main/AGENTS.md"
 
 [project.scripts]
 tsinsurance = "tsinsurance.cli:main"

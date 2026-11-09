@@ -4,17 +4,17 @@
 
 | Punto | Estado |
 |-------|--------|
-| Visibilidad del repositorio en GitHub | **privado** |
-| Rama `main` | sólo el commit inicial; todo el trabajo está en `ccr-d4f6f6a0-bg0992` |
+| Visibilidad del repositorio en GitHub | **público** |
+| Rama `main` | integra todo el trabajo (v0.1.0) en un commit limpio, sin datos de terceros no redistribuibles |
 | Licencia del código | MIT (`LICENSE`) |
-| Credenciales en el repositorio | ninguna (verificado: la clave de FRED nunca se versionó) |
+| Credenciales en el repositorio | ninguna (verificado) |
 
 ## Datos de terceros versionados
 
 | Ubicación | Contenido | ¿Redistribuible? |
 |-----------|-----------|------------------|
-| `examples/data/yahoo_etfs/` | precios de 8 ETFs (Yahoo Finance) | **No** (términos de Yahoo: uso personal) |
-| `examples/data/fred_daily/` | DTB3, DGS10, T10Y2Y (dominio público) y **BAA10Y** (Moody's, con derechos de autor) | Parcial: BAA10Y **no** |
+| `examples/data/yahoo_etfs/` | precios de 8 ETFs (Yahoo Finance) | **No**: no se versiona; `examples/fetch_data.py` |
+| `examples/data/fred_daily/` | DTB3, DGS10, T10Y2Y y **BAA10Y** (Moody's) | **No** (por BAA10Y): no se versiona; `examples/fetch_data.py` |
 | `examples/data/fred_monthly/` | CPIAUCNS (BLS, dominio público) | Sí |
 | `examples/data/fred_gs10/` | GS10 (Federal Reserve, dominio público) | Sí |
 | `experiments/*/data/` | paquetes con datos de Yahoo | No se versionan (`.gitignore`) |
@@ -22,20 +22,16 @@
 Los datos de los paquetes nuevos declaran `license` y `redistributable` por serie; un
 paquete es redistribuible sólo si todas sus series lo son (`Bundle.redistributable`).
 
-## Pasos para hacer público el repositorio
+## Publicación realizada
 
-1. **Retirar datos no redistribuibles**: eliminar `examples/data/yahoo_etfs/` y la serie
-   BAA10Y de `examples/data/fred_daily/`, reemplazándolos por recetas
-   (`recipe.toml`) que cada usuario ejecuta localmente; las pruebas que dependen de esos
-   datos se omiten si el paquete no existe (como `tests/integration/test_inverse_treasury_experiment.py`).
-2. **Historial**: esos archivos están en el historial de la rama de trabajo. Para no
-   publicarlos, integrar en `main` con un *squash merge* desde una rama limpia y
-   eliminar la rama de trabajo (GitHub conserva las referencias de PR; si eso importa,
-   crear un repositorio público nuevo a partir de `main` limpio).
-3. **Fusionar** la rama de trabajo en `main` mediante un PR revisado.
-4. **Cambiar la visibilidad** en GitHub: *Settings → General → Danger Zone → Change
-   repository visibility → Public* (sólo el dueño puede hacerlo).
-5. **Opcional**: publicar en PyPI (`uv build` + `uv publish`) para que cualquier proyecto
-   lo instale con `pip install tsinsurance`; mientras tanto se instala desde GitHub:
-   `pip install "tsinsurance @ git+https://github.com/AOchoaArangoA/time-series-insurance"`.
-6. Rotar la clave de FRED compartida en la conversación de desarrollo.
+1. Datos no redistribuibles retirados del árbol y reemplazados por recetas/scripts
+   (`examples/fetch_data.py`, `experiments/*/recipe.toml`); las pruebas que los necesitan
+   se omiten si no se descargaron, y las cifras publicadas sólo se comparan cuando la
+   huella coincide (`examples/data/expected_sha256.json`).
+2. `main` recibe el trabajo en un único commit desde una rama limpia (los datos retirados
+   no están en su historial).
+3. Pendiente del dueño: la rama de desarrollo `ccr-d4f6f6a0-bg0992` conserva en su
+   historial las instantáneas de Yahoo/BAA10Y; eliminarla deja `main` como única fuente.
+4. Opcional: publicar en PyPI (`uv build` + `uv publish`); mientras tanto se instala desde
+   GitHub.
+5. Rotar la clave de FRED compartida en la conversación de desarrollo.

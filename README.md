@@ -1,116 +1,115 @@
 # time-series-insurance (`tsinsurance`)
 
-Paquete Python de series de tiempo para asistir decisiones cuantitativas de inversión
-—con foco en el portafolio de una aseguradora—, con metodología econométrica y
-estadística robusta: estacionariedad, modelos de media y volatilidad, pronóstico con
-incertidumbre, validación fuera de muestra, **backtesting responsable de estrategias
-cuantitativas y de modelos econométricos**, VaR/ES y ALM.
+[![CI](https://github.com/AOchoaArangoA/time-series-insurance/actions/workflows/ci.yml/badge.svg)](https://github.com/AOchoaArangoA/time-series-insurance/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Metodología de desarrollo: Spec-Driven Development con agentes de IA
+Paquete Python de series de tiempo para **asistir decisiones cuantitativas de
+inversión** —con foco en el portafolio de una aseguradora— con metodología econométrica
+y estadística robusta: contrato de datos, estacionariedad, **backtesting responsable** de
+estrategias cuantitativas y de modelos econométricos con variables macro, y
+**experimentos registrados** que humanos y agentes de IA pueden ejecutar y auditar.
 
-El proyecto usa [GitHub Spec Kit](https://github.com/github/spec-kit) con Claude Code.
-Spec Kit separa el **qué** (especificación) del **cómo** (plan) y hace que el agente
-implemente por tareas verificables.
+## Instalación
 
-| Artefacto | Ubicación |
-|-----------|-----------|
-| Constitución (principios no negociables) | `.specify/memory/constitution.md` |
-| Especificaciones por funcionalidad | `specs/NNN-*/spec.md` |
-| Hoja de ruta | `docs/roadmap.md` |
-| Comandos de Spec Kit para Claude Code | `.claude/skills/speckit-*` |
-| Subagente revisor econométrico | `.claude/agents/econometrics-reviewer.md` |
-| Guía para agentes | `CLAUDE.md` |
+```bash
+pip install "tsinsurance[yahoo,excel,backtest] @ git+https://github.com/AOchoaArangoA/time-series-insurance"
+# o, para desarrollar:
+git clone https://github.com/AOchoaArangoA/time-series-insurance && cd time-series-insurance
+uv sync --all-extras
+```
 
-Flujo por funcionalidad, dentro de Claude Code:
+Requiere Python ≥ 3.11. La clave de FRED (`FRED_API_KEY`) sólo se necesita para
+descargar datos de FRED; se lee del entorno y nunca se versiona.
+
+## Mapa del proceso
 
 ```text
-/speckit-specify   describe la funcionalidad
-/speckit-clarify   resuelve ambigüedades
-/speckit-plan      plan técnico (stack, contratos, modelo de datos)
-/speckit-tasks     lista de tareas ordenadas por dependencias
-/speckit-analyze   consistencia spec ↔ plan ↔ tareas
-/speckit-implement implementación con TDD
+ 1. Hipótesis ─▶ 2. Receta de datos ─▶ 3. Paquete de insumos ─▶ 4. experiment.toml ─▶ 5. Ejecución
+   (humano o      (Yahoo, FRED, CSV,     (formato base,           (ideas, modelos,       │ anticipación
+    agente)        proveedor interno)     independiente de        supuestos,             │ punto en el tiempo
+                                          la fuente)              validación)            │ pruebas múltiples
+                                                                                         ▼ validación única
+ 8. Decisión ◀── 7. report.md / result.json ◀── 6. Bitácora permanente (registry.jsonl, encadenada por hash)
 ```
 
-## Uso rápido (v0.1 — preparación y diagnóstico)
+| Necesito… | Dónde |
+|-----------|-------|
+| Entender el proceso completo y el flujo de la información | [`docs/propuesta-proceso.md`](docs/propuesta-proceso.md) |
+| Usar el paquete desde **otro agente o herramienta** | [`AGENTS.md`](AGENTS.md) · habilidad [`.claude/skills/tsinsurance-experiment`](.claude/skills/tsinsurance-experiment/SKILL.md) |
+| Ver un experimento real registrado (TBT, TBX, TBF) | [`experiments/inverse_treasury/`](experiments/inverse_treasury/README.md) |
+| Resultados y validaciones realizadas hasta hoy | [`docs/resumen-procesos-y-resultados.md`](docs/resumen-procesos-y-resultados.md) |
+| Metodología (pruebas, supuestos, referencias) | [`docs/methodology/`](docs/methodology/) |
+| Principios no negociables | [`.specify/memory/constitution.md`](.specify/memory/constitution.md) |
+| Especificaciones, planes y tareas | [`specs/`](specs/) · hoja de ruta [`docs/roadmap.md`](docs/roadmap.md) |
+| Datos de terceros y publicación | [`docs/politica-datos-y-publicacion.md`](docs/politica-datos-y-publicacion.md) |
+
+## Uso rápido: un experimento en 4 comandos
 
 ```bash
-uv sync --all-extras          # incluye bt (motor de referencia) y yfinance
-uv run tsinsurance template market --format xlsx -o mis_series.xlsx   # plantilla de insumos
-uv run tsinsurance validate market mis_series.csv                     # valida contra el contrato
-uv run tsinsurance schema market --format json-schema                 # contrato publicado
-uv run python examples/01_diagnostico_tasas_fred.py                   # ejercicio con datos reales
+uv run tsinsurance bundle template mi_exp/data            # 1. paquete de insumos para llenar (o:)
+uv run tsinsurance bundle fetch recipe.toml mi_exp/data    #    descargarlo con una receta
+uv run tsinsurance bundle validate mi_exp/data             # 2. contrato, manifiesto y huella
+uv run tsinsurance experiment run mi_exp/experiment.toml   # 3. ejecutar y registrar
+uv run tsinsurance experiment verify experiments/registry.jsonl   # 4. integridad de la bitácora
 ```
+
+Ver el formato de `experiment.toml` y de `result.json` en [`AGENTS.md`](AGENTS.md).
+
+## Qué incluye
+
+| Módulo | Capacidades |
+|--------|-------------|
+| `tsinsurance.data` | contrato de insumos v1.0 (plantillas, JSON Schema, validación fila/columna/regla), conectores CSV/Excel/FRED/Yahoo, instantáneas con huella, **paquete de insumos** independiente de la fuente |
+| `tsinsurance.diagnostics` | ADF, Phillips-Perron, KPSS, Zivot-Andrews con regla de decisión explícita; descriptivos, Ljung-Box, Jarque-Bera, ARCH-LM (verificados contra R) |
+| `tsinsurance.backtest` | motor con ejecución, costos y tasa libre de riesgo explícitos (validado contra `bt`); señales de tendencia y volatilidad; datos punto-en-el-tiempo; prueba de anticipación; Sharpe con EE HAC y bootstrap, PSR, Sharpe deflactado, SPA de Hansen; regresión predictiva walk-forward con **validación doble** (Clark-West, Pesaran-Timmermann, diagnósticos / valor económico) |
+| `tsinsurance.experiments` | `experiment.toml` declarativo, registro de señales, bitácora con pre-registro y validación registrada, ajuste por pruebas múltiples acumulado entre experimentos |
+
+### Desde Python
 
 ```python
-from tsinsurance.data import Snapshot, prepare, to_wide
-from tsinsurance.data.sources import get_source
-from tsinsurance.diagnostics import describe, stationarity
+from tsinsurance.data.bundle import Bundle
+from tsinsurance.backtest import ExecutionConfig, check_lookahead, run_backtest, sma_crossover
+from tsinsurance.experiments import run_experiment
 
-snap = get_source("fred").fetch(["GS10"], "1990-01-01", "2025-12-31")  # requiere FRED_API_KEY
-snap.save("data/gs10")                       # instantánea replicable (Parquet + metadatos + hash)
-serie = prepare(to_wide(snap.data)["GS10"], freq="M").data
-print(stationarity(serie).summary())         # ADF + PP + KPSS + Zivot-Andrews, regla confirmatoria
-```
-
-## Backtesting responsable (spec 002)
-
-```bash
-uv run python examples/backtest_01_tendencia_volatilidad_etfs.py   # tendencia/volatilidad, 8 ETFs
-uv run python examples/backtest_02_macro_tlt.py                    # modelo macro para TLT
-```
-
-```python
-from tsinsurance.backtest import (
-    ExecutionConfig, run_backtest, sma_crossover, check_lookahead, sweep,
-    Exogenous, align_point_in_time, PredictiveRegression, backtest_econometric,
-)
-
-# 1) Una idea de tendencia, con supuestos explícitos y prueba de anticipación
+bundle = Bundle.load("mi_exp/data")
+precios, rf = bundle.assets(), bundle.risk_free()
 idea = lambda p: sma_crossover(p, 50, 200, normalize=False)
-check_lookahead(idea, precios).raise_if_biased()
-res = run_backtest(precios, idea(precios), ExecutionConfig(lag=1, cost_bps=5), risk_free=rf)
-print(res.summary())
+check_lookahead(idea, precios[["TLT"]].dropna()).raise_if_biased()
+print(run_backtest(precios["TLT"].dropna(), idea(precios[["TLT"]].dropna()),
+                   ExecutionConfig(lag=1, cost_bps=5), risk_free=rf).summary())
 
-# 2) Barrido con ajuste por pruebas múltiples (Sharpe deflactado + SPA de Hansen)
-print(sweep(precios, lambda p, fast, slow: sma_crossover(p, fast, slow, normalize=False),
-            {"fast": [20, 50], "slow": [150, 200]}, risk_free=rf).summary())
-
-# 3) Modelo econométrico con variables macro: validación estadística + económica
-x = align_point_in_time([Exogenous("inflacion", cpi, "M", release_lag="20D", transform="yoy")],
-                        fechas_decision)
-print(backtest_econometric(tlt, y_exceso, x, PredictiveRegression(min_train=60)).summary())
+print(run_experiment("mi_exp/experiment.toml").summary())
 ```
 
-Cada resultado reporta supuestos, benchmark, incertidumbre (EE HAC, bootstrap) y, para
-modelos econométricos, un **veredicto doble** (evidencia estadística / valor económico).
-Metodología: `docs/methodology/backtesting.md`.
-
-Las claves de API (p. ej. `FRED_API_KEY`) se leen de variables de entorno y nunca se versionan.
-
-## Experimentos registrados y entrega a agentes (spec 003)
+## Ejemplos
 
 ```bash
-uv run tsinsurance bundle template mi_exp/data          # formato base de insumos (sin depender de la fuente)
-uv run tsinsurance bundle fetch recipe.toml mi_exp/data  # o descargar con una receta (Yahoo, FRED, CSV)
-uv run tsinsurance experiment run mi_exp/experiment.toml # ejecuta y registra en experiments/registry.jsonl
+uv run python examples/01_diagnostico_tasas_fred.py               # estacionariedad de GS10 (datos incluidos)
+uv run python examples/fetch_data.py                              # descarga los datos de terceros (FRED_API_KEY)
+uv run python examples/backtest_01_tendencia_volatilidad_etfs.py  # tendencia/volatilidad en 8 ETFs
+uv run python examples/backtest_02_macro_tlt.py                   # modelo macro para TLT
 ```
 
-- Guía para agentes: [`AGENTS.md`](AGENTS.md) · habilidad `.claude/skills/tsinsurance-experiment`.
-- Ejemplo registrado: [`experiments/inverse_treasury/`](experiments/inverse_treasury/README.md) (TBT, TBX, TBF).
-- Proceso completo: [`docs/propuesta-proceso.md`](docs/propuesta-proceso.md) · publicación: [`docs/politica-datos-y-publicacion.md`](docs/politica-datos-y-publicacion.md).
+Los precios de Yahoo Finance y la serie BAA10Y (Moody's) **no se redistribuyen**: se
+regeneran localmente con su receta o script, y cada resultado registra la huella exacta
+de los datos usados.
 
-## Resumen de procesos y resultados
+## Cómo se desarrolla
 
-Ver [`docs/resumen-procesos-y-resultados.md`](docs/resumen-procesos-y-resultados.md).
-
-## Desarrollo
+*Spec-Driven Development* con [GitHub Spec Kit](https://github.com/github/spec-kit) y
+Claude Code (`/speckit-specify` → `/speckit-plan` → `/speckit-tasks` →
+`/speckit-implement`), pruebas primero y revisión independiente con el subagente
+[`econometrics-reviewer`](.claude/agents/econometrics-reviewer.md) antes de integrar.
+Guía para agentes que desarrollan: [`CLAUDE.md`](CLAUDE.md).
 
 ```bash
 uv sync --all-extras
-uv run pytest                 # rápido + simulaciones; sin red
+uv run pytest                 # unitarias, referencia, Monte Carlo, integración (sin red)
 uv run pytest -m network      # descargas reales (requiere FRED_API_KEY)
 uv run ruff check src tests && uv run mypy
 ```
 
-Requiere Python >= 3.11 y [uv](https://docs.astral.sh/uv/).
+## Licencia
+
+Código bajo [MIT](LICENSE). Los datos de terceros se rigen por los términos de sus
+proveedores.
