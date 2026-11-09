@@ -1,0 +1,26 @@
+# Usa la señal "ruptura" registrada en senal_propia.py (no existe en la CLI sola).
+
+[experiment]
+id = "prueba-conexion-senal-propia"
+hypothesis = "Prueba de conexión: una ruptura de máximos sobre datos simulados no debe ser significativa."
+registry = "registry.jsonl"
+
+[data]
+bundle = "data"
+assets = ["ACT_A", "ACT_B"]
+
+[execution]
+lag = 1
+cost_bps = 5.0
+
+[validation]
+alpha = 0.05
+reps = 200
+seed = 1
+train_end = "2019-12-31"
+
+[[ideas]]
+name = "ruptura"
+signal = "ruptura"
+  [ideas.grid]
+  ventana = [60, 120]

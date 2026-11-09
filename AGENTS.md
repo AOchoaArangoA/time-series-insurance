@@ -5,6 +5,11 @@ propios) que deba usar el paquete para probar ideas cuantitativas o modelos
 econométricos. Para *desarrollar* el paquete, lea además `CLAUDE.md` y la constitución
 `.specify/memory/constitution.md`.
 
+> ¿Integra el paquete desde otro sistema (otro proyecto, orquestador, lenguaje o agente)?
+> Empiece por [`docs/integracion/manual-de-uso.md`](docs/integracion/manual-de-uso.md)
+> (instalación, prueba de conexión, interfaces de entrada y salida) y el prompt listo para
+> entregar a un agente [`docs/integracion/prompt-agente.md`](docs/integracion/prompt-agente.md).
+
 ## Qué es
 
 Un paquete Python de series de tiempo para decisiones cuantitativas de inversión con
@@ -94,7 +99,7 @@ position = "long_cash"            # long_cash, long_short, proportional
 min_train = 60
 ```
 
-## `result.json` (versión 1.0)
+## `result.json` (versión 1.1)
 
 | Clave | Contenido |
 |-------|-----------|
