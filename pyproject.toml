@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tsinsurance"
+version = "0.1.0"
+description = "Modelos de series de tiempo con metodología econométrica robusta para la gestión de inversiones de aseguradoras."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["time series", "econometrics", "backtesting", "insurance", "quantitative finance"]
+authors = [{ name = "A. Ochoa Arango" }]
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11",
+    "statsmodels>=0.14",
+    "arch>=7.0",
+    "pandera>=0.20",
+    "pyarrow>=15",
+]
+
+[project.optional-dependencies]
+yahoo = ["yfinance>=0.2.40"]
+excel = ["openpyxl>=3.1"]
+backtest = ["bt>=1.1"]
+viz = ["matplotlib>=3.8"]
+
+[project.urls]
+Homepage = "https://github.com/AOchoaArangoA/time-series-insurance"
+Documentation = "https://github.com/AOchoaArangoA/time-series-insurance/blob/main/AGENTS.md"
+
+[project.scripts]
+tsinsurance = "tsinsurance.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "hypothesis>=6.100",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pandas-stubs>=2.1",
+    "pre-commit>=3.7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tsinsurance"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "NPY", "PD", "D"]
+ignore = ["D105", "D107", "D401", "PD010", "PD901"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "N803", "N806"]
+# Notación econométrica estándar (X, F, A matrices).
+"src/tsinsurance/backtest/econometric.py" = ["N803", "N806"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["statsmodels.*", "arch.*", "scipy.*", "yfinance.*", "pyarrow.*", "openpyxl.*", "bt.*", "ffn.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers -m 'not network' --cov=tsinsurance --cov-report=term-missing"
+markers = [
+    "slow: simulaciones Monte Carlo largas",
+    "network: requiere acceso a internet (excluidas por defecto)",
+]
+filterwarnings = ["error::FutureWarning:tsinsurance"]

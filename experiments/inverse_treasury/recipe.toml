@@ -1,0 +1,91 @@
+# Receta de datos: lo ÚNICO que depende de la fuente. Produce el paquete de insumos
+# (formato base) en ./data con:  tsinsurance bundle fetch recipe.toml data
+# Requiere FRED_API_KEY en el entorno. Los datos de Yahoo no son redistribuibles:
+# ./data no se versiona (ver docs/politica-datos-y-publicacion.md).
+
+[bundle]
+name = "inverse_treasury"
+description = "ETFs inversos del Tesoro de EE. UU. (ProShares) y TLT de referencia, con macro de FRED"
+
+[[fetch]]
+source = "yahoo"
+ids = ["TBT", "TBX", "TBF", "TLT"]
+start = "2003-01-01"
+end = "2025-12-31"
+  [[fetch.series]]
+  id = "TBT"
+  role = "asset"
+  description = "ProShares UltraShort 20+ Year Treasury (-2x diario), precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "TBX"
+  role = "asset"
+  description = "ProShares Short 7-10 Year Treasury (-1x diario), precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "TBF"
+  role = "asset"
+  description = "ProShares Short 20+ Year Treasury (-1x diario), precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "TLT"
+  role = "asset"
+  description = "iShares 20+ Year Treasury Bond (referencia, subyacente de TBT/TBF)"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+
+[[fetch]]
+source = "fred"
+ids = ["DTB3", "T10Y2Y", "DGS10", "T10YIE"]
+start = "2002-01-01"
+end = "2025-12-31"
+  [[fetch.series]]
+  id = "DTB3"
+  role = "risk_free"
+  description = "Letra del Tesoro a 3 meses, tasa de descuento (H.15)"
+  release_lag = "1B"
+  rf_convention = "dtb3_discount"
+  license = "Dominio público (Federal Reserve H.15 vía FRED)"
+  redistributable = true
+  [[fetch.series]]
+  id = "T10Y2Y"
+  role = "exogenous"
+  point_in_time = true   # serie de mercado / IPC sin desestacionalizar: no se revisa
+  description = "Pendiente 10 años - 2 años"
+  release_lag = "1B"
+  license = "Dominio público (Federal Reserve H.15 vía FRED)"
+  redistributable = true
+  [[fetch.series]]
+  id = "DGS10"
+  role = "exogenous"
+  point_in_time = true   # serie de mercado / IPC sin desestacionalizar: no se revisa
+  description = "Tasa del Tesoro a 10 años"
+  release_lag = "1B"
+  license = "Dominio público (Federal Reserve H.15 vía FRED)"
+  redistributable = true
+  [[fetch.series]]
+  id = "T10YIE"
+  role = "exogenous"
+  point_in_time = true   # serie de mercado / IPC sin desestacionalizar: no se revisa
+  description = "Inflación implícita (breakeven) a 10 años"
+  release_lag = "1B"
+  license = "Dominio público (Federal Reserve Bank of St. Louis)"
+  redistributable = true
+
+[[fetch]]
+source = "fred"
+ids = ["CPIAUCNS"]
+start = "2000-01-01"
+end = "2025-12-31"
+  [[fetch.series]]
+  id = "CPIAUCNS"
+  role = "exogenous"
+  point_in_time = true   # serie de mercado / IPC sin desestacionalizar: no se revisa
+  description = "IPC urbano sin desestacionalizar (no se revisa); variación anual"
+  release_lag = "20D"
+  transform = "yoy"
+  license = "Dominio público (U.S. Bureau of Labor Statistics vía FRED)"
+  redistributable = true

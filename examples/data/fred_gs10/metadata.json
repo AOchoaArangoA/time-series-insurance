@@ -1,0 +1,16 @@
+{
+  "kind": "market",
+  "n_rows": 432,
+  "query": {
+    "end": "2025-12-31",
+    "ids": [
+      "GS10"
+    ],
+    "start": "1990-01-01",
+    "units": "lin"
+  },
+  "retrieved_at": "2026-11-02T15:13:06+00:00",
+  "schema_version": "1.0",
+  "sha256": "e6bb192cce25f78e72d7e2720cb3d8b57abbd6d93b1cbea9b31716dbc96f948c",
+  "source": "fred"
+}
