@@ -70,7 +70,7 @@
 - [X] T041 [P] [US2] Pruebas de `monthly_decision_dates`, `dtb3_to_daily` y proyección mensual→diaria en tests/backtest/test_pit.py
 - [X] T042 [P] [US3] Pruebas de `sharpe_difference` y SE HAC del Sharpe en tests/backtest/test_inference.py
 - [X] T043 [P] [US2] Simulación SC-004 (c) con regresor persistente: medir y documentar tamaño
-- [ ] T044 Referencias externas de R (rugarch::DACTest, forecast::dm.test, Rapach-Zhou) cuando R esté disponible
+- [ ] T044 Referencias externas de R: hecho forecast::dm.test (tests/reference/test_against_r.py); faltan rugarch::DACTest y Rapach-Zhou
 - [ ] T045 Inferencia IVX (Kostakis-Magdalinos-Stamatogiannis 2015) para regresores persistentes
 - [ ] T046 Soporte de vintages ALFRED en FredSource para variables revisables
 - [ ] T047 EE HAC del Sharpe con preblanqueo (Andrews-Monahan) para reducir el sesgo de ~9 % con autocorrelación

@@ -88,6 +88,10 @@ Metodología: `docs/methodology/backtesting.md`.
 
 Las claves de API (p. ej. `FRED_API_KEY`) se leen de variables de entorno y nunca se versionan.
 
+## Resumen de procesos y resultados
+
+Ver [`docs/resumen-procesos-y-resultados.md`](docs/resumen-procesos-y-resultados.md).
+
 ## Desarrollo
 
 ```bash

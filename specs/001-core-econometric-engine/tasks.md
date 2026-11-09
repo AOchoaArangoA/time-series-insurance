@@ -186,7 +186,7 @@ etiquetada con su significancia y convención (#13); validación de entradas en 
 - [ ] T079 Secuencia descendente de Dickey-Pantula (1987) cuando `max_d = 2` (#7)
 - [ ] T080 [P] Ampliar DGP de simulación (AR φ=0,95, tendencia determinística, paseo con deriva, I(2), quiebre) con error Monte Carlo reportado en tests/simulation/ (#12, #20)
 - [ ] T081 Calendario de días hábiles con feriados inyectado desde JurisdictionProfile en src/tsinsurance/data/prepare.py (#10)
-- [ ] T082 [P] Referencias independientes de R (urca::ur.za con Nelson-Plosser, tseries::kpss.test/pp.test, Box.test, FinTS::ArchTest) en tests/reference/ (#11, #21)
+- [X] T082 [P] (parcial: ADF, PP, KPSS, Ljung-Box, JB, ARCH-LM en tests/reference/test_against_r.py; falta ur.za con Nelson-Plosser) Referencias independientes de R (urca::ur.za con Nelson-Plosser, tseries::kpss.test/pp.test, Box.test, FinTS::ArchTest) en tests/reference/ (#11, #21)
 - [ ] T083 Registrar `realtime_end` (vintage) en FredSource y en la consulta de la instantánea (#14)
 - [ ] T084 Huella de instantánea con metadatos, compatibilidad de `schema_version` y versiones de dependencias (#19)
 - [ ] T085 Determinísticos coherentes en diferencias (`n` tras `c`) y corregir docs/methodology/stationarity.md (#16, #17)
