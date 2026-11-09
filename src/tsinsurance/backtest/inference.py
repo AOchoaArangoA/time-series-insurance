@@ -58,8 +58,8 @@ EULER_GAMMA = 0.5772156649015329
 
 
 def _clean(x: pd.Series | np.ndarray, name: str, minimum: int = 10) -> np.ndarray:
-    arr = np.asarray(x, dtype=float)
-    arr = arr[np.isfinite(arr)]
+    raw: np.ndarray = np.asarray(x, dtype=float)
+    arr: np.ndarray = raw[np.isfinite(raw)]
     if arr.size < minimum:
         raise InsufficientDataError(name, minimum, int(arr.size))
     return arr
