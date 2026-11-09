@@ -1,0 +1,77 @@
+# Experimento: ETFs inversos del Tesoro de EE. UU.
+# Ejecutar:  tsinsurance experiment run experiment.toml
+# Cada ejecución agrega sus pruebas a ../registry.jsonl (bitácora permanente).
+
+[experiment]
+id = "inverse-treasury-etfs"
+title = "Timing de ETFs inversos del Tesoro (TBT, TBX, TBF) frente a comprar y mantener"
+hypothesis = """Los ETFs inversos del Tesoro pierden valor en el tiempo (tendencia de tasas, \
+financiamiento y rebalanceo diario), de modo que superar a comprar y mantener es trivial \
+(basta estar menos invertido). Hipótesis: las reglas de tendencia/momentum y un modelo \
+macro tienen habilidad de TIMING, es decir, superan a mantener la misma exposición media \
+constante (retorno de timing > 0), neto de costos y tras el ajuste por pruebas múltiples."""
+author = "tsinsurance (ejemplo de la funcionalidad)"
+registry = "../registry.jsonl"
+
+[data]
+bundle = "data"                     # paquete de insumos (formato base, ver recipe.toml)
+assets = ["TBT", "TBX", "TBF"]          # TLT sólo como referencia descriptiva (README)
+start = "2008-01-01"
+end = "2025-12-31"
+
+[execution]
+lag = 1                             # decisión al cierre, ejecución al cierre siguiente
+cost_bps = 5.0
+slippage_bps = 2.0
+rebalance = "every_bar"
+max_gross = 1.0
+allow_short = false
+
+[validation]
+alpha = 0.05
+reps = 500
+seed = 20261109
+train_end = "2018-12-31"           # selección 2008-2018; validación única 2019-2025 (todas las ideas)
+
+[[ideas]]
+name = "tendencia"
+signal = "sma_crossover"
+description = "Largo si la media móvil rápida supera a la lenta; si no, efectivo"
+  [ideas.grid]
+  fast = [20, 50, 100]
+  slow = [150, 200]
+
+[[ideas]]
+name = "momentum"
+signal = "tsmom"
+description = "Largo si el retorno de los últimos meses es positivo"
+  [ideas.grid]
+  lookback = [63, 126, 252]
+  skip = [0, 21]
+
+[[ideas]]
+name = "momentum_vol"
+signal = "tsmom_vol_target"
+description = "Momentum 12-1 con objetivo de volatilidad"
+  [ideas.grid]
+  lookback = [252]
+  skip = [21]
+  target = [0.08, 0.12]
+
+[[econometric]]
+name = "macro_tbf"
+asset = "TBF"
+regressors = ["T10Y2Y", "d_DGS10", "T10YIE", "CPIAUCNS"]
+derived = { d_DGS10 = { from = "DGS10", op = "diff" } }
+position = "long_cash"
+min_train = 60
+rebalance = "M"
+
+[[econometric]]
+name = "macro_tbx"
+asset = "TBX"
+regressors = ["T10Y2Y", "d_DGS10", "T10YIE", "CPIAUCNS"]
+derived = { d_DGS10 = { from = "DGS10", op = "diff" } }
+position = "long_cash"
+min_train = 60
+rebalance = "M"

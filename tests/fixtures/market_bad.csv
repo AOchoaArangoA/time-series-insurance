@@ -1,0 +1,5 @@
+date,series_id,value,kind,unit,currency,frequency,source
+2024-01-02,SPX,4742.83,price,level,USD,B,yahoo:^GSPC
+2024-01-03,SPX,-1.0,price,level,USD,B,yahoo:^GSPC
+2024-01-02,DGS10,3.95,rate,pct,USD,B,fred:DGS10
+2024-01-03,DGS10,3.91,rate,percent,usd,B,fred:DGS10
