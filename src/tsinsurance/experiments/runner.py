@@ -187,12 +187,35 @@ def _frozen(
         for es in spec.econometric
         if es.name in result["econometric"]
     }
-    family = [f"idea:{n}:{a}" for n, v in ideas.items() for a in v["assets"]] + [
-        f"modelo:{n}" for n in econ
-    ]
+    portfolios = {
+        n: {
+            "universe": v["universe"],
+            "universe_id": v["universe_id"],
+            "signal": v["signal"],
+            "min_history_m": v["min_history_m"],
+            "params": v["best_params"],
+            "exposure_calibration": v["best_exposure"],
+        }
+        for n, v in result.get("portfolios", {}).items()
+        if v.get("best_params") is not None
+    }
+    regimes = {
+        n: {"spec": v["spec"], "selected": v["selected"]}
+        for n, v in result.get("regimes", {}).items()
+    }
+    family = (
+        [f"idea:{n}:{a}" for n, v in ideas.items() for a in v["assets"]]
+        + [f"modelo:{n}" for n in econ]
+        + [f"cartera:{n}" for n in portfolios]
+    )
+    regime_family = [h["label"] for v in regimes.values() for h in v["selected"]]
     return {
         "ideas": ideas,
         "econometric": econ,
+        "portfolios": portfolios,
+        "regimes": regimes,
+        "regime_family": regime_family,
+        "alpha_split": {"strategies": 0.8 * spec.alpha, "regimes": 0.2 * spec.alpha},
         "package_version": __version__,
         "bundle_as_of_sha256": bundle.as_of_sha256,
         "execution": _execution_identity(spec.execution),
@@ -296,6 +319,9 @@ def _run_locked(
         raise TSInsuranceError("La bitácora fue alterada: " + "; ".join(integrity[:3]))
 
     history = read_registry(spec.registry)
+    # Pruebas hechas fuera de la bitácora (spec 005, B2): cuentan desde esta ejecución.
+    declared_lines = _declared_lines(spec, history)
+    history = [*history, *declared_lines]
     head_before = registry_head(spec.registry)
     base_identity = {
         # Con train_end, la huella del paquete TRUNCADO (revisión I6): agregar datos
@@ -330,7 +356,7 @@ def _run_locked(
     prior_extra = prior_trials_after(
         history, exclude_keys=excluded, periods_per_year=252, cut=spec.train_end
     )
-    lines: list[dict[str, Any]] = []
+    lines: list[dict[str, Any]] = [{**d} for d in declared_lines]
     common = {
         "experiment_id": spec.id,
         "run_id": run_id,
@@ -395,6 +421,8 @@ def _run_locked(
         "ideas": {},
         "calibration": {},
         "econometric": {},
+        "portfolios": {},
+        "regimes": {},
     }
     report = [
         f"# Experimento {spec.id}",
@@ -613,6 +641,14 @@ def _run_locked(
         if idea.name not in current:
             report += [f"## Idea `{idea.name}`: RECHAZADA por anticipación", ""]
 
+    if spec.portfolios or spec.regimes:
+        extra_report, extra_lines, extra_reasons = _portfolios_and_regimes(
+            spec, bundle, rf, history, base_identity, result
+        )
+        report += extra_report
+        lines += [{**common, **ln} for ln in extra_lines]
+        reasons += extra_reasons
+
     # Fase de calibración (spec 004, US2): se FIJAN las configuraciones; la validación se
     # abre después, explícitamente, con `tsinsurance experiment validate`.
     if spec.train_end:
@@ -710,3 +746,229 @@ def _run_locked(
     text = "\n".join(report) + "\n"
     (out_dir / "report.md").write_text(text, encoding="utf-8")
     return ExperimentResult(run_id, out_dir, clean, text, written)
+
+
+def _declared_lines(spec: ExperimentSpec, history: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Líneas ``declared_prior`` nuevas (idempotentes por clave; spec 005, B2)."""
+    known = {r.get("key") for r in history if r.get("kind") == "declared_prior"}
+    out = []
+    for d in spec.declared_prior_tests:
+        body = dataclasses.asdict(d)
+        key = trial_key(record="declared_prior", **body)
+        if key in known:
+            continue
+        assets = sorted({*d.assets, *d.universe})
+        out.append(
+            {
+                "kind": "declared_prior",
+                "key": key,
+                "experiment_id": spec.id,
+                "declared_kind": d.kind,
+                "n_tests": d.n_tests,
+                "n_tests_per_asset": -(-d.n_tests // max(len(d.assets), 1)) if d.assets else 0,
+                "universe": sorted(d.universe),
+                "assets": assets,
+                "period_start": d.period_start,
+                "eval_start": d.period_start,
+                "eval_end": d.period_end,
+                "script_sha256": d.script_sha256,
+                "regime_key": d.regime_key,
+                "description": d.description,
+            }
+        )
+    return out
+
+
+def _portfolios_and_regimes(
+    spec: ExperimentSpec,
+    bundle: Bundle,
+    rf: pd.Series | None,
+    history: list[dict[str, Any]],
+    base_identity: Mapping[str, Any],
+    result: dict[str, Any],
+) -> tuple[list[str], list[dict[str, Any]], list[str]]:
+    """Calibración de ideas de cartera y de regímenes (spec 005)."""
+    from tsinsurance.experiments.portfolio_eval import evaluate_portfolio
+    from tsinsurance.experiments.regimes import analyze_regime, holm_extended
+    from tsinsurance.experiments.registry import prior_portfolio_trials, prior_regime_variants
+
+    report: list[str] = []
+    lines: list[dict[str, Any]] = []
+    reasons: list[str] = []
+    cut = spec.train_end
+    for ps in spec.portfolios:
+        px = bundle.assets(ps.universe).loc[spec.start : spec.end]
+        run = evaluate_portfolio(px, ps, spec.execution, rf, seed=spec.seed)
+        entry: dict[str, Any] = {
+            "universe": sorted(ps.universe),
+            "universe_id": run.universe_id,
+            "signal": ps.signal,
+            "min_history_m": ps.min_history_m,
+            "benchmark": "equal_weight (elegibles, mismos costos, rebalanceo M)",
+            "rejected_lookahead": run.rejected,
+            "window_start": str(run.window_start.date()) if run.window_start is not None else None,
+            "configurations": run.configurations,
+            "best_params": None,
+            "best_exposure": None,
+        }
+        result["portfolios"][ps.name] = entry
+        if not run.trials:
+            report += [f"## Cartera `{ps.name}`: RECHAZADA por anticipación", ""]
+            continue
+        keys = [
+            trial_key(
+                kind="portfolio",
+                universe=run.universe_id,
+                signal=ps.signal,
+                params={k: v for k, v in t.params.items() if k != "idea"},
+                min_history_m=ps.min_history_m,
+                rebalance="M",
+                **base_identity,
+            )
+            for t in run.trials
+        ]
+        ratios, extra = prior_portfolio_trials(
+            history, ps.universe, exclude_keys=keys, periods_per_year=252, cut=cut
+        )
+        reg = TrialRegistry()
+        for t in run.trials:
+            reg.add(t)
+        sel = select(
+            reg,
+            {run.universe_id: run.trials},
+            alpha=spec.alpha,
+            reps=spec.reps,
+            seed=spec.seed,
+            prior_information_ratios={run.universe_id: ratios},
+            prior_extra_trials={run.universe_id: extra},
+        )
+        best_label = str(sel.iloc[0]["best"])
+        best = next(t for t in run.trials if t.label == best_label)
+        entry["selection"] = to_jsonable(sel.reset_index())
+        entry["best_params"] = {k: v for k, v in best.params.items() if k != "idea"}
+        entry["best_exposure"] = best.exposure
+        entry["prior_trials"] = {"in_variance": len(ratios), "count_only": extra}
+        for t, key in zip(run.trials, keys, strict=True):
+            ar = t.active_returns
+            lines.append(
+                {
+                    "kind": "portfolio",
+                    "key": key,
+                    "asset": run.universe_id,
+                    "universe": sorted(ps.universe),
+                    "idea": ps.name,
+                    "signal": ps.signal,
+                    "params": {k: v for k, v in t.params.items() if k != "idea"},
+                    "sharpe_per_period": sharpe_per_period(t.excess_returns),
+                    "timing_ir_per_period": sharpe_per_period(ar),
+                    "exposure": t.exposure,
+                    "periods_per_year": t.periods_per_year,
+                    "n_obs": len(ar),
+                    "eval_start": str(ar.index[0].date()),
+                    "eval_end": str(ar.index[-1].date()),
+                    "sharpe_se_hac": _se_hac(ar),
+                }
+            )
+        row = sel.iloc[0]
+        report += [
+            f"## Cartera `{ps.name}` ({ps.signal} sobre {len(ps.universe)} activos)",
+            "",
+            f"- Benchmark: igual ponderado de los elegibles (≥ {ps.min_history_m} meses), "
+            f"mismos costos, rebalanceo mensual · ventana desde {entry['window_start']}",
+            f"- Mejor configuración: {best_label} · Sharpe {row['sharpe']:.2f} · "
+            f"IR frente al igual ponderado {row['timing_ir']:+.2f} · pruebas N={int(row['n_trials'])} "
+            f"(incluye universos parecidos) · DSR {row['dsr']:.3f} · SPA p {row['spa_p']:.3f} · "
+            f"significativa: {'sí' if bool(row['significant']) else 'no'}",
+            "",
+        ]
+
+    alpha_r = 0.2 * spec.alpha
+    all_rows = []
+    for rs in spec.regimes:
+        if not rs.justification:
+            reasons.append(f"régimen '{rs.name}' sin justificación previa de sus umbrales")
+        for v in rs.variables:
+            if bundle.spec(v).role == "exogenous" and not bundle.spec(v).point_in_time:
+                reasons.append(f"régimen '{rs.name}' usa variables no punto-en-el-tiempo")
+        rows = analyze_regime(bundle, rs, start=spec.start, end=spec.end)
+        all_rows += [(rs, r) for r in rows]
+    valid = [(rs, r) for rs, r in all_rows if not r.inconclusive]
+    current_variants: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for rs, r in valid:
+        current_variants.setdefault((r.asset, rs.memory_key), []).append(r.variant)
+    extra_m = sum(
+        prior_regime_variants(history, asset, mk, exclude_variants=vs)
+        for (asset, mk), vs in current_variants.items()
+    )
+    adjusted = holm_extended([r.p for _, r in valid], extra_m) if valid else []
+    holm_by_label = {r.label: p for (_, r), p in zip(valid, adjusted, strict=True)}
+    for rs in spec.regimes:
+        mine = [r for s2, r in all_rows if s2 is rs]
+        selected = [
+            {
+                "label": r.label,
+                "asset": r.asset,
+                "variant": r.variant,
+                "sign": float(np.sign(r.diff_ann)),
+            }
+            for r in mine
+            if not r.inconclusive and holm_by_label[r.label] < alpha_r
+        ]
+        result["regimes"][rs.name] = {
+            "spec": dataclasses.asdict(rs),
+            "memory_key": rs.memory_key,
+            "rows": [
+                {**dataclasses.asdict(r), "label": r.label, "p_holm": holm_by_label.get(r.label)}
+                for r in mine
+            ],
+            "prior_variants_in_holm": extra_m,
+            "alpha_family": alpha_r,
+            "selected": selected,
+        }
+        for r in mine:
+            lines.append(
+                {
+                    "kind": "regime",
+                    "key": trial_key(
+                        kind="regime",
+                        asset=r.asset,
+                        key=rs.memory_key,
+                        variant=r.variant,
+                        **base_identity,
+                    ),
+                    "asset": r.asset,
+                    "regime": rs.name,
+                    "regime_key": rs.memory_key,
+                    "variant": r.variant,
+                    "months_on": r.months_on,
+                    "months_off": r.months_off,
+                    "diff_ann": None if r.inconclusive else r.diff_ann,
+                    "t_hc3": None if r.inconclusive else r.t,
+                    "p": None if r.inconclusive else r.p,
+                    "eval_start": r.eval_start,
+                    "eval_end": r.eval_end,
+                    "n_obs": r.months_on + r.months_off,
+                }
+            )
+        report += [
+            f"## Régimen `{rs.name}` ({rs.type}, clave {rs.memory_key})",
+            "",
+            f"- Justificación: {rs.justification or 'NINGUNA (exploratorio)'} · variantes previas "
+            f"en el Holm de la familia: {extra_m} · α de la familia de regímenes = {alpha_r:.3f}",
+            "",
+            "| Activo | Variante | Meses en / fuera | Exceso anual en / fuera | Dif. | t (HC3) | p | p Holm |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+        for r in mine:
+            ph = holm_by_label.get(r.label)
+            report.append(
+                f"| {r.asset} | {r.variant} | {r.months_on} / {r.months_off} | "
+                + (
+                    "no concluyente | | | | |"
+                    if r.inconclusive
+                    else f"{r.ann_on:+.1%} / {r.ann_off:+.1%} | {r.diff_ann:+.1%} | {r.t:+.2f} | "
+                    f"{r.p:.3f} | {ph:.3f} |"
+                )
+            )
+        report += ["", f"- Seleccionadas para la validación: {len(selected)}", ""]
+    return report, lines, reasons

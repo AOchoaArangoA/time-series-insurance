@@ -548,19 +548,26 @@ def prior_regime_variants(
     memory_key: str,
     *,
     exclude_keys: Iterable[str] = (),
+    exclude_variants: Iterable[Mapping[str, Any]] = (),
 ) -> int:
     """Variantes previas de un régimen sobre ``asset`` con la misma clave de memoria (B1).
+
+    ``exclude_variants`` son las que se prueban ahora: re-ejecutarlas no es una variante
+    previa.
 
     Cuenta variantes distintas (umbral u op) ya registradas, más las declaradas fuera de la
     bitácora; entran en la m de Holm de la calibración.
     """
     skip = set(exclude_keys)
+    current = {_canonical(v) for v in exclude_variants}
     variants: set[str] = set()
     declared = 0
     for r in rows:
         if r.get("kind") == "regime" and r.get("asset") == asset:
             if r.get("regime_key") == memory_key and r.get("key") not in skip:
-                variants.add(_canonical(r.get("variant")))
+                v = _canonical(r.get("variant"))
+                if v not in current:
+                    variants.add(v)
         elif (
             r.get("kind") == "declared_prior"
             and r.get("declared_kind") == "regime"

@@ -103,3 +103,62 @@ def test_validation_window_uses_only_post_cut_targets(bundle: Bundle) -> None:
 def test_holm_extended_counts_prior_variants() -> None:
     assert holm_extended([0.01, 0.04]) == [0.02, 0.04]
     assert holm_extended([0.01, 0.04], extra_m=2) == [0.04, 0.12]
+
+
+REGIME = """
+[[regimes]]
+name = "spread_alto"
+type = "threshold"
+variable = "SPREAD"
+op = ">"
+value = [1.0]
+assets = ["AAA", "BBB"]
+justification = "umbral fijado antes de mirar los datos (prueba)"
+"""
+
+
+def test_regimes_registered_and_memory_counts_prior_variants(experiment_file: Path) -> None:
+    from tests.experiments.conftest import EXPERIMENT
+    from tsinsurance.experiments import read_registry, run_experiment
+
+    experiment_file.write_text(EXPERIMENT + REGIME)
+    first = run_experiment(experiment_file).result["regimes"]["spread_alto"]
+    assert first["prior_variants_in_holm"] == 0
+    lines = [
+        r for r in read_registry(experiment_file.parent / "registry.jsonl") if r["kind"] == "regime"
+    ]
+    assert {r["asset"] for r in lines} == {"AAA", "BBB"} and lines[0][
+        "regime_key"
+    ] == "threshold:SPREAD"
+    # Otro umbral sobre la misma variable: las variantes previas entran en el Holm (B1).
+    experiment_file.write_text(EXPERIMENT + REGIME.replace("value = [1.0]", "value = [0.8]"))
+    second = run_experiment(experiment_file).result["regimes"]["spread_alto"]
+    assert second["prior_variants_in_holm"] == 2  # una variante previa por activo
+    row = next(r for r in second["rows"] if not r["inconclusive"])
+    assert row["p_holm"] >= min(1.0, 4 * row["p"]) - 1e-8  # m = 2 actuales + 2 previas
+
+
+def test_regime_without_justification_is_exploratory(experiment_file: Path) -> None:
+    from tests.experiments.conftest import EXPERIMENT
+    from tsinsurance.experiments import run_experiment
+
+    text = REGIME.replace('justification = "umbral fijado antes de mirar los datos (prueba)"\n', "")
+    experiment_file.write_text(EXPERIMENT + text)
+    res = run_experiment(experiment_file)
+    assert any("sin justificación" in r for r in res.result["status"]["exploratory_reasons"])
+
+
+def test_validation_has_separate_regime_family(experiment_file: Path) -> None:
+    from tests.experiments.conftest import EXPERIMENT
+    from tsinsurance.experiments import run_experiment, validate_experiment
+
+    experiment_file.write_text(EXPERIMENT + REGIME)
+    cal = run_experiment(experiment_file)
+    frozen = cal.result["calibration"]["frozen"]
+    assert frozen["alpha_split"] == {
+        "strategies": pytest.approx(0.04),
+        "regimes": pytest.approx(0.01),
+    }
+    v = validate_experiment(experiment_file, cal.run_id).result
+    assert v["assumptions"]["regime_family"] == frozen["regime_family"]
+    assert "0,8α" in v["assumptions"]["multiple_testing"]

@@ -48,6 +48,8 @@ from tsinsurance.backtest.metrics import sharpe_per_period
 from tsinsurance.backtest.sweep import holm
 from tsinsurance.data.bundle import Bundle
 from tsinsurance.errors import ValidationPreconditionError
+from tsinsurance.experiments.portfolio_eval import portfolio_backtests
+from tsinsurance.experiments.regimes import analyze_regime, one_sided_p
 from tsinsurance.experiments.registry import (
     append_trials,
     read_registry,
@@ -63,7 +65,12 @@ from tsinsurance.experiments.runner import (
     _round,
 )
 from tsinsurance.experiments.signals import get_signal
-from tsinsurance.experiments.spec import EconometricSpec, load_experiment
+from tsinsurance.experiments.spec import (
+    EconometricSpec,
+    PortfolioSpec,
+    RegimeSpec,
+    load_experiment,
+)
 from tsinsurance.results import to_jsonable
 
 __all__ = ["validate_experiment"]
@@ -100,10 +107,21 @@ def _seen_after(rows: list[dict[str, Any]], asset: str, cut: str, exclude_run: s
             continue
         label = f"{r.get('experiment_id')} ({r.get('run_id')})"
         kind = r.get("kind")
-        if kind in ("signal", "econometric") and r.get("asset") == asset:
-            end = r.get("eval_end")
-            if end is None or str(end)[:10] > cut[:10]:
+        end = r.get("eval_end")
+        after_cut = end is None or str(end)[:10] > cut[:10]
+        if (
+            kind in ("signal", "econometric", "regime")
+            and r.get("asset") == asset
+            or kind == "portfolio"
+            and (asset == r.get("asset") or asset in r.get("universe", []))
+        ):
+            if after_cut:
                 seen.append(label)
+        elif kind == "declared_prior" and (
+            asset in r.get("assets", []) or asset in r.get("universe", [])
+        ):
+            if after_cut:
+                seen.append(f"{label} [declarada fuera de la bitácora]")
         elif kind == "validation":
             if r.get("asset") is not None:
                 if r["asset"] == asset:
@@ -220,9 +238,14 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
     if not full.sealed:
         reasons.append("paquete de insumos sin sellar (sin huella)")
 
+    frozen_ports = frozen.get("portfolios", {})
+    frozen_regs = frozen.get("regimes", {})
     family_assets = sorted(
         {a for v in frozen["ideas"].values() for a in v["assets"]}
         | {m["spec"]["asset"] for m in frozen["econometric"].values()}
+        | {a for v in frozen_ports.values() for a in v["universe"]}
+        | {v["universe_id"] for v in frozen_ports.values()}
+        | {h["asset"] for v in frozen_regs.values() for h in v["selected"]}
     )
     seen = {a: _seen_after(rows, a, cut, calibration_run_id) for a in family_assets}
     for a, who in seen.items():
@@ -233,7 +256,8 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             )
 
     rf = full.risk_free()
-    prices = full.assets(family_assets).loc[spec.start : spec.end]
+    real_assets = [a for a in family_assets if not a.startswith("U:")]
+    prices = full.assets(real_assets).loc[spec.start : spec.end]
     hyp: list[dict[str, Any]] = []
     ideas_out: dict[str, Any] = {}
     for name, v in frozen["ideas"].items():
@@ -316,11 +340,76 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
         econ_out[name] = row
         hyp.append({"id": f"modelo:{name}", "p": stat_p, "row": row})
 
-    # Holm sobre la familia pre-registrada (FR-009b).
-    ps = [h["p"] if h["p"] is not None and np.isfinite(h["p"]) else 1.0 for h in hyp]
-    for h, ph in zip(hyp, holm(ps) if ps else [], strict=True):
-        h["row"]["p_holm"] = ph
-    significant = [h["id"] for h in hyp if h["row"]["p_holm"] < spec.alpha]
+    ports_out: dict[str, Any] = {}
+    for name, v in frozen_ports.items():
+        pspec = PortfolioSpec(
+            name=name,
+            universe=list(v["universe"]),
+            signal=v["signal"],
+            grid={k: [val] for k, val in v["params"].items()},
+            min_history_m=int(v["min_history_m"]),
+        )
+        px = full.assets(pspec.universe).loc[spec.start : spec.end]
+        strat, ew = portfolio_backtests(px, pspec, v["params"], spec.execution, rf)
+        after = strat.excess_returns.loc[cut:].iloc[1:]
+        bex = ew.excess_returns.reindex(after.index)
+        exp_cal = float(v["exposure_calibration"])
+        inf = sharpe_inference(after, strat.periods_per_year, reps=spec.reps, seed=spec.seed)
+        diff = sharpe_difference(after, exp_cal * bex, reps=spec.reps, seed=spec.seed)
+        seen_const = [a for a in pspec.universe if seen.get(a)]
+        row = {
+            "universe_id": v["universe_id"],
+            "params": v["params"],
+            "sharpe_oos": inf.sharpe,
+            "ci95": [inf.ci_low, inf.ci_high],
+            "equal_weight_sharpe_oos": sharpe_per_period(bex) * np.sqrt(strat.periods_per_year),
+            "exposure_calibration": exp_cal,
+            "diff_vs_equal_weight": diff.difference,
+            "p": diff.p_value,
+            "constituents_seen": f"{len(seen_const)}/{len(pspec.universe)}",
+            "previously_seen_in": seen.get(v["universe_id"], []),
+        }
+        if seen_const and not seen.get(v["universe_id"]):
+            reasons.append(
+                f"cartera '{name}': {len(seen_const)}/{len(pspec.universe)} constituyentes con el "
+                f"periodo posterior a {cut} ya visto"
+            )
+        ports_out[name] = row
+        hyp.append({"id": f"cartera:{name}", "p": diff.p_value, "row": row})
+
+    # Familia de regímenes: sólo las hipótesis seleccionadas en calibración, unilaterales.
+    reg_hyp: list[dict[str, Any]] = []
+    regs_out: dict[str, Any] = {}
+    for name, v in frozen_regs.items():
+        if not v["selected"]:
+            continue
+        rspec = RegimeSpec(**v["spec"])
+        out_rows = []
+        for h in v["selected"]:
+            sub = dataclasses.replace(
+                rspec,
+                assets=[h["asset"]],
+                values=[h["variant"]["value"]] if "value" in h["variant"] else rspec.values,
+                months=[h["variant"]["months"]] if "months" in h["variant"] else rspec.months,
+                min_months=min(rspec.min_months, 6),
+            )
+            res_rows = analyze_regime(full, sub, start=spec.start, end=spec.end, after=cut)
+            r = res_rows[0]
+            p1 = float("nan") if r.inconclusive else one_sided_p(r.t, h["sign"])
+            row = {**dataclasses.asdict(r), "label": h["label"], "p_one_sided": p1}
+            out_rows.append(row)
+            reg_hyp.append({"id": h["label"], "p": p1, "row": row})
+        regs_out[name] = out_rows
+
+    # Holm por familia con α pre-declarado (FR-009b): estrategias 0,8α y regímenes 0,2α.
+    alpha_s, alpha_r = 0.8 * spec.alpha, 0.2 * spec.alpha
+    significant = []
+    for fam, a in ((hyp, alpha_s), (reg_hyp, alpha_r)):
+        ps = [h["p"] if h["p"] is not None and np.isfinite(h["p"]) else 1.0 for h in fam]
+        for h, ph in zip(fam, holm(ps) if ps else [], strict=True):
+            h["row"]["p_holm"] = ph
+            h["row"]["alpha_family"] = a
+        significant += [h["id"] for h in fam if h["row"]["p_holm"] < a]
 
     common = {
         "experiment_id": spec.id,
@@ -359,6 +448,30 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
                 "oos_start": cut,
             }
         )
+    for name, r in ports_out.items():
+        lines.append(
+            {
+                **common,
+                "kind": "validation",
+                "key": trial_key(kind="validation", asset=r["universe_id"], oos_start=cut),
+                "asset": r["universe_id"],
+                "universe": sorted(frozen_ports[name]["universe"]),
+                "portfolio": name,
+                "oos_start": cut,
+            }
+        )
+    for name, rows_ in regs_out.items():
+        for r in rows_:
+            lines.append(
+                {
+                    **common,
+                    "kind": "validation",
+                    "key": trial_key(kind="validation", asset=r["asset"], oos_start=cut),
+                    "asset": r["asset"],
+                    "regime": name,
+                    "oos_start": cut,
+                }
+            )
     written = append_trials(spec.registry, lines)
 
     state = (
@@ -386,11 +499,17 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             "alpha": spec.alpha,
             "train_end": cut,
             "family": [h["id"] for h in hyp],
-            "multiple_testing": "Holm sobre la familia pre-registrada",
+            "regime_family": [h["id"] for h in reg_hyp],
+            "multiple_testing": "Holm por familia pre-registrada: estrategias 0,8α, regímenes 0,2α",
             "p_vs_cash": "unilateral con EE HAC del Sharpe",
             "timing_benchmark": "exposición media de la calibración × comprar y mantener",
         },
-        "validation": {"ideas": ideas_out, "econometric": econ_out},
+        "validation": {
+            "ideas": ideas_out,
+            "econometric": econ_out,
+            "portfolios": ports_out,
+            "regimes": regs_out,
+        },
         "status": {
             "exploratory_reasons": reasons,
             "significant_after_holm": significant,
@@ -421,6 +540,26 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
                 f"[{r['ci95'][0]:+.2f}; {r['ci95'][1]:+.2f}] | {r['p_vs_cash_hac']:.3f} | "
                 f"{r['buy_hold_sharpe_oos']:+.2f} | {r['timing_sharpe_diff']:+.2f} "
                 f"({r['timing_p']:.3f} · {r['p_holm']:.3f}) |"
+            )
+        report.append("")
+    for name, r in ports_out.items():
+        report += [
+            f"## Cartera `{name}` ({r['universe_id']})",
+            "",
+            f"- Sharpe fuera de muestra {r['sharpe_oos']:+.2f} "
+            f"[{r['ci95'][0]:+.2f}; {r['ci95'][1]:+.2f}] frente a igual ponderado "
+            f"{r['equal_weight_sharpe_oos']:+.2f} · diferencia {r['diff_vs_equal_weight']:+.2f} "
+            f"(p {r['p']:.3f} · Holm {r['p_holm']:.3f}) · constituyentes ya vistos "
+            f"{r['constituents_seen']}",
+            "",
+        ]
+    for name, rows_ in regs_out.items():
+        report += [f"## Régimen `{name}` (hipótesis seleccionadas en calibración)", ""]
+        for r in rows_:
+            report.append(
+                f"- {r['label']}: dif. {r['diff_ann']:+.1%} · p unilateral "
+                f"{r['p_one_sided']:.3f} · Holm {r['p_holm']:.3f} · meses "
+                f"{r['months_on']}/{r['months_off']}"
             )
         report.append("")
     for name, r in econ_out.items():
