@@ -876,8 +876,9 @@ def _portfolios_and_regimes(
             f"- Benchmark: igual ponderado de los elegibles (≥ {ps.min_history_m} meses), "
             f"mismos costos, rebalanceo mensual · ventana desde {entry['window_start']}",
             f"- Mejor configuración: {best_label} · Sharpe {row['sharpe']:.2f} · "
-            f"IR frente al igual ponderado {row['timing_ir']:+.2f} · pruebas N={int(row['n_trials'])} "
-            f"(incluye universos parecidos) · DSR {row['dsr']:.3f} · SPA p {row['spa_p']:.3f} · "
+            f"IR frente al igual ponderado {row['timing_ir']:+.2f} · "
+            f"pruebas N={int(row['n_trials'])} (incluye universos parecidos) · "
+            f"DSR {row['dsr']:.3f} · SPA p {row['spa_p']:.3f} · "
             f"significativa: {'sí' if bool(row['significant']) else 'no'}",
             "",
         ]
@@ -956,7 +957,8 @@ def _portfolios_and_regimes(
             f"- Justificación: {rs.justification or 'NINGUNA (exploratorio)'} · variantes previas "
             f"en el Holm de la familia: {extra_m} · α de la familia de regímenes = {alpha_r:.3f}",
             "",
-            "| Activo | Variante | Meses en / fuera | Exceso anual en / fuera | Dif. | t (HC3) | p | p Holm |",
+            "| Activo | Variante | Meses en / fuera | Exceso anual en / fuera | Dif. | t (HC3) "
+            "| p | p Holm |",
             "|---|---|---|---|---|---|---|---|",
         ]
         for r in mine:

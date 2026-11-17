@@ -30,6 +30,11 @@ from tsinsurance.experiments.spec import PortfolioSpec
 __all__ = ["PortfolioRun", "combos", "evaluate_portfolio", "portfolio_backtests"]
 
 
+def _ann_sharpe(x: pd.Series, ppy: int) -> float:
+    sd = float(x.std())
+    return float(x.mean() / sd * np.sqrt(ppy)) if sd > 0 else float("nan")
+
+
 def combos(grid: Mapping[str, list[Any]]) -> list[dict[str, Any]]:
     """Todas las combinaciones de la malla (orden estable)."""
     keys = list(grid)
@@ -116,12 +121,13 @@ def evaluate_portfolio(
         return PortfolioRun(pspec.universe_id, [], rejected, None, [])
     # Ventana común: desde la primera fecha en que TODAS las configuraciones y el benchmark
     # están invertidos (un peso cero no es una posición).
-    firsts = []
+    firsts: list[pd.Timestamp | None] = []
     for res in [r for _, r, _ in runs] + [b for _, _, b in runs]:
         invested = res.weights.abs().sum(axis=1) > 0
-        firsts.append(invested.idxmax() if bool(invested.any()) else None)
+        on = pd.DatetimeIndex(invested.index[invested.to_numpy()])
+        firsts.append(on[0] if len(on) else None)
     known = [f for f in firsts if f is not None]
-    start = max(known) if len(known) == len(firsts) else None
+    start: pd.Timestamp | None = max(known) if len(known) == len(firsts) else None
     trials, rows = [], []
     for params, strat, bench in runs:
         ex = strat.excess_returns.loc[start:] if start is not None else strat.excess_returns
@@ -141,14 +147,8 @@ def evaluate_portfolio(
                 "params": params,
                 "exposure": exposure,
                 "turnover_mean": float(strat.turnover.reindex(ex.index).mean()),
-                "sharpe_ann": float(ex.mean() / ex.std() * np.sqrt(strat.periods_per_year))
-                if float(ex.std()) > 0
-                else float("nan"),
-                "benchmark_sharpe_ann": float(
-                    bex.mean() / bex.std() * np.sqrt(strat.periods_per_year)
-                )
-                if float(bex.std()) > 0
-                else float("nan"),
+                "sharpe_ann": _ann_sharpe(ex, strat.periods_per_year),
+                "benchmark_sharpe_ann": _ann_sharpe(bex, strat.periods_per_year),
             }
         )
     return PortfolioRun(pspec.universe_id, trials, rejected, start, rows)
