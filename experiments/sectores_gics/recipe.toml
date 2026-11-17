@@ -1,0 +1,127 @@
+# Receta: ETFs sectoriales SPDR (uno por sector GICS), SPY como mercado y series de mercado
+# de Yahoo para el ciclo (tasas y volatilidad). Sin FRED: no requiere clave.
+#   tsinsurance bundle fetch recipe.toml data
+# Los datos de Yahoo no son redistribuibles: ./data no se versiona.
+
+[bundle]
+name = "sectores_gics"
+description = "ETFs Select Sector SPDR (11 sectores GICS), SPY, T-bill 13 semanas, Tesoro 10 años y VIX"
+
+[[fetch]]
+source = "yahoo"
+ids = ["XLE", "XLB", "XLI", "XLY", "XLP", "XLV", "XLF", "XLK", "XLC", "XLU", "XLRE", "SPY"]
+start = "1998-12-01"
+end = "2026-10-31"
+  [[fetch.series]]
+  id = "XLE"
+  role = "asset"
+  description = "Select Sector SPDR Energy, precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLB"
+  role = "asset"
+  description = "Select Sector SPDR Materials, precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLI"
+  role = "asset"
+  description = "Select Sector SPDR Industrials, precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLY"
+  role = "asset"
+  description = "Select Sector SPDR Consumer Discretionary, precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLP"
+  role = "asset"
+  description = "Select Sector SPDR Consumer Staples, precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLV"
+  role = "asset"
+  description = "Select Sector SPDR Health Care, precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLF"
+  role = "asset"
+  description = "Select Sector SPDR Financials, precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLK"
+  role = "asset"
+  description = "Select Sector SPDR Information Technology, precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLC"
+  role = "asset"
+  description = "Select Sector SPDR Communication Services (desde 2018-06), precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLU"
+  role = "asset"
+  description = "Select Sector SPDR Utilities, precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "XLRE"
+  role = "asset"
+  description = "Select Sector SPDR Real Estate (desde 2015-10), precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "SPY"
+  role = "asset"
+  description = "SPDR S&P 500 (mercado), precio ajustado"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+
+[[fetch]]
+source = "yahoo"
+ids = ["^IRX", "^TNX"]
+start = "1998-12-01"
+end = "2026-10-31"
+  [fetch.options]
+  kind = "rate"        # tasas en %: pueden ser 0 o negativas (^IRX en 2020)
+  unit = "percent"
+  [[fetch.series]]
+  id = "^IRX"
+  role = "risk_free"
+  description = "T-bill 13 semanas (CBOE), tasa de descuento en %"
+  release_lag = "1B"
+  rf_convention = "dtb3_discount"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "^TNX"
+  role = "exogenous"
+  description = "Rendimiento del Tesoro a 10 años (CBOE), en %"
+  release_lag = "1B"
+  point_in_time = true   # serie de mercado: no se revisa
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+
+[[fetch]]
+source = "yahoo"
+ids = ["^VIX"]
+start = "1998-12-01"
+end = "2026-10-31"
+  [fetch.options]
+  kind = "index"
+  [[fetch.series]]
+  id = "^VIX"
+  role = "exogenous"
+  description = "Índice de volatilidad implícita del S&P 500 (CBOE)"
+  release_lag = "1B"
+  point_in_time = true
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false

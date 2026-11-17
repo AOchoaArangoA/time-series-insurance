@@ -1,0 +1,82 @@
+# Experimento exploratorio: estrategias sectoriales y ciclo de mercado (2026-11-17).
+# Se ejecuta con la versión en desarrollo 0.2.0 (MVP de la spec 004): la misma ejecución
+# calibra (1999-2014) y abre la validación (2015-2026).
+
+[experiment]
+id = "sectores-gics-ciclo"
+title = "Timing sectorial (tendencia y momentum) y modelos de ciclo con tasas y VIX"
+author = "agente (Claude) a pedido del usuario"
+hypothesis = """
+H1 (timing): en los ETFs sectoriales SPDR, las reglas de tendencia y momentum de serie de
+tiempo mejoran el timing frente a la MISMA exposición constante (no sólo frente a comprar y
+mantener), después de ajustar por todas las pruebas.
+H2 (ciclo): el nivel y el cambio de la tasa a 10 años y el nivel del VIX, conocidos al cierre
+de mes, predicen el exceso de retorno del mes siguiente de Financials (XLF), Utilities (XLU) y
+Tecnología (XLK) mejor que la media histórica, con valor económico neto de costos.
+Expectativa previa: evidencia débil o nula; el ejercicio es exploratorio.
+"""
+registry = "../registry.jsonl"
+
+[data]
+bundle = "data"
+assets = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
+start = "1999-01-01"
+end = "2026-10-31"
+
+[execution]
+lag = 1
+cost_bps = 3.0
+slippage_bps = 2.0
+allow_short = false
+
+[validation]
+alpha = 0.05
+reps = 500
+seed = 17
+train_end = "2014-12-31"
+
+[[ideas]]
+name = "tendencia"
+signal = "sma_crossover"
+  [ideas.grid]
+  fast = [50, 100]
+  slow = [150, 200]
+
+[[ideas]]
+name = "momentum"
+signal = "tsmom"
+  [ideas.grid]
+  lookback = [126, 252]
+  skip = [21]
+
+[[ideas]]
+name = "momentum_vol"
+signal = "tsmom_vol_target"
+  [ideas.grid]
+  lookback = [252]
+  skip = [21]
+  target = [0.10, 0.15]
+
+[[econometric]]
+name = "ciclo_financieras"
+asset = "XLF"
+regressors = ["^TNX", "d_TNX", "^VIX"]
+derived = { d_TNX = { from = "^TNX", op = "diff" } }
+position = "long_cash"
+min_train = 60
+
+[[econometric]]
+name = "ciclo_utilities"
+asset = "XLU"
+regressors = ["^TNX", "d_TNX", "^VIX"]
+derived = { d_TNX = { from = "^TNX", op = "diff" } }
+position = "long_cash"
+min_train = 60
+
+[[econometric]]
+name = "ciclo_tecnologia"
+asset = "XLK"
+regressors = ["^TNX", "d_TNX", "^VIX"]
+derived = { d_TNX = { from = "^TNX", op = "diff" } }
+position = "long_cash"
+min_train = 60
