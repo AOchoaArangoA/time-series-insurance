@@ -30,3 +30,27 @@ uv run python experiments/sectores_gics/analisis_exploratorio.py salida.json   #
 ```
 
 Los datos de Yahoo no se versionan (`data/` está ignorado).
+
+## Rotación sectorial y regímenes con el flujo registrado (spec 005)
+
+`rotacion_regimenes.toml` repite lo que el análisis exploratorio hizo fuera de la
+bitácora, ahora con las salvaguardas del paquete:
+
+- **Rotación** por momentum relativo (L 6/12 meses, k 3/4) frente a los 9 sectores igual
+  ponderados, con los mismos costos y rebalanceo mensual. Las 4 configuraciones del
+  script exploratorio se **declaran** (`[[declared_prior_tests]]`), así que N = 8.
+- **Regímenes**: curva invertida (^TNX − ^IRX < 0), VIX > 20/25/30 (malla completa
+  declarada) y SPY bajo su media de 10 meses, para los 9 sectores. Se usa HC3, y el Holm
+  incluye las variantes previas y las 33 pruebas declaradas.
+
+Resultados:
+- **Calibración** (`20261117T201317Z-2133a5`, 1999-2014): rotación con IR ≈ 0,00 frente
+  al igual ponderado (DSR 0,29; SPA p 0,68). Ningún régimen sobrevive a Holm (la menor p
+  sin ajustar es XLU con VIX alto, p ≈ 0,09), así que ninguno pasa a la validación.
+- **Validación** (`20261117T201350Z-2133a5-val`, 2015-2026): rotación con Sharpe 0,64
+  frente a 0,64 del igual ponderado (diferencia −0,01; p 0,56). Sale **EXPLORATORIA
+  automáticamente**: el periodo ya lo vieron el experimento `sectores-gics-ciclo` y el
+  análisis declarado.
+
+Nota: las 33 pruebas de régimen se declararon sin clave de memoria, así que cuentan para
+cada tipo de régimen. Es conservador (m de Holm mayor).

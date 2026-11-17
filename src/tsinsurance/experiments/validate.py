@@ -121,7 +121,7 @@ def _seen_after(rows: list[dict[str, Any]], asset: str, cut: str, exclude_run: s
             asset in r.get("assets", []) or asset in r.get("universe", [])
         ):
             if after_cut:
-                seen.append(f"{label} [declarada fuera de la bitácora]")
+                seen.append(f"{r.get('experiment_id')} [declarada fuera de la bitácora]")
         elif kind == "validation":
             if r.get("asset") is not None:
                 if r["asset"] == asset:

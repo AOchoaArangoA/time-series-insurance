@@ -1,0 +1,91 @@
+{
+  "assumptions": {
+    "alpha": 0.05,
+    "execution": "retraso=1 barra(s), costo=3.0 pb, deslizamiento=2.0 pb, rebalanceo=every_bar, bruto máx.=1.0, cortos=no, financiación=rf+0.0 pb",
+    "family": [
+      "cartera:rotacion_momentum"
+    ],
+    "multiple_testing": "Holm por familia pre-registrada: estrategias 0,8α, regímenes 0,2α",
+    "p_vs_cash": "unilateral con EE HAC del Sharpe",
+    "regime_family": [],
+    "timing_benchmark": "exposición media de la calibración × comprar y mantener",
+    "train_end": "2014-12-31"
+  },
+  "calibration_run_id": "20261117T201317Z-2133a5",
+  "experiment": {
+    "file": "/home/user/time-series-insurance/experiments/sectores_gics/rotacion_regimenes.toml",
+    "id": "sectores-gics-rotacion-regimenes",
+    "sha256": "2133a5ed3360f788248b2742ea7f1e100a863d42dba7d3e09d39dcb1cf7b9151"
+  },
+  "phase": "validation",
+  "provenance": {
+    "bundle": {
+      "as_of_sha256": "c79a5069c869497bddb9b72a8e9f27baa92f333d7132639daf774b2597471ba8",
+      "sha256": "e60a270bf66bc25b6618a9dc08e1db1acf188981aa219883d64c81cb1e4016bc"
+    },
+    "git": {
+      "commit": "c69bc80d9982ff0c52964145a48bf41ffde63fb3",
+      "dirty": false
+    },
+    "package_version": "0.2.0",
+    "python": "3.13.18",
+    "registry": "/home/user/time-series-insurance/experiments/registry.jsonl",
+    "registry_relpath": "../../../registry.jsonl",
+    "run_id": "20261117T201350Z-2133a5-val",
+    "seed": 17,
+    "started_at": "2026-11-17T20:13:50+00:00"
+  },
+  "registry_head": {
+    "last_hash": "5b78baa92feac17ddfa5fc81e31ec860a4b6cfe7c2d69fdebbcd913c7f09ed8e",
+    "n_lines": 181
+  },
+  "registry_head_before": {
+    "last_hash": "226b87a10d97f839dc8fc6284e5221628ff45f58f6b2dbd8a1b1644733bbaa1d",
+    "n_lines": 180
+  },
+  "result_version": "1.2",
+  "status": {
+    "exploratory_reasons": [
+      "periodo posterior a 2014-12-31 de XLB ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLE ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLF ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLI ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLK ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLP ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLU ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLV ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLY ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]",
+      "cartera 'rotacion_momentum': 9/9 constituyentes con el periodo posterior a 2014-12-31 ya visto"
+    ],
+    "lines_registered": 1,
+    "out_of_sample": "abierta",
+    "significant_after_holm": []
+  },
+  "validation": {
+    "econometric": {},
+    "ideas": {},
+    "portfolios": {
+      "rotacion_momentum": {
+        "alpha_family": 0.04,
+        "ci95": [
+          0.2620730948,
+          1.0394456657
+        ],
+        "constituents_seen": "9/9",
+        "diff_vs_equal_weight": -0.0087983177,
+        "equal_weight_sharpe_oos": 0.6449366226,
+        "exposure_calibration": 1.0,
+        "p": 0.562,
+        "p_holm": 0.562,
+        "params": {
+          "lookback_m": 6,
+          "top_k": 4
+        },
+        "previously_seen_in": [],
+        "sharpe_oos": 0.6361383049,
+        "universe_id": "U:XLB+XLE+XLF+XLI+XLK+XLP+XLU+XLV+XLY"
+      }
+    },
+    "regimes": {}
+  }
+}
