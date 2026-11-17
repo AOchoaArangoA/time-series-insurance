@@ -235,10 +235,13 @@ razones de exploratorio esperadas.
   ranking con precios futuros) se rechazan por anticipación.
 - **SC-004**: Con estados sin efecto (≥ 500 réplicas, 9 activos × 3 estados, uno de ellos
   endógeno), la probabilidad de al menos un falso positivo tras Holm es ≤ 5 % + 2,5
-  errores de Monte Carlo. Con un efecto de 0,6σ mensual en un activo, en un estado activo
-  el 20 % del tiempo y T = 300, la potencia para ese activo es ≥ 80 %. El informe declara
-  que, con la volatilidad sectorial real, la potencia para efectos de ~1 % mensual es
-  baja.
+  errores de Monte Carlo. Con un efecto de **0,75σ** mensual en un activo, en un estado
+  activo el 20 % del tiempo y T = 300, la potencia para ese activo (condicional a que el
+  estado tenga al menos 24 meses) es ≥ 80 % con Holm al 5 %. *Redefinido con evidencia
+  (2026-11-17): con 0,6σ la potencia medida es ≈ 76-79 % condicional y ≈ 66 % incondicional,
+  porque en el 16 % de las muestras el estado no alcanza el mínimo de meses. Con el α de
+  la familia de regímenes (1 %) es menor.* El informe declara que, con la volatilidad
+  sectorial real, la potencia para efectos de ~1 % mensual (≈ 0,2σ) es baja.
 - **SC-005**: Alterar las observaciones posteriores a cada fecha de decisión no cambia
   ningún estado de esa fecha (100 % de los casos de prueba).
 - **SC-006**: Una segunda idea de cartera sobre el mismo universo cuenta todas las
