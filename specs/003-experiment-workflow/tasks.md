@@ -27,7 +27,7 @@
 - [ ] T015 [US4] Retirar datos no redistribuibles de examples/data antes de publicar (decisión del dueño)
 - [ ] T016 [US4] PR a main y cambio de visibilidad (acción del dueño)
 - [X] T017 Revisión `econometrics-reviewer` de la spec 003 (3 bloqueantes y 6 importantes corregidos: benchmark de timing por exposición constante, selección sólo en calibración y validación registrada, identidad completa de pruebas, selección independiente del orden, especificaciones econométricas contadas, huella con declaraciones, campos punto-en-el-tiempo obligatorios, ejecución declarada en modelos macro, anticipación en toda la malla, bitácora encadenada, marcas automáticas de exploratorio)
-- [ ] T018 Corregir la varianza de ratios previos por ruido de muestreo (1/T) y ventanas distintas
-- [ ] T019 Retención física de datos posteriores a `train_end` hasta el pre-registro y aprobación humana para abrir la validación
-- [ ] T020 Hash del código de señales registradas por agentes en la identidad de la prueba
-- [ ] T021 Verificación en CI de que `experiments/registry.jsonl` sólo agrega líneas
+- [ ] T018 Corregir la varianza de ratios previos por ruido de muestreo (1/T) y ventanas distintas **(→ spec 004)**
+- [ ] T019 Retención física de datos posteriores a `train_end` hasta el pre-registro y aprobación humana para abrir la validación **(→ spec 004)**
+- [ ] T020 Hash del código de señales registradas por agentes en la identidad de la prueba **(→ spec 004)**
+- [ ] T021 Verificación en CI de que `experiments/registry.jsonl` sólo agrega líneas **(→ spec 004)**

@@ -98,6 +98,18 @@ activo. Usarlo en el DSR con la varianza de todas las pruebas infló el tamaño 
 (medido). El DSR usa N bruto (tamaño 1,6 %, potencia 88 %; SC-003) y el N efectivo se
 reporta sólo como diagnóstico.
 
+**Varianza de las pruebas previas (regla vigente y cambio previsto).** Hoy el umbral del
+DSR usa la varianza muestral de los ratios de timing por periodo de todas las pruebas del
+activo (las del experimento y las de la bitácora). Esa varianza mezcla la dispersión real
+entre estrategias con el ruido de muestreo de cada ratio (≈ 1/T por prueba, con T su
+número de observaciones), y pruebas de ventanas distintas aportan ruidos distintos. Inflar
+la varianza sube el umbral: la regla vigente es **conservadora**. La spec 004 (US6)
+propone descontar el ruido de muestreo de cada prueba; como eso **baja** el umbral, se
+adopta como regla por defecto sólo si el Monte Carlo con estrategias sin habilidad y
+ventanas de largo distinto conserva el tamaño (≤ 6,9 % al 5 %; SC-009 de la spec 004).
+El resultado de ese Monte Carlo, la regla adoptada y su efecto en la potencia se
+registrarán aquí.
+
 ## 5. Señales econométricas y validación doble
 
 `PredictiveRegression` estima `y_{t+1} = a + b'X_t (+ AR) + e` con todos los pares

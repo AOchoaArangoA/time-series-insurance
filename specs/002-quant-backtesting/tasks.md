@@ -71,9 +71,9 @@
 - [X] T042 [P] [US3] Pruebas de `sharpe_difference` y SE HAC del Sharpe en tests/backtest/test_inference.py
 - [X] T043 [P] [US2] Simulación SC-004 (c) con regresor persistente: medir y documentar tamaño
 - [ ] T044 Referencias externas de R: hecho forecast::dm.test (tests/reference/test_against_r.py); faltan rugarch::DACTest y Rapach-Zhou
-- [ ] T045 Inferencia IVX (Kostakis-Magdalinos-Stamatogiannis 2015) para regresores persistentes
-- [ ] T046 Soporte de vintages ALFRED en FredSource para variables revisables
-- [ ] T047 EE HAC del Sharpe con preblanqueo (Andrews-Monahan) para reducir el sesgo de ~9 % con autocorrelación
+- [ ] T045 Inferencia IVX (Kostakis-Magdalinos-Stamatogiannis 2015) para regresores persistentes **(→ spec 004)**
+- [ ] T046 Soporte de vintages ALFRED en FredSource para variables revisables **(→ spec 004)**
+- [ ] T047 EE HAC del Sharpe con preblanqueo (Andrews-Monahan) para reducir el sesgo de ~9 % con autocorrelación **(→ spec 004)**
 - [X] T036 [P] [US5] Prueba de rendimiento SC-006 (8 activos × 20 configuraciones × 10 años diarios < 60 s) en tests/backtest/test_performance.py (marca `slow`)
 
 ## Phase 8: Polish
