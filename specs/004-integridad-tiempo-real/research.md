@@ -142,7 +142,7 @@ validación:
   `realtime_start`. Las transformaciones se calculan sobre los valores de primera
   publicación.
 - `all_vintages` (la "vista de cada fecha"): en cada fecha de decisión `d` se arma el
-  vector vigente `{date: value | realtime_start ≤ d < realtime_end}` y las
+  vector vigente `{date: value | realtime_start ≤ d < realtime_end_excl}` (fin exclusivo, ver R10-B3) y las
   transformaciones se calculan **dentro de ese vector** (FR-019a). La regresión
   walk-forward en `d` se estima con la historia completa de la vista `d` y pronostica con
   su último valor. Esto exige que `PredictiveRegression.walk_forward` acepte una matriz
@@ -236,9 +236,8 @@ SR_0 = E[max_N z] / sqrt(T_actual)          (E[max] de Bailey-López de Prado co
 
 - Si todas las pruebas tienen el mismo T, coincide con la regla vigente. Si no, corrige
   en el sentido que corresponda: puede ser más o menos conservadora.
-- Requiere `n_obs` por prueba. Las líneas de señales ya lo tienen; las econométricas
-  usan `n_forecasts`; las líneas antiguas sin `n_obs` se combinan con la regla vigente y
-  el resultado lo informa.
+- Requiere `n_obs` por prueba **en las mismas unidades que el ratio registrado** (días
+  para ambos tipos de línea; no `n_forecasts`, que son meses). Ver R10-B6.
 
 **Criterio de adopción (FR-023, SC-009).** Monte Carlo con familias de 20 a 200
 estrategias sin habilidad, ventanas mezcladas (T de 60 a 300 meses y de 2 520 a 5 000
@@ -272,9 +271,60 @@ Si la bitácora no existe en la rama base, la base vacía acepta cualquier bitá
 `experiments/tlt_treasury/`:
 - activos TLT, TBX y TBF (Yahoo);
 - exógenas de mercado T10Y2Y y DGS10 (rezago 1B, no se revisan);
-- IPC desestacionalizado `CPIAUCSL` (sí se revisa) en dos bloques econométricos, uno en
-  `first_release` y otro en `all_vintages`, declarados con `n_specifications = 2`;
+- IPC desestacionalizado `CPIAUCSL` (sí se revisa): especificación principal en
+  `first_release` y análisis de sensibilidad declarado en `all_vintages` (no cuenta como
+  selección; revisión I8);
+- es una **demostración**: el periodo 2019-2025 ya se abrió para estos activos (R10-B2);
 - `train_end = 2018-12-31`.
 
 Se ejecutan las dos fases; el README documenta ambas y la comparación entre los dos
 modos. Requiere `FRED_API_KEY` y red; los datos no se versionan.
+
+---
+
+## R10. Correcciones tras la revisión econométrica (2026-11-17)
+
+### Bloqueantes (corregidos en spec, data model y contratos)
+
+| # | Hallazgo | Decisión |
+|---|----------|----------|
+| B1 | La identidad de reapertura incluía id del experimento, huella del paquete y fin de ventana: renombrar o volver a descargar la eludía; no se detectaban periodos vistos por otros experimentos | Identidad del periodo fuera de muestra = (activo, intervalo > `train_end`). `validate` recorre la bitácora: si cualquier línea previa (señal, econométrica, validación; de cualquier experimento) cubrió fechas > `train_end` del activo, el resultado queda exploratorio con la ejecución y el experimento que lo vieron (FR-009, FR-009a) |
+| B2 | La bitácora ya tiene validaciones 2019-2025 de TBX y TBF y econométricas de toda la ventana; TLT 2017-2025 se mostró en la spec 002 | US7 es demostración del procedimiento; B1 genera la razón automáticamente |
+| B3 | `realtime_end` de ALFRED es inclusivo; hay versiones de un día | El conector guarda `realtime_end` exclusivo (= ALFRED + 1 día; `9999-12-31` → vacío). La vista usa `start ≤ d < end`; regla `end > start`; reabrir en el truncado si `end > cut`. SC-006b prueba bordes |
+| B4 | El flujo econométrico de `check_lookahead` recibía `x` ya alineado; una función `X_at` no es truncable; `derived` se calculaba después de alinear | El flujo probado parte de precios y de objetos `Exogenous`/`RealTimeExogenous`, y hace dentro la alineación, las derivadas y el walk-forward. `X_at` se construye dentro, nunca entra como parámetro. Las derivadas pasan a calcularse por vista (o como `transform`). Prueba de mutación: un rezago omitido y el uso de `realtime_end` se detectan |
+| B5 | `validate` no comparaba huellas de señales ni versión del paquete; ignoraba no rastreados; sin git se saltaba; aceptaba otra bitácora | `frozen` guarda huellas y versión; se recalculan y deben coincidir. `git status --porcelain` incluyendo no rastreados (directorio del experimento y módulos de las huellas). Sin git: exploratorio. Sólo la bitácora declarada |
+| B6 | Las líneas econométricas registran IR diarios; `n_forecasts` (meses) achicaría z en ≈ √21 | `n_obs` = largo de la ventana del IR, registrado en toda línea. Imputación desde `eval_start`/`eval_end` para líneas antiguas; si falta, T actual (equivale a la regla vigente para esa línea) y se declara |
+
+### Importantes (tareas con criterio de aceptación)
+
+| # | Tema | Decisión / tarea |
+|---|------|------------------|
+| I1 | Bloqueo | Cubre toda la ejecución: se toma antes de verificar y leer la bitácora y se libera tras la última escritura; `flush` + `fsync`; recuperación de una última línea truncada |
+| I2 | Huella no conservadora | Recorrer referencias globales (nombres y atributos): llamables del usuario fuera de site-packages y de la biblioteca estándar, transitivas y entre módulos; no llamables por hash de su valor (arreglos y DataFrames por sus bytes); quitar docstrings a mano; `coverage = "partial"` con la lista si algo no se puede hashear; huella AST también para las señales incluidas. Se elimina "nunca de menos" del plan |
+| I3 | DSR de calibración con información posterior | FR-022a: V sólo con líneas con `eval_end ≤ cut`; N con todas; las validaciones nunca entran |
+| I4 | Vista `all_vintages` incompleta | Dentro de la vista `d`, cada fecha histórica `t` recibe el último periodo cuya primera publicación es ≤ `t`, con el valor de la vista `d`. Diagnósticos e IVX sobre la vista en `train_end` (calibración) y la vista final (validación). Advertencia de Koenig-Dolmas-Piger en `docs/methodology/realtime.md` |
+| I5 | Transformaciones en `first_release` | Disponibilidad = máximo de los `realtime_start` de los insumos. Documentar que mezclar primeras publicaciones puede sesgar (factores estacionales). SC-006 se prueba derivando `first_release` desde un conjunto sintético de todas las versiones |
+| I6 | SC-003 | Claves de calibración con la huella de `as_of(cut)`; bitácora fija en la prueba; categorías de mutación enumeradas; series no punto-en-el-tiempo fuera |
+| I7 | Validación sin pruebas múltiples | FR-009b: Holm sobre la familia pre-registrada; p frente a efectivo por HAC o bootstrap estacionario; exposición constante de la calibración |
+| I8 | Dos modos fuerzan exploratorio | `first_release` principal y `all_vintages` como sensibilidad declarada (no cuenta como selección) |
+| I9 | Referencia del preblanqueo | HAC sobre la influencia escalar ψ_t con `kernHAC(prewhite=1, kernel="Quadratic Spectral", bw=bwAndrews, adjust=FALSE, ar.method="ols")`; declarar si se ajustan los autovalores; SC-008 con procesos generadores fijos (AR(1) φ ∈ {0, 0,1, 0,3}, n ∈ {250, 2 520}, t de Student) y criterios de sesgo relativo, ECM y cobertura |
+| I10 | IVX | Convención de R: `Rz = 1 − 1/(n−1)^0,95` con n efectivo; excluir rezagos AR de y o documentarlo; verificar en la fuente C++ la corrección de muestra finita; escenarios ρ ∈ {0,9, 0,99, 1} × δ ∈ {0, −0,5, −0,95} y potencia con β ≠ 0; salidas de R y series guardadas como datos de prueba versionados para que CI verifique sin R. Citar Phillips y Magdalinos (2009) |
+| I11 | Monte Carlo de R7 | SC-009 reescrito: mallas reales, ρ entre pruebas 0-0,97, dos reglas de selección, ≥ 2 000 réplicas, umbral 5 % + 2,5 EE de Monte Carlo, decisión por potencia con tamaño acotado; variante estandarizada por el EE HAC de cada prueba (registrar `sharpe_se_hac`). Hallazgo preliminar del revisor: con T heterogéneo y pruebas muy correlacionadas, la regla vigente tiene tamaño ≈ 0 (pérdida grave de potencia) y la estandarizada 3,4-4,4 % |
+| I12 | `calibrate_validate` | Deprecarla (aviso) y marcar su resultado como exploratorio |
+| I13 | Huella del paquete entre fases | Precondición sobre la huella de `as_of(train_end)`; conservar la instantánea |
+| I14 | CI y riesgo residual | `git cat-file -e` para distinguir "no existe en la base" de un error; verificación también en `push` a main contra `github.event.before`; `--results` filtra por `provenance.registry`; riesgo residual declarado en la spec (Assumptions) |
+
+### Menores
+
+| # | Tarea |
+|---|-------|
+| M1 | PID vivo en Windows con `OpenProcess` (no `os.kill(pid, 0)`) |
+| M2 | La antigüedad sólo vence bloqueos de otra máquina; en la misma máquina con PID vivo, sólo `--force` |
+| M3 | `schema_version` acepta {1.0, 1.1} |
+| M4 | `vintage_mode` prohibido en `risk_free` en esta versión |
+| M5 | Desfase de publicación por serie (p. ej. +1B si se publica después del cierre) |
+| M6 | `train_end` debe ser fecha de decisión (o embargo del mes que lo cruza); filtrar los pronósticos de validación por fecha objetivo > `train_end` |
+| M7 | Valores "." en filas de versiones: faltante explícito |
+| M8 | `quality_warnings`, `window` y `asset_start` sobre `as_of` |
+| M9 | Numeración de escenarios de US4 (corregida); `head -n -3` del quickstart sólo funciona con GNU |
+| M10 | Límite de la separación lógica declarado en la spec (señal que lee el disco) |

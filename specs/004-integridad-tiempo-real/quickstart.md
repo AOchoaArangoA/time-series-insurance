@@ -9,7 +9,7 @@ Para los escenarios con datos reales, `FRED_API_KEY` y red.
 ```bash
 cd examples/integracion && python generar_paquete_sintetico.py data
 tsinsurance experiment run experiment.toml
-head -n -3 registry.jsonl > recortada.jsonl
+python -c "import sys;l=open('registry.jsonl').readlines();open('recortada.jsonl','w').writelines(l[:-3])"
 tsinsurance experiment verify recortada.jsonl --results results   # ⇒ salida 1: "recorte: results/<run>/result.json espera 11 líneas"
 tsinsurance experiment verify registry.jsonl --base recortada.jsonl  # ⇒ salida 0 (sólo agrega)
 tsinsurance experiment verify recortada.jsonl --base registry.jsonl  # ⇒ salida 1

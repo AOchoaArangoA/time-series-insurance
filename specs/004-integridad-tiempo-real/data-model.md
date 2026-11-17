@@ -50,11 +50,17 @@ Evento nuevo `kind = "calibration"` (uno por ejecución de calibración):
 |-------|-----------|
 | `run_id`, `experiment_id`, `experiment_sha256`, `bundle_sha256`, `git_commit` | identidad |
 | `train_end` | fecha de corte |
-| `frozen` | por idea: activo → parámetros elegidos; por modelo: especificación |
+| `frozen` | por idea: activo → parámetros elegidos y `SignalFingerprint`; por modelo: especificación; `package_version`; familia de hipótesis de la validación (para Holm) |
+| `bundle_as_of_sha256` | huella de `Bundle.as_of(train_end)` (precondición de validación) |
 | `frozen_sha256` | hash canónico de `frozen` |
 
-Evento `kind = "validation"` (existente) gana `calibration_run_id`, `frozen_sha256` y
-`model` (para bloques econométricos).
+Evento `kind = "validation"` (existente) gana `calibration_run_id`, `frozen_sha256`,
+`model` (para bloques econométricos) y `oos_start`/`oos_end`. **Identidad del periodo fuera
+de muestra**: `(asset, oos_start, oos_end)`; se considera visto si cualquier línea previa
+de cualquier experimento cubre fechas > `train_end` del activo.
+
+Toda línea `signal`/`econometric` registra `n_obs` (largo de la ventana del ratio, en sus
+unidades), `eval_start`, `eval_end` y `sharpe_se_hac`.
 
 Transiciones: `preregistration → signal/econometric* → calibration` (fase 1);
 `validation` (fase 2) exige un `calibration` previo con el mismo `experiment_sha256` y
@@ -66,7 +72,7 @@ Transiciones: `preregistration → signal/econometric* → calibration` (fase 1)
 |---------|------|-------------|-------|
 | `date` … `source` | (como 1.0) | sí | sin cambios |
 | `realtime_start` | fecha | no | ≥ fin del periodo de `date` |
-| `realtime_end` | fecha o vacío | no | > `realtime_start`; vacío = vigente |
+| `realtime_end` | fecha o vacío | no | **exclusivo**: primer día en que la versión ya no rige (ALFRED inclusivo + 1 día); > `realtime_start`; vacío = vigente |
 
 Unicidad: `(date, series_id)` sin columnas de tiempo real; `(date, series_id,
 realtime_start)` con ellas. Intervalos sin solape por `(series_id, date)`.

@@ -157,18 +157,18 @@ de esa fecha no altera la decisión.
 2. **Given** una fecha de decisión, **When** se construye la variable explicativa,
    **Then** sólo se usan observaciones cuya primera publicación es anterior o igual a esa
    fecha.
-5. **Given** una receta que pide todas las versiones de una serie, **When** se descarga,
+3. **Given** una receta que pide todas las versiones de una serie, **When** se descarga,
    **Then** el paquete guarda cada par (periodo, versión) con su fecha de publicación y su
    fecha de reemplazo.
-6. **Given** el modo todas las versiones y una fecha de decisión, **When** se construye la
+4. **Given** el modo todas las versiones y una fecha de decisión, **When** se construye la
    variable, **Then** para cada periodo se usa la versión vigente ese día, y las
    transformaciones (diferencias, variaciones anuales) se calculan dentro de esa misma
    versión, no mezclando versiones de distintas fechas.
-7. **Given** una misma serie y un mismo modelo, **When** se ejecuta en ambos modos,
+5. **Given** una misma serie y un mismo modelo, **When** se ejecuta en ambos modos,
    **Then** el informe permite comparar los resultados.
-3. **Given** un paquete de insumos v1.0 sin fechas de publicación, **When** se carga,
+6. **Given** un paquete de insumos v1.0 sin fechas de publicación, **When** se carga,
    **Then** funciona como hoy (rezago de publicación declarado).
-4. **Given** una señal o modelo que usa estas variables, **When** se ejecuta la prueba de
+7. **Given** una señal o modelo que usa estas variables, **When** se ejecuta la prueba de
    anticipación, **Then** trunca por fecha de publicación.
 
 ---
@@ -197,12 +197,17 @@ sobre los mismos datos y medir su tamaño por Monte Carlo.
 
 ### User Story 6 - Varianza de las pruebas previas corregida y documentada (Priority: P3)
 
-El ajuste por pruebas múltiples combina pruebas de ventanas y largos distintos sin
-confundir el ruido de muestreo con la dispersión real entre estrategias, y el proceso
-documenta qué corrección se usa y por qué.
+El ajuste por pruebas múltiples combina pruebas de ventanas y largos distintos de forma
+comparable: cada Sharpe previo se **estandariza** por su número de observaciones (o su
+error estándar) antes de combinarlo, en lugar de mezclar en una sola varianza Sharpe
+estimados con ruidos distintos. El proceso documenta qué regla se usa y por qué.
 
-**Why this priority**: La corrección reduce el umbral del Sharpe deflactado (lo hace
-menos conservador); por eso se adopta sólo con evidencia de Monte Carlo.
+(Revisión 2026-11-17: "descontar el ruido de muestreo" sería incorrecto bajo la hipótesis
+nula, donde la dispersión entre Sharpe estimados *es* ese ruido; ver research R7.)
+
+**Why this priority**: La regla puede hacer el Sharpe deflactado más o menos
+conservador según los largos de las ventanas; por eso se adopta sólo con evidencia de
+Monte Carlo sobre tamaño y potencia.
 
 **Independent Test**: Simular familias de estrategias sin habilidad con ventanas de largo
 distinto y comprobar el tamaño del Sharpe deflactado con y sin corrección.
@@ -210,7 +215,9 @@ distinto y comprobar el tamaño del Sharpe deflactado con y sin corrección.
 **Acceptance Scenarios**:
 
 1. **Given** pruebas previas con distinto número de observaciones, **When** se calcula el
-   Sharpe deflactado, **Then** la varianza descuenta el ruido de muestreo de cada prueba.
+   Sharpe deflactado, **Then** cada prueba se estandariza por su número de observaciones
+   en las mismas unidades que su ratio, y el umbral se reescala al largo de la prueba
+   actual.
 2. **Given** el Monte Carlo de tamaño, **When** la corrección no conserva el tamaño
    nominal, **Then** se mantiene la regla actual y se documenta el resultado.
 3. **Given** cualquiera de los dos resultados, **When** se lee la documentación del
@@ -223,7 +230,12 @@ distinto y comprobar el tamaño del Sharpe deflactado con y sin corrección.
 
 El dueño del proyecto ve el flujo completo con las salvaguardas nuevas sobre el conjunto
 que pidió originalmente ("TFT" = TLT): calibración, validación única abierta una vez,
-variables macro de primera publicación y bitácora verificada.
+variables macro en tiempo real y bitácora verificada.
+
+Es una **demostración del procedimiento, no un resultado confirmatorio**: el periodo
+2019-2025 ya se abrió para TBX y TBF en el experimento `inverse-treasury-etfs` y para TLT
+en los ejemplos de la spec 002 (validación 2017-2025). El sistema debe detectarlo y
+marcarlo solo (FR-009a).
 
 **Why this priority**: Es la demostración integrada; depende de las historias anteriores.
 
@@ -236,7 +248,12 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
    quedan un pre-registro, las pruebas de calibración y un evento de validación por idea
    y por modelo.
 2. **Given** el resultado, **When** se lee el informe, **Then** las únicas razones de
-   "exploratorio" son las declaradas y explicadas.
+   "exploratorio" son las declaradas y explicadas, incluida "periodo posterior a
+   train_end ya visto en …" para TBX y TBF, generada automáticamente.
+3. **Given** los dos modos de tiempo real del IPC, **When** se pre-registra el
+   experimento, **Then** `first_release` es la especificación principal y
+   `all_vintages` un análisis de sensibilidad declarado (no una selección), de modo que
+   la comparación no fuerza el veredicto exploratorio.
 
 ---
 
@@ -263,6 +280,11 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - Regresor no persistente en la prueba IVX: el resultado debe ser consistente con la
   inferencia HAC.
 - Pocas pruebas previas (0 o 1): la corrección de varianza no aplica y se informa.
+- Versión de ALFRED de un solo día (inicio = fin inclusivo): es válida; con fin exclusivo
+  dura un día.
+- Validación con el paquete vuelto a descargar: se acepta si su truncado en la fecha de
+  corte tiene la misma huella que el de la calibración; si Yahoo reescaló los precios
+  ajustados, se rechaza y se indica conservar la instantánea.
 - Modo todas las versiones con una revisión que cambia la definición o el año base de la
   serie: la vista de cada fecha usa sólo valores de la misma versión; si la versión
   vigente no cubre la ventana del modelo, la observación queda faltante y se informa.
@@ -293,13 +315,32 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - **FR-006**: En la fase de calibración, las señales, los modelos y los informes MUST
   recibir sólo datos disponibles hasta la fecha de corte (por fecha de observación y,
   para variables con fecha de publicación, por fecha de publicación).
-- **FR-007**: La fase de validación MUST exigir: calibración pre-registrada de la misma
-  versión del experimento y del paquete de insumos, y ausencia de cambios sin confirmar.
+- **FR-007**: La fase de validación MUST exigir:
+  - calibración pre-registrada en la **bitácora declarada** (validar con otra bitácora es
+    un error);
+  - la misma huella del experimento;
+  - la misma huella del paquete **truncado en la fecha de corte** (se pueden agregar datos
+    posteriores, nunca cambiar los anteriores);
+  - las mismas huellas de código de las señales y la misma versión del paquete;
+  - ausencia de cambios sin confirmar, incluidos archivos no rastreados en el directorio
+    del experimento y en los módulos cubiertos por las huellas.
+
+  Sin repositorio git, la validación se permite pero queda exploratoria con la causa.
 - **FR-008**: La validación MUST evaluar sólo las configuraciones y especificaciones
   fijadas en la calibración y MUST registrar un evento de validación por idea y por
   modelo.
 - **FR-009**: Reabrir una validación MUST marcar el resultado como exploratorio con el
-  número de aperturas (comportamiento vigente, extendido a los modelos econométricos).
+  número de aperturas, también en los modelos econométricos. La identidad del periodo
+  fuera de muestra es **(activo, intervalo posterior a la fecha de corte)**, independiente
+  del id del experimento, de la huella del paquete y del fin de la ventana.
+- **FR-009a**: Antes de validar, el sistema MUST recorrer la bitácora y marcar como
+  exploratorio, con la ejecución y el experimento que lo vieron, todo activo cuyo periodo
+  posterior a la fecha de corte ya haya sido cubierto por cualquier línea previa (pruebas
+  de muestra completa, validaciones de otros experimentos).
+- **FR-009b**: La validación MUST ajustar por pruebas múltiples entre todas las hipótesis
+  que abre (activos × ideas × modelos, familia declarada en el pre-registro) y usar
+  errores robustos a autocorrelación; la comparación contra exposición constante MUST
+  usar la exposición de la calibración.
 - **FR-010**: Los bloques econométricos MUST calibrarse con la ventana de calibración y
   validarse fuera de muestra después de la fecha de corte con la especificación fijada.
 
@@ -316,7 +357,9 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 **Primera publicación (US4)**
 
 - **FR-014**: El contrato de datos MUST admitir, de forma opcional y compatible con la
-  versión 1.0, la fecha de publicación de cada observación.
+  versión 1.0, la fecha de publicación de cada observación y, en el modo todas las
+  versiones, su fin de vigencia **exclusivo** (ALFRED publica un fin inclusivo; el
+  conector lo convierte sumando un día y traduce `9999-12-31` a "vigente").
 - **FR-015**: El conector de FRED/ALFRED MUST poder descargar la primera publicación de
   cada observación con su fecha real de publicación.
 - **FR-016**: Las variables explicativas con fecha de publicación MUST usar, en cada fecha
@@ -325,7 +368,13 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - **FR-017**: Una serie con fecha de publicación en todas sus observaciones MUST
   considerarse punto-en-el-tiempo.
 - **FR-018**: La prueba de anticipación MUST truncar las variables por fecha de
-  publicación (en ambos modos).
+  publicación (en ambos modos) y MUST ejercitar el flujo completo: partir de las series
+  sin alinear (precios y variables truncables), y hacer dentro de la función probada la
+  alineación, las variables derivadas y el walk-forward. Un flujo que recibe datos ya
+  alineados o una función de regresores no truncable no cuenta como prueba.
+- **FR-018a**: Las variables derivadas (diferencias, variaciones) MUST calcularse dentro
+  de cada vista de tiempo real, y la disponibilidad de un valor transformado MUST ser la
+  más tardía de las fechas de publicación de sus insumos.
 - **FR-019**: El conector y el contrato MUST soportar también el modo **todas las
   versiones**: cada observación con su periodo, su fecha de publicación y la fecha en que
   fue reemplazada por una versión posterior (abierta si sigue vigente).
@@ -341,8 +390,15 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
   reportarla junto a la HAC.
 - **FR-021**: El error estándar HAC del Sharpe MUST ofrecer preblanqueo e informar cuál se
   usa.
-- **FR-022**: El Sharpe deflactado MUST poder descontar de la varianza de las pruebas
-  previas el ruido de muestreo de cada una según su número de observaciones.
+- **FR-022**: El Sharpe deflactado MUST poder estandarizar los Sharpe de las pruebas
+  previas por su número de observaciones (en las mismas unidades que el ratio registrado)
+  antes de combinarlos, y reescalar el umbral al largo de la prueba actual. Toda línea de
+  la bitácora MUST registrar ese número; para líneas antiguas sin él se imputa desde su
+  ventana o, si no se puede, se usa el largo de la prueba actual, y se declara.
+- **FR-022a**: La varianza del umbral en la calibración MUST calcularse sólo con pruebas
+  cuya ventana termina antes de la fecha de corte; las demás cuentan en el número de
+  pruebas (conservador) y se informan aparte. Las líneas de validación nunca entran en
+  esa varianza.
 - **FR-023**: La corrección de FR-022 MUST adoptarse como regla por defecto sólo si el
   Monte Carlo de tamaño la valida (SC-009); en caso contrario se mantiene la regla vigente.
 - **FR-024**: La regla vigente, su evidencia de Monte Carlo y su efecto en la
@@ -382,29 +438,46 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - **SC-002**: El 100 % de los cambios que editan, reordenan o borran líneas de la
   bitácora se rechazan en la revisión automática; el 100 % de los que sólo agregan líneas
   se aceptan.
-- **SC-003**: Alterar arbitrariamente los datos posteriores a la fecha de corte deja la
-  fase de calibración idéntica (mismo resultado, número a número) en todas las pruebas.
+- **SC-003**: Con una copia fija de la bitácora, alterar arbitrariamente cualquiera de
+  estas categorías deja la calibración idéntica número a número (salvo los campos de
+  procedencia del paquete completo):
+  - observaciones posteriores a la fecha de corte;
+  - versiones publicadas después de la fecha de corte de periodos anteriores;
+  - fines de vigencia posteriores a la fecha de corte;
+  - primeras publicaciones posteriores a la fecha de corte de periodos anteriores (p. ej.
+    el IPC de diciembre publicado en enero).
+
+  La identidad de las pruebas de calibración usa la huella del paquete truncado. Las
+  series no punto-en-el-tiempo quedan fuera de este criterio y siguen siendo
+  exploratorias.
 - **SC-004**: El 100 % de los intentos de validar sin pre-registro, con otra versión del
-  experimento o con cambios sin confirmar se rechazan con la causa.
+  experimento, con otra bitácora, con código de señal distinto, con archivos no
+  rastreados o con cambios sin confirmar se rechazan con la causa. El 100 % de los
+  intentos de eludir la reapertura (renombrar el experimento, volver a descargar el
+  paquete, extender el fin de la ventana) quedan marcados como exploratorios.
 - **SC-005**: Cambiar una línea del código de una señal propia cambia la identidad de la
   prueba en el 100 % de los casos; ejecutar la misma señal sin cambios la conserva.
 - **SC-006**: Con una serie revisada conocida, alterar las revisiones posteriores a la
   primera publicación no cambia ningún resultado en el modo primera publicación; en el
   modo todas las versiones, alterar versiones publicadas después de una fecha de decisión
   no cambia la decisión de esa fecha (100 % de los casos de prueba).
-- **SC-006b**: El modo todas las versiones reproduce exactamente, para fechas de decisión
-  elegidas al azar, la vista que devuelve ALFRED consultada con esa fecha como fecha de
-  tiempo real.
+- **SC-006b**: El modo todas las versiones reproduce exactamente la vista que devuelve
+  ALFRED consultada con esa fecha como fecha de tiempo real, para fechas al azar **y** para
+  cada fecha de inicio de versión y cada último día de vigencia (incluidas versiones de un
+  solo día).
 - **SC-007**: La prueba IVX coincide con la implementación de referencia en R con
   diferencia relativa ≤ 1e-6, y su tamaño al 5 % con un regresor de persistencia 0,99 y
   correlación de innovaciones −0,95 está entre 3 % y 7 % (n = 300 meses).
 - **SC-008**: El error estándar del Sharpe con preblanqueo coincide con la referencia en
   R (diferencia relativa ≤ 1e-6) y reduce el sesgo medido con autocorrelación por debajo
   de la mitad del actual (≈ 9 %).
-- **SC-009**: Con la corrección de varianza, el tamaño del Sharpe deflactado con
-  estrategias sin habilidad y ventanas de largo distinto es ≤ 6,9 % al 5 %, y la potencia
-  se reporta frente a la regla vigente; si no se cumple, la regla vigente se mantiene y
-  la documentación lo registra.
+- **SC-009**: Monte Carlo con al menos 2 000 réplicas por escenario sobre familias de
+  estrategias realistas (mallas de tendencia y momentum sobre precios simulados, ventanas
+  solapadas y de largo distinto, correlación entre pruebas de 0 a 0,97, con y sin
+  autocorrelación) y dos reglas de selección (mejor de la ejecución y mejor global). La
+  regla estandarizada se adopta si su tamaño al 5 % es ≤ 5 % + 2,5 errores de Monte Carlo
+  en todos los escenarios **y** su potencia no es menor que la de la regla vigente; si no,
+  se mantiene la regla vigente. Tamaño, potencia y decisión se documentan.
 - **SC-010**: El experimento de aceptación se ejecuta de punta a punta (descarga,
   calibración, validación) en menos de 5 minutos y la bitácora queda íntegra.
 
@@ -421,6 +494,10 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - R con los paquetes `ivx` y `sandwich` está disponible para las pruebas de referencia; si
   no lo está, esas pruebas se omiten con aviso.
 - Los precios de los ETFs siguen viniendo de Yahoo Finance y no se versionan.
+- **Límites de la separación lógica**: una señal que lea por su cuenta los archivos del
+  disco evita el truncado y también la prueba de anticipación. Borrar a la vez líneas de
+  la bitácora y resultados **aún no confirmados**, o abandonar una rama con pruebas, no se
+  detecta. La garantía cubre los resultados publicados (confirmados y fusionados).
 
 ## Clarifications
 
@@ -435,3 +512,20 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - Q: ¿Corregir la varianza de los Sharpe previos? → A: Sí, **validada por Monte Carlo** y
   documentada en el proceso.
 - Q: ¿"TFT"? → A: Es **TLT** (confirmado); el experimento de aceptación usa TLT, TBX y TBF.
+
+### Revisión econométrica del diseño (2026-11-17)
+
+El subagente `econometrics-reviewer` encontró 6 bloqueantes, corregidos en este texto:
+- **B1**: la reapertura se podía eludir. Ahora la identidad es activo + periodo, y se
+  detectan periodos ya vistos (FR-009, FR-009a).
+- **B2**: el experimento de aceptación ya estaba contaminado. US7 pasa a ser demostración
+  con detección automática.
+- **B3**: el fin de vigencia de ALFRED es inclusivo. Se convierte a exclusivo (FR-014,
+  SC-006b).
+- **B4**: la prueba de anticipación no ejercitaba el tiempo real. Ahora recorre el flujo
+  completo (FR-018, FR-018a).
+- **B5**: faltaban precondiciones de validación (FR-007).
+- **B6**: unidades de `n_obs` y contradicción con R7 (FR-022, FR-022a, US6).
+
+También se reflejan en los criterios los importantes I3 (FR-022a), I6 (SC-003), I7
+(FR-009b), I8 (US7) e I11 (SC-009). Los demás quedan como tareas (research R10).

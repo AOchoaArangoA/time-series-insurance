@@ -161,7 +161,22 @@ US6 varianza DSR ────────┘ (Monte Carlo decide el valor por de
 | La API real de ALFRED difiere de lo documentado (nombres, límites) | grabar respuestas reales en la primera ejecución con clave; pruebas sin red sobre esas grabaciones |
 | `experiment run` deja de validar (cambio de comportamiento) | versión 0.2.0, nota en el registro de cambios, manual y AGENTS actualizados, mensaje con el comando de validación |
 | El preblanqueo o la estandarización no pasan el Monte Carlo | se mantiene la regla vigente (FR-023) y se documenta; la opción queda disponible y explícita |
-| Huella por AST sensible a refactorizaciones sin cambio de comportamiento | conservador por diseño: cuenta una prueba de más, nunca de menos |
+| Huella incompleta: constantes globales, funciones de otros módulos, `partial` (revisión I2) | recorrido transitivo de referencias, hash de valores y `coverage = "partial"` declarada; una refactorización sin cambio de comportamiento cuenta una prueba de más (conservador) |
+
+## Revisión econométrica del diseño (2026-11-17)
+
+El subagente `econometrics-reviewer` encontró 6 bloqueantes (B1-B6), 14 importantes y 10
+menores.
+- Los bloqueantes ya están corregidos en spec, data model y contratos.
+- Los importantes y menores quedan como tareas con su criterio de aceptación
+  (research R10).
+
+El diseño no cambia de arquitectura. Lo que cambia es la identidad del periodo fuera de
+muestra, la semántica del fin de vigencia de ALFRED, que la prueba de anticipación
+ejercite el flujo completo, las precondiciones de validación y las unidades de `n_obs`.
+
+Consecuencia para US7: el experimento de TLT, TBX y TBF es una **demostración**. El
+periodo 2019-2025 ya se abrió antes, y el sistema lo detectará y marcará solo.
 
 ## Complexity Tracking
 

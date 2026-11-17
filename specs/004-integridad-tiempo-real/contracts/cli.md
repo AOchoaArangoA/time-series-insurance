@@ -16,10 +16,19 @@ por otra ejecución.
 
 Precondiciones (si falla alguna: salida 1 y no escribe nada):
 
-1. bitácora íntegra (cadena) y no bloqueada;
+1. es la bitácora declarada en el experimento, íntegra (cadena y resultados) y no
+   bloqueada;
 2. existe el evento `calibration` con `RUN_ID`;
-3. `experiment_sha256` y `bundle_sha256` coinciden con los de esa calibración;
-4. sin cambios sin confirmar en git (si hay repositorio).
+3. `experiment_sha256` coincide, y la huella de `as_of(train_end)` del paquete actual es
+   igual a la de la calibración;
+4. las huellas de código de las señales y `package_version` coinciden con las fijadas;
+5. git sin cambios sin confirmar, incluidos archivos no rastreados en el directorio del
+   experimento y en los módulos de las huellas.
+
+Sin repositorio git: se permite, pero queda exploratoria.
+
+Además, antes de evaluar, marca exploratorio todo activo cuyo periodo posterior a
+`train_end` ya aparezca en la bitácora, indicando ejecución y experimento (FR-009a).
 
 Efecto:
 - evalúa las configuraciones fijadas después de `train_end`;
