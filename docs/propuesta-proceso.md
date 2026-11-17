@@ -121,7 +121,8 @@ mi_paquete/
 2. ~~Fusionar la rama de trabajo en `main`~~: hecho (PR #1).
 3. **Spec 004 — integridad y tiempo real** (Prioridad 1): bitácora a prueba de recortes,
    validación única en dos fases (también para modelos econométricos), identidad del
-   código de las señales, variables macro en su primera publicación (ALFRED), IVX,
+   código de las señales, variables macro en tiempo real (ALFRED: primera publicación y
+   todas las versiones), IVX,
    preblanqueo y corrección de varianza del DSR validada por Monte Carlo.
 4. Spec 001 US2-US5 (ARIMA/GARCH, pronóstico, VaR/ES, reportes de comité).
 5. Adaptador para la fuente de datos oficial de la aseguradora (precios de retorno total

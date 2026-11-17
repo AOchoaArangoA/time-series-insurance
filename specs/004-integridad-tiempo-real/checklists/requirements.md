@@ -36,7 +36,8 @@
 - Términos estadísticos (IVX, HAC, Sharpe deflactado) y nombres de fuentes (FRED/ALFRED,
   R como referencia) son parte del dominio del usuario, no detalles de implementación;
   igual que en las specs 002 y 003.
-- Alcance acotado explícitamente: fuera quedan el reencadenado de bitácoras de varias
-  ramas (FR-004) y la descarga de todas las versiones de ALFRED (FR-019).
+- Alcance acotado explícitamente: fuera queda el reencadenado de bitácoras de varias
+  ramas (FR-004). El modo "todas las versiones" de ALFRED entró al alcance a pedido del
+  usuario (FR-019 a FR-019b).
 - SC-007 y SC-008 mencionan R como referencia de verificación, criterio heredado de la
   constitución (Principio I y VII).

@@ -11,7 +11,7 @@ experimentos y datos en tiempo real. (A) bitácora a prueba de recortes al final
 en CI, bloqueo de archivo, un solo escritor a la vez; (B) huella del código de las señales
 propias en la identidad de la prueba; (C) separación lógica de la validación en dos fases,
 incluidos los bloques econométricos; (D) datos de ALFRED en modo 'solo primera
-publicación'; (E) inferencia IVX verificada contra R; (F) EE HAC del Sharpe con
+publicación' y, por pedido posterior del usuario, también 'todas las versiones'; (E) inferencia IVX verificada contra R; (F) EE HAC del Sharpe con
 preblanqueo verificado contra R; (G) corrección de la varianza de los Sharpe previos,
 adoptada sólo si el Monte Carlo conserva el tamaño del DSR y documentada en el proceso.
 Prueba de aceptación: experimento registrado con TLT, TBX y TBF."
@@ -126,18 +126,28 @@ comprobar que la identidad coincide.
 
 ---
 
-### User Story 4 - Variables macro en su primera publicación (Priority: P2)
+### User Story 4 - Variables macro en tiempo real: primera publicación y todas las versiones (Priority: P2)
 
-El analista usa variables macro revisables (IPC, empleo, PIB) tal como se conocieron **la
-primera vez que se publicaron**, con su fecha real de publicación, de modo que un modelo
-macro pueda dejar de ser exploratorio.
+El analista usa variables macro revisables (IPC, empleo, PIB) tal como se conocían en
+cada fecha de decisión, con su fecha real de publicación, de modo que un modelo macro
+pueda dejar de ser exploratorio. Puede elegir, por serie, entre dos modos:
+
+- **Primera publicación**: cada observación con el valor con que salió la primera vez.
+  Nunca usa el futuro, pero ignora correcciones que ya se conocían en la fecha de
+  decisión.
+- **Todas las versiones**: en cada fecha de decisión, para cada periodo, la última
+  versión publicada hasta ese día (incluidas las correcciones ya conocidas). Es lo más
+  fiel a lo que sabía un inversionista en ese momento.
 
 **Why this priority**: Hoy todo modelo con IPC sale exploratorio por diseño; esta es la
-condición para conclusiones macro que sirvan para decidir.
+condición para conclusiones macro que sirvan para decidir. Tener ambos modos permite
+medir cuánto cambia una conclusión según se usen o no las correcciones conocidas.
 
-**Independent Test**: Con una serie revisada conocida, comprobar que cada fecha de
-decisión usa el valor de la primera publicación disponible en esa fecha y que cambiar
-las revisiones posteriores no altera ningún resultado.
+**Independent Test**: Con una serie revisada conocida, comprobar que (a) en modo
+primera publicación cada fecha de decisión usa el primer valor publicado y cambiar las
+revisiones posteriores no altera ningún resultado; (b) en modo todas las versiones cada
+fecha de decisión usa la versión vigente ese día y cambiar versiones publicadas después
+de esa fecha no altera la decisión.
 
 **Acceptance Scenarios**:
 
@@ -147,6 +157,15 @@ las revisiones posteriores no altera ningún resultado.
 2. **Given** una fecha de decisión, **When** se construye la variable explicativa,
    **Then** sólo se usan observaciones cuya primera publicación es anterior o igual a esa
    fecha.
+5. **Given** una receta que pide todas las versiones de una serie, **When** se descarga,
+   **Then** el paquete guarda cada par (periodo, versión) con su fecha de publicación y su
+   fecha de reemplazo.
+6. **Given** el modo todas las versiones y una fecha de decisión, **When** se construye la
+   variable, **Then** para cada periodo se usa la versión vigente ese día, y las
+   transformaciones (diferencias, variaciones anuales) se calculan dentro de esa misma
+   versión, no mezclando versiones de distintas fechas.
+7. **Given** una misma serie y un mismo modelo, **When** se ejecuta en ambos modos,
+   **Then** el informe permite comparar los resultados.
 3. **Given** un paquete de insumos v1.0 sin fechas de publicación, **When** se carga,
    **Then** funciona como hoy (rezago de publicación declarado).
 4. **Given** una señal o modelo que usa estas variables, **When** se ejecuta la prueba de
@@ -244,6 +263,11 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - Regresor no persistente en la prueba IVX: el resultado debe ser consistente con la
   inferencia HAC.
 - Pocas pruebas previas (0 o 1): la corrección de varianza no aplica y se informa.
+- Modo todas las versiones con una revisión que cambia la definición o el año base de la
+  serie: la vista de cada fecha usa sólo valores de la misma versión; si la versión
+  vigente no cubre la ventana del modelo, la observación queda faltante y se informa.
+- Volumen: series con muchas versiones (cientos por periodo) pueden multiplicar el
+  tamaño del paquete; la validación informa el número de versiones por serie.
 
 ## Requirements *(mandatory)*
 
@@ -301,9 +325,15 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - **FR-017**: Una serie con fecha de publicación en todas sus observaciones MUST
   considerarse punto-en-el-tiempo.
 - **FR-018**: La prueba de anticipación MUST truncar las variables por fecha de
-  publicación.
-- **FR-019**: La descarga de todas las versiones (no sólo la primera) queda fuera de
-  alcance.
+  publicación (en ambos modos).
+- **FR-019**: El conector y el contrato MUST soportar también el modo **todas las
+  versiones**: cada observación con su periodo, su fecha de publicación y la fecha en que
+  fue reemplazada por una versión posterior (abierta si sigue vigente).
+- **FR-019a**: En el modo todas las versiones, la variable en cada fecha de decisión MUST
+  construirse con la vista vigente ese día; las transformaciones MUST calcularse dentro de
+  esa vista (consistencia de versión).
+- **FR-019b**: El modo MUST declararse por serie en el manifiesto y registrarse en el
+  resultado y en la identidad de la prueba (cambiar de modo es una prueba nueva).
 
 **Inferencia (US5, US6)**
 
@@ -336,7 +366,10 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - **Huella de señal**: identidad del código de una señal propia, con su cobertura (código
   fuente, compilado o no disponible).
 - **Observación con fecha de publicación**: valor de una serie para un periodo junto con
-  la fecha en que se publicó por primera vez.
+  la fecha en que se publicó (primera publicación) o, en el modo todas las versiones, con
+  su fecha de publicación y su fecha de reemplazo.
+- **Vista en tiempo real**: para una fecha de decisión, el conjunto de valores de cada
+  periodo vigentes ese día.
 - **Regla de varianza de pruebas previas**: cómo se combinan los Sharpe de pruebas
   anteriores en el Sharpe deflactado, con su evidencia.
 
@@ -356,7 +389,12 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - **SC-005**: Cambiar una línea del código de una señal propia cambia la identidad de la
   prueba en el 100 % de los casos; ejecutar la misma señal sin cambios la conserva.
 - **SC-006**: Con una serie revisada conocida, alterar las revisiones posteriores a la
-  primera publicación no cambia ningún resultado.
+  primera publicación no cambia ningún resultado en el modo primera publicación; en el
+  modo todas las versiones, alterar versiones publicadas después de una fecha de decisión
+  no cambia la decisión de esa fecha (100 % de los casos de prueba).
+- **SC-006b**: El modo todas las versiones reproduce exactamente, para fechas de decisión
+  elegidas al azar, la vista que devuelve ALFRED consultada con esa fecha como fecha de
+  tiempo real.
 - **SC-007**: La prueba IVX coincide con la implementación de referencia en R con
   diferencia relativa ≤ 1e-6, y su tamaño al 5 % con un regresor de persistencia 0,99 y
   correlación de innovaciones −0,95 está entre 3 % y 7 % (n = 300 meses).
@@ -377,8 +415,8 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 - La separación de la validación es lógica (el código no entrega los datos posteriores a
   la fecha de corte y todo queda registrado), no física ni con aprobación humana
   (decisión del usuario).
-- ALFRED se usa en modo "primera publicación" (decisión del usuario); la clave de FRED se
-  lee del entorno.
+- ALFRED se usa en dos modos: "primera publicación" (por defecto, decisión del usuario) y
+  "todas las versiones" (agregado por el usuario); la clave de FRED se lee del entorno.
 - Las series que no se revisan (tasas de mercado) siguen usando el rezago declarado.
 - R con los paquetes `ivx` y `sandwich` está disponible para las pruebas de referencia; si
   no lo está, esas pruebas se omiten con aviso.
@@ -390,8 +428,9 @@ verificar que ambas fases quedan registradas y la bitácora es íntegra.
 
 - Q: ¿Qué tan dura debe ser la separación de la validación? → A: **Lógica**: el código
   impide ver los datos posteriores a la fecha de corte y todo queda registrado.
-- Q: ¿Datos vintage completos o sólo la primera publicación? → A: **Sólo primera
-  publicación**.
+- Q: ¿Datos vintage completos o sólo la primera publicación? → A: **Primera publicación**
+  como modo por defecto; en una segunda respuesta el usuario pidió agregar también
+  **todas las versiones** al alcance de esta spec.
 - Q: ¿Varios escritores de la bitácora en paralelo? → A: **Uno solo a la vez** por ahora.
 - Q: ¿Corregir la varianza de los Sharpe previos? → A: Sí, **validada por Monte Carlo** y
   documentada en el proceso.
