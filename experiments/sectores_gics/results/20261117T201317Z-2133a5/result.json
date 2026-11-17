@@ -1,0 +1,1342 @@
+{
+  "assumptions": {
+    "alpha": 0.05,
+    "asset_start": {
+      "XLB": "1999-01-04",
+      "XLE": "1999-01-04",
+      "XLF": "1999-01-04",
+      "XLI": "1999-01-04",
+      "XLK": "1999-01-04",
+      "XLP": "1999-01-04",
+      "XLU": "1999-01-04",
+      "XLV": "1999-01-04",
+      "XLY": "1999-01-04"
+    },
+    "execution": "retraso=1 barra(s), costo=3.0 pb, deslizamiento=2.0 pb, rebalanceo=every_bar, bruto máx.=1.0, cortos=no, financiación=rf+0.0 pb",
+    "risk_free": [
+      "^IRX"
+    ],
+    "selection_window_end": "2014-12-31",
+    "train_end": "2014-12-31",
+    "window": [
+      "1999-01-04",
+      "2014-12-31"
+    ]
+  },
+  "calibration": {
+    "frozen": {
+      "alpha": 0.05,
+      "alpha_split": {
+        "regimes": 0.01,
+        "strategies": 0.04
+      },
+      "bundle_as_of_sha256": "c79a5069c869497bddb9b72a8e9f27baa92f333d7132639daf774b2597471ba8",
+      "econometric": {},
+      "execution": {
+        "allow_short": false,
+        "cost_bps": 3.0,
+        "default_cost_bps": 5.0,
+        "financing_spread_bps": 0.0,
+        "lag": 1,
+        "max_gross": 1.0,
+        "periods_per_year": null,
+        "rebalance": "every_bar",
+        "slippage_bps": 2.0
+      },
+      "family": [
+        "cartera:rotacion_momentum"
+      ],
+      "ideas": {},
+      "package_version": "0.2.0",
+      "portfolios": {
+        "rotacion_momentum": {
+          "exposure_calibration": 1.0,
+          "min_history_m": 13,
+          "params": {
+            "lookback_m": 6,
+            "top_k": 4
+          },
+          "signal": "cross_sectional_momentum",
+          "universe": [
+            "XLB",
+            "XLE",
+            "XLF",
+            "XLI",
+            "XLK",
+            "XLP",
+            "XLU",
+            "XLV",
+            "XLY"
+          ],
+          "universe_id": "U:XLB+XLE+XLF+XLI+XLK+XLP+XLU+XLV+XLY"
+        }
+      },
+      "regime_family": [],
+      "regimes": {
+        "curva_invertida": {
+          "selected": [],
+          "spec": {
+            "asset": null,
+            "assets": [
+              "XLB",
+              "XLE",
+              "XLF",
+              "XLI",
+              "XLK",
+              "XLP",
+              "XLU",
+              "XLV",
+              "XLY"
+            ],
+            "justification": "Umbral natural 0: la inversión de la curva anticipa recesiones (Estrella y Mishkin 1998)",
+            "min_months": 24,
+            "months": [],
+            "name": "curva_invertida",
+            "op": "<",
+            "type": "spread",
+            "values": [
+              0.0
+            ],
+            "variables": [
+              "^TNX",
+              "^IRX"
+            ]
+          }
+        },
+        "mercado_bajista": {
+          "selected": [],
+          "spec": {
+            "asset": "SPY",
+            "assets": [
+              "XLB",
+              "XLE",
+              "XLF",
+              "XLI",
+              "XLK",
+              "XLP",
+              "XLU",
+              "XLV",
+              "XLY"
+            ],
+            "justification": "Media móvil de 10 meses (Faber 2007)",
+            "min_months": 24,
+            "months": [
+              10
+            ],
+            "name": "mercado_bajista",
+            "op": ">",
+            "type": "trend",
+            "values": [],
+            "variables": []
+          }
+        },
+        "vix_alto": {
+          "selected": [],
+          "spec": {
+            "asset": null,
+            "assets": [
+              "XLB",
+              "XLE",
+              "XLF",
+              "XLI",
+              "XLK",
+              "XLP",
+              "XLU",
+              "XLV",
+              "XLY"
+            ],
+            "justification": "Niveles convencionales de estrés del VIX; se declara la malla completa (el 25 se usó antes en el análisis exploratorio)",
+            "min_months": 24,
+            "months": [],
+            "name": "vix_alto",
+            "op": ">",
+            "type": "threshold",
+            "values": [
+              20.0,
+              25.0,
+              30.0
+            ],
+            "variables": [
+              "^VIX"
+            ]
+          }
+        }
+      }
+    },
+    "frozen_sha256": "8a858cc0d8eb2b7424c23d0b6e17784d066bb52ba7cd41c33bf13eedb914dc43",
+    "train_end": "2014-12-31",
+    "validate_with": "tsinsurance experiment validate /home/user/time-series-insurance/experiments/sectores_gics/rotacion_regimenes.toml --calibration 20261117T201317Z-2133a5"
+  },
+  "econometric": {},
+  "experiment": {
+    "author": "agente (Claude) a pedido del usuario",
+    "file": "/home/user/time-series-insurance/experiments/sectores_gics/rotacion_regimenes.toml",
+    "hypothesis": "H1 (rotación): invertir cada mes en los k sectores SPDR con mayor momentum de 6 o 12 meses\nsupera a los 9 sectores igual ponderados (mismos costos, rebalanceo mensual) después de\najustar por todas las pruebas, incluidas las 4 del análisis exploratorio previo.\nH2 (ciclo): el exceso de retorno del mes siguiente de los sectores difiere según la curva\ninvertida, el nivel del VIX o la tendencia del S&P 500.\nExpectativa previa: sin evidencia; el periodo 2015-2026 ya se miró, así que es exploratorio.\n",
+    "id": "sectores-gics-rotacion-regimenes",
+    "sha256": "2133a5ed3360f788248b2742ea7f1e100a863d42dba7d3e09d39dcb1cf7b9151",
+    "title": "Rotación sectorial por momentum relativo y regímenes del ciclo (flujo registrado)"
+  },
+  "ideas": {},
+  "phase": "calibration",
+  "portfolios": {
+    "rotacion_momentum": {
+      "benchmark": "equal_weight (elegibles, mismos costos, rebalanceo M)",
+      "best_exposure": 1.0,
+      "best_params": {
+        "lookback_m": 6,
+        "top_k": 4
+      },
+      "configurations": [
+        {
+          "benchmark_sharpe_ann": 0.3420290725,
+          "exposure": 1.0,
+          "params": {
+            "lookback_m": 6,
+            "top_k": 3
+          },
+          "sharpe_ann": 0.3147496639,
+          "turnover_mean": 0.0271387603
+        },
+        {
+          "benchmark_sharpe_ann": 0.3420290725,
+          "exposure": 1.0,
+          "params": {
+            "lookback_m": 6,
+            "top_k": 4
+          },
+          "sharpe_ann": 0.3518466604,
+          "turnover_mean": 0.0225197334
+        },
+        {
+          "benchmark_sharpe_ann": 0.3420290725,
+          "exposure": 1.0,
+          "params": {
+            "lookback_m": 12,
+            "top_k": 3
+          },
+          "sharpe_ann": 0.2806317784,
+          "turnover_mean": 0.0226803475
+        },
+        {
+          "benchmark_sharpe_ann": 0.3420290725,
+          "exposure": 1.0,
+          "params": {
+            "lookback_m": 12,
+            "top_k": 4
+          },
+          "sharpe_ann": 0.2531726406,
+          "turnover_mean": 0.015399869
+        }
+      ],
+      "min_history_m": 13,
+      "prior_trials": {
+        "count_only": 4,
+        "in_variance": 0
+      },
+      "rejected_lookahead": [],
+      "selection": {
+        "asset": {
+          "0": "U:XLB+XLE+XLF+XLI+XLK+XLP+XLU+XLV+XLY"
+        },
+        "best": {
+          "0": "idea=rotacion_momentum, lookback_m=6, top_k=4"
+        },
+        "dsr": {
+          "0": 0.2855286532
+        },
+        "eval_end": {
+          "0": "2014-12-31T00:00:00"
+        },
+        "eval_start": {
+          "0": "2000-04-04T00:00:00"
+        },
+        "exposure": {
+          "0": 1.0
+        },
+        "ir_vs_bh": {
+          "0": -0.0031433867
+        },
+        "n_effective": {
+          "0": 1.5134166659
+        },
+        "n_trials": {
+          "0": 8
+        },
+        "psr": {
+          "0": 0.9111783186
+        },
+        "sharpe": {
+          "0": 0.3518466604
+        },
+        "significant": {
+          "0": false
+        },
+        "spa_p": {
+          "0": 0.682
+        },
+        "spa_p_holm": {
+          "0": 0.682
+        },
+        "timing_ir": {
+          "0": -0.0031433867
+        }
+      },
+      "signal": "cross_sectional_momentum",
+      "universe": [
+        "XLB",
+        "XLE",
+        "XLF",
+        "XLI",
+        "XLK",
+        "XLP",
+        "XLU",
+        "XLV",
+        "XLY"
+      ],
+      "universe_id": "U:XLB+XLE+XLF+XLI+XLK+XLP+XLU+XLV+XLY",
+      "window_start": "2000-04-04"
+    }
+  },
+  "provenance": {
+    "bundle": {
+      "name": "sectores_gics",
+      "path": "/home/user/time-series-insurance/experiments/sectores_gics/data",
+      "quality_warnings": [],
+      "sha256": "e60a270bf66bc25b6618a9dc08e1db1acf188981aa219883d64c81cb1e4016bc"
+    },
+    "git": {
+      "commit": "b04f5286fdc851017d0d77acf23895240b4fa41c",
+      "dirty": false
+    },
+    "package_version": "0.2.0",
+    "prior_trials_by_asset": {
+      "XLB": 8,
+      "XLE": 8,
+      "XLF": 8,
+      "XLI": 8,
+      "XLK": 8,
+      "XLP": 8,
+      "XLU": 8,
+      "XLV": 8,
+      "XLY": 8
+    },
+    "python": "3.13.18",
+    "registry": "/home/user/time-series-insurance/experiments/registry.jsonl",
+    "registry_relpath": "../../../registry.jsonl",
+    "run_id": "20261117T201317Z-2133a5",
+    "seed": 17,
+    "started_at": "2026-11-17T20:13:17+00:00"
+  },
+  "regimes": {
+    "curva_invertida": {
+      "alpha_family": 0.01,
+      "memory_key": "spread:^TNX-^IRX",
+      "prior_variants_in_holm": 54,
+      "rows": [
+        {
+          "ann_off": 0.0666336787,
+          "ann_on": 0.2499619928,
+          "asset": "XLB",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:curva_invertida[op=<,value=0.0]:XLB",
+          "months_off": 177,
+          "months_on": 14,
+          "p": null,
+          "p_holm": null,
+          "regime": "curva_invertida",
+          "t": null,
+          "variant": {
+            "op": "<",
+            "value": 0.0
+          }
+        },
+        {
+          "ann_off": 0.097897637,
+          "ann_on": 0.1468968499,
+          "asset": "XLE",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:curva_invertida[op=<,value=0.0]:XLE",
+          "months_off": 177,
+          "months_on": 14,
+          "p": null,
+          "p_holm": null,
+          "regime": "curva_invertida",
+          "t": null,
+          "variant": {
+            "op": "<",
+            "value": 0.0
+          }
+        },
+        {
+          "ann_off": 0.0210452676,
+          "ann_on": 0.1102218115,
+          "asset": "XLF",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:curva_invertida[op=<,value=0.0]:XLF",
+          "months_off": 177,
+          "months_on": 14,
+          "p": null,
+          "p_holm": null,
+          "regime": "curva_invertida",
+          "t": null,
+          "variant": {
+            "op": "<",
+            "value": 0.0
+          }
+        },
+        {
+          "ann_off": 0.0638355294,
+          "ann_on": 0.131239831,
+          "asset": "XLI",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:curva_invertida[op=<,value=0.0]:XLI",
+          "months_off": 177,
+          "months_on": 14,
+          "p": null,
+          "p_holm": null,
+          "regime": "curva_invertida",
+          "t": null,
+          "variant": {
+            "op": "<",
+            "value": 0.0
+          }
+        },
+        {
+          "ann_off": 0.0428111874,
+          "ann_on": -0.1780256841,
+          "asset": "XLK",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:curva_invertida[op=<,value=0.0]:XLK",
+          "months_off": 177,
+          "months_on": 14,
+          "p": null,
+          "p_holm": null,
+          "regime": "curva_invertida",
+          "t": null,
+          "variant": {
+            "op": "<",
+            "value": 0.0
+          }
+        },
+        {
+          "ann_off": 0.0396837615,
+          "ann_on": 0.1295418453,
+          "asset": "XLP",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:curva_invertida[op=<,value=0.0]:XLP",
+          "months_off": 177,
+          "months_on": 14,
+          "p": null,
+          "p_holm": null,
+          "regime": "curva_invertida",
+          "t": null,
+          "variant": {
+            "op": "<",
+            "value": 0.0
+          }
+        },
+        {
+          "ann_off": 0.0439097651,
+          "ann_on": 0.2321737667,
+          "asset": "XLU",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:curva_invertida[op=<,value=0.0]:XLU",
+          "months_off": 177,
+          "months_on": 14,
+          "p": null,
+          "p_holm": null,
+          "regime": "curva_invertida",
+          "t": null,
+          "variant": {
+            "op": "<",
+            "value": 0.0
+          }
+        },
+        {
+          "ann_off": 0.0632091329,
+          "ann_on": 0.0362807267,
+          "asset": "XLV",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:curva_invertida[op=<,value=0.0]:XLV",
+          "months_off": 177,
+          "months_on": 14,
+          "p": null,
+          "p_holm": null,
+          "regime": "curva_invertida",
+          "t": null,
+          "variant": {
+            "op": "<",
+            "value": 0.0
+          }
+        },
+        {
+          "ann_off": 0.0552061,
+          "ann_on": 0.2567337943,
+          "asset": "XLY",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:curva_invertida[op=<,value=0.0]:XLY",
+          "months_off": 177,
+          "months_on": 14,
+          "p": null,
+          "p_holm": null,
+          "regime": "curva_invertida",
+          "t": null,
+          "variant": {
+            "op": "<",
+            "value": 0.0
+          }
+        }
+      ],
+      "selected": [],
+      "spec": {
+        "asset": null,
+        "assets": [
+          "XLB",
+          "XLE",
+          "XLF",
+          "XLI",
+          "XLK",
+          "XLP",
+          "XLU",
+          "XLV",
+          "XLY"
+        ],
+        "justification": "Umbral natural 0: la inversión de la curva anticipa recesiones (Estrella y Mishkin 1998)",
+        "min_months": 24,
+        "months": [],
+        "name": "curva_invertida",
+        "op": "<",
+        "type": "spread",
+        "values": [
+          0.0
+        ],
+        "variables": [
+          "^TNX",
+          "^IRX"
+        ]
+      }
+    },
+    "mercado_bajista": {
+      "alpha_family": 0.01,
+      "memory_key": "trend:SPY",
+      "prior_variants_in_holm": 54,
+      "rows": [
+        {
+          "ann_off": 0.0888094178,
+          "ann_on": 0.0414876178,
+          "asset": "XLB",
+          "diff_ann": -0.0473218,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-10-29",
+          "inconclusive": false,
+          "label": "regimen:mercado_bajista[months=10]:XLB",
+          "months_off": 126,
+          "months_on": 56,
+          "p": 0.7484575443,
+          "p_holm": 1.0,
+          "regime": "mercado_bajista",
+          "t": -0.3206738789,
+          "variant": {
+            "months": 10
+          }
+        },
+        {
+          "ann_off": 0.1703990523,
+          "ann_on": -0.0830351999,
+          "asset": "XLE",
+          "diff_ann": -0.2534342522,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-10-29",
+          "inconclusive": false,
+          "label": "regimen:mercado_bajista[months=10]:XLE",
+          "months_off": 126,
+          "months_on": 56,
+          "p": 0.0707489146,
+          "p_holm": 1.0,
+          "regime": "mercado_bajista",
+          "t": -1.8070857217,
+          "variant": {
+            "months": 10
+          }
+        },
+        {
+          "ann_off": 0.0960295035,
+          "ann_on": -0.1357989666,
+          "asset": "XLF",
+          "diff_ann": -0.2318284701,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-10-29",
+          "inconclusive": false,
+          "label": "regimen:mercado_bajista[months=10]:XLF",
+          "months_off": 126,
+          "months_on": 56,
+          "p": 0.1425606742,
+          "p_holm": 1.0,
+          "regime": "mercado_bajista",
+          "t": -1.4663216713,
+          "variant": {
+            "months": 10
+          }
+        },
+        {
+          "ann_off": 0.1249795049,
+          "ann_on": -0.0748420665,
+          "asset": "XLI",
+          "diff_ann": -0.1998215714,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-10-29",
+          "inconclusive": false,
+          "label": "regimen:mercado_bajista[months=10]:XLI",
+          "months_off": 126,
+          "months_on": 56,
+          "p": 0.1354921344,
+          "p_holm": 1.0,
+          "regime": "mercado_bajista",
+          "t": -1.4927901195,
+          "variant": {
+            "months": 10
+          }
+        },
+        {
+          "ann_off": 0.1041713723,
+          "ann_on": -0.1639809137,
+          "asset": "XLK",
+          "diff_ann": -0.268152286,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-10-29",
+          "inconclusive": false,
+          "label": "regimen:mercado_bajista[months=10]:XLK",
+          "months_off": 126,
+          "months_on": 56,
+          "p": 0.1335387965,
+          "p_holm": 1.0,
+          "regime": "mercado_bajista",
+          "t": -1.5002919393,
+          "variant": {
+            "months": 10
+          }
+        },
+        {
+          "ann_off": 0.1045656235,
+          "ann_on": -0.0574596087,
+          "asset": "XLP",
+          "diff_ann": -0.1620252322,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-10-29",
+          "inconclusive": false,
+          "label": "regimen:mercado_bajista[months=10]:XLP",
+          "months_off": 126,
+          "months_on": 56,
+          "p": 0.0349404059,
+          "p_holm": 1.0,
+          "regime": "mercado_bajista",
+          "t": -2.1090483792,
+          "variant": {
+            "months": 10
+          }
+        },
+        {
+          "ann_off": 0.1370275276,
+          "ann_on": -0.1135807438,
+          "asset": "XLU",
+          "diff_ann": -0.2506082714,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-10-29",
+          "inconclusive": false,
+          "label": "regimen:mercado_bajista[months=10]:XLU",
+          "months_off": 126,
+          "months_on": 56,
+          "p": 0.0083378055,
+          "p_holm": 0.6753622473,
+          "regime": "mercado_bajista",
+          "t": -2.638075342,
+          "variant": {
+            "months": 10
+          }
+        },
+        {
+          "ann_off": 0.1051777302,
+          "ann_on": -0.0285333128,
+          "asset": "XLV",
+          "diff_ann": -0.1337110431,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-10-29",
+          "inconclusive": false,
+          "label": "regimen:mercado_bajista[months=10]:XLV",
+          "months_off": 126,
+          "months_on": 56,
+          "p": 0.1620555136,
+          "p_holm": 1.0,
+          "regime": "mercado_bajista",
+          "t": -1.3981916833,
+          "variant": {
+            "months": 10
+          }
+        },
+        {
+          "ann_off": 0.092035611,
+          "ann_on": 0.028618856,
+          "asset": "XLY",
+          "diff_ann": -0.063416755,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-10-29",
+          "inconclusive": false,
+          "label": "regimen:mercado_bajista[months=10]:XLY",
+          "months_off": 126,
+          "months_on": 56,
+          "p": 0.628866968,
+          "p_holm": 1.0,
+          "regime": "mercado_bajista",
+          "t": -0.4833222162,
+          "variant": {
+            "months": 10
+          }
+        }
+      ],
+      "selected": [],
+      "spec": {
+        "asset": "SPY",
+        "assets": [
+          "XLB",
+          "XLE",
+          "XLF",
+          "XLI",
+          "XLK",
+          "XLP",
+          "XLU",
+          "XLV",
+          "XLY"
+        ],
+        "justification": "Media móvil de 10 meses (Faber 2007)",
+        "min_months": 24,
+        "months": [
+          10
+        ],
+        "name": "mercado_bajista",
+        "op": ">",
+        "type": "trend",
+        "values": [],
+        "variables": []
+      }
+    },
+    "vix_alto": {
+      "alpha_family": 0.01,
+      "memory_key": "threshold:^VIX",
+      "prior_variants_in_holm": 54,
+      "rows": [
+        {
+          "ann_off": 0.0452910493,
+          "ann_on": 0.1159616728,
+          "asset": "XLB",
+          "diff_ann": 0.0706706235,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=20.0]:XLB",
+          "months_off": 97,
+          "months_on": 94,
+          "p": 0.5287089637,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": 0.6299780221,
+          "variant": {
+            "op": ">",
+            "value": 20.0
+          }
+        },
+        {
+          "ann_off": 0.1036626531,
+          "ann_on": 0.0097889507,
+          "asset": "XLB",
+          "diff_ann": -0.0938737024,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=25.0]:XLB",
+          "months_off": 143,
+          "months_on": 48,
+          "p": 0.5775236267,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -0.5570055654,
+          "variant": {
+            "op": ">",
+            "value": 25.0
+          }
+        },
+        {
+          "ann_off": 0.0822589591,
+          "ann_on": 0.0623621892,
+          "asset": "XLB",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:vix_alto[op=>,value=30.0]:XLB",
+          "months_off": 170,
+          "months_on": 21,
+          "p": null,
+          "p_holm": null,
+          "regime": "vix_alto",
+          "t": null,
+          "variant": {
+            "op": ">",
+            "value": 30.0
+          }
+        },
+        {
+          "ann_off": 0.1069484626,
+          "ann_on": 0.0958557103,
+          "asset": "XLE",
+          "diff_ann": -0.0110927523,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=20.0]:XLE",
+          "months_off": 97,
+          "months_on": 94,
+          "p": 0.9198897492,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -0.100572599,
+          "variant": {
+            "op": ">",
+            "value": 20.0
+          }
+        },
+        {
+          "ann_off": 0.111353399,
+          "ann_on": 0.0721021163,
+          "asset": "XLE",
+          "diff_ann": -0.0392512827,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=25.0]:XLE",
+          "months_off": 143,
+          "months_on": 48,
+          "p": 0.7928115577,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -0.2626614168,
+          "variant": {
+            "op": ">",
+            "value": 25.0
+          }
+        },
+        {
+          "ann_off": 0.1211008947,
+          "ann_on": -0.0572721171,
+          "asset": "XLE",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:vix_alto[op=>,value=30.0]:XLE",
+          "months_off": 170,
+          "months_on": 21,
+          "p": null,
+          "p_holm": null,
+          "regime": "vix_alto",
+          "t": null,
+          "variant": {
+            "op": ">",
+            "value": 30.0
+          }
+        },
+        {
+          "ann_off": 0.0435135844,
+          "ann_on": 0.0111414898,
+          "asset": "XLF",
+          "diff_ann": -0.0323720946,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=20.0]:XLF",
+          "months_off": 97,
+          "months_on": 94,
+          "p": 0.7763647883,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -0.2840594936,
+          "variant": {
+            "op": ">",
+            "value": 20.0
+          }
+        },
+        {
+          "ann_off": 0.0385255272,
+          "ann_on": -0.005021514,
+          "asset": "XLF",
+          "diff_ann": -0.0435470412,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=25.0]:XLF",
+          "months_off": 143,
+          "months_on": 48,
+          "p": 0.8124745947,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -0.2372348588,
+          "variant": {
+            "op": ">",
+            "value": 25.0
+          }
+        },
+        {
+          "ann_off": 0.0438979723,
+          "ann_on": -0.1045017889,
+          "asset": "XLF",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:vix_alto[op=>,value=30.0]:XLF",
+          "months_off": 170,
+          "months_on": 21,
+          "p": null,
+          "p_holm": null,
+          "regime": "vix_alto",
+          "t": null,
+          "variant": {
+            "op": ">",
+            "value": 30.0
+          }
+        },
+        {
+          "ann_off": 0.0597307505,
+          "ann_on": 0.0781102505,
+          "asset": "XLI",
+          "diff_ann": 0.0183795,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=20.0]:XLI",
+          "months_off": 97,
+          "months_on": 94,
+          "p": 0.8498722116,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": 0.1892814777,
+          "variant": {
+            "op": ">",
+            "value": 20.0
+          }
+        },
+        {
+          "ann_off": 0.0917064482,
+          "ann_on": 0.000463005,
+          "asset": "XLI",
+          "diff_ann": -0.0912434432,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=25.0]:XLI",
+          "months_off": 143,
+          "months_on": 48,
+          "p": 0.5365725193,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -0.6180042769,
+          "variant": {
+            "op": ">",
+            "value": 25.0
+          }
+        },
+        {
+          "ann_off": 0.0785342637,
+          "ann_on": -0.010218023,
+          "asset": "XLI",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:vix_alto[op=>,value=30.0]:XLI",
+          "months_off": 170,
+          "months_on": 21,
+          "p": null,
+          "p_holm": null,
+          "regime": "vix_alto",
+          "t": null,
+          "variant": {
+            "op": ">",
+            "value": 30.0
+          }
+        },
+        {
+          "ann_off": -0.0014200152,
+          "ann_on": 0.0555634263,
+          "asset": "XLK",
+          "diff_ann": 0.0569834415,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=20.0]:XLK",
+          "months_off": 97,
+          "months_on": 94,
+          "p": 0.6507200047,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": 0.452762173,
+          "variant": {
+            "op": ">",
+            "value": 20.0
+          }
+        },
+        {
+          "ann_off": 0.0097861312,
+          "ann_on": 0.0767875798,
+          "asset": "XLK",
+          "diff_ann": 0.0670014486,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=25.0]:XLK",
+          "months_off": 143,
+          "months_on": 48,
+          "p": 0.7245880237,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": 0.3523336917,
+          "variant": {
+            "op": ">",
+            "value": 25.0
+          }
+        },
+        {
+          "ann_off": -0.0104025628,
+          "ann_on": 0.3263645847,
+          "asset": "XLK",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:vix_alto[op=>,value=30.0]:XLK",
+          "months_off": 170,
+          "months_on": 21,
+          "p": null,
+          "p_holm": null,
+          "regime": "vix_alto",
+          "t": null,
+          "variant": {
+            "op": ">",
+            "value": 30.0
+          }
+        },
+        {
+          "ann_off": 0.0655216255,
+          "ann_on": 0.0264044038,
+          "asset": "XLP",
+          "diff_ann": -0.0391172217,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=20.0]:XLP",
+          "months_off": 97,
+          "months_on": 94,
+          "p": 0.5322102533,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -0.6246355936,
+          "variant": {
+            "op": ">",
+            "value": 20.0
+          }
+        },
+        {
+          "ann_off": 0.0642618428,
+          "ann_on": -0.0073298314,
+          "asset": "XLP",
+          "diff_ann": -0.0715916742,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=25.0]:XLP",
+          "months_off": 143,
+          "months_on": 48,
+          "p": 0.4270109144,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -0.794316992,
+          "variant": {
+            "op": ">",
+            "value": 25.0
+          }
+        },
+        {
+          "ann_off": 0.0591739706,
+          "ann_on": -0.0581887322,
+          "asset": "XLP",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:vix_alto[op=>,value=30.0]:XLP",
+          "months_off": 170,
+          "months_on": 21,
+          "p": null,
+          "p_holm": null,
+          "regime": "vix_alto",
+          "t": null,
+          "variant": {
+            "op": ">",
+            "value": 30.0
+          }
+        },
+        {
+          "ann_off": 0.1217853274,
+          "ann_on": -0.008411868,
+          "asset": "XLU",
+          "diff_ann": -0.1301971954,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=20.0]:XLU",
+          "months_off": 97,
+          "months_on": 94,
+          "p": 0.0909824609,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -1.6902378443,
+          "variant": {
+            "op": ">",
+            "value": 20.0
+          }
+        },
+        {
+          "ann_off": 0.0995416093,
+          "ann_on": -0.0669164369,
+          "asset": "XLU",
+          "diff_ann": -0.1664580462,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=25.0]:XLU",
+          "months_off": 143,
+          "months_on": 48,
+          "p": 0.1143813217,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -1.5788026889,
+          "variant": {
+            "op": ">",
+            "value": 25.0
+          }
+        },
+        {
+          "ann_off": 0.0738914889,
+          "ann_on": -0.0732900928,
+          "asset": "XLU",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:vix_alto[op=>,value=30.0]:XLU",
+          "months_off": 170,
+          "months_on": 21,
+          "p": null,
+          "p_holm": null,
+          "regime": "vix_alto",
+          "t": null,
+          "variant": {
+            "op": ">",
+            "value": 30.0
+          }
+        },
+        {
+          "ann_off": 0.0573830514,
+          "ann_on": 0.0652105396,
+          "asset": "XLV",
+          "diff_ann": 0.0078274882,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=20.0]:XLV",
+          "months_off": 97,
+          "months_on": 94,
+          "p": 0.9130849776,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": 0.109148159,
+          "variant": {
+            "op": ">",
+            "value": 20.0
+          }
+        },
+        {
+          "ann_off": 0.0780982347,
+          "ann_on": 0.0109978988,
+          "asset": "XLV",
+          "diff_ann": -0.0671003359,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=25.0]:XLV",
+          "months_off": 143,
+          "months_on": 48,
+          "p": 0.5232143778,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": -0.6383983915,
+          "variant": {
+            "op": ">",
+            "value": 25.0
+          }
+        },
+        {
+          "ann_off": 0.0601006955,
+          "ann_on": 0.0704204032,
+          "asset": "XLV",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:vix_alto[op=>,value=30.0]:XLV",
+          "months_off": 170,
+          "months_on": 21,
+          "p": null,
+          "p_holm": null,
+          "regime": "vix_alto",
+          "t": null,
+          "variant": {
+            "op": ">",
+            "value": 30.0
+          }
+        },
+        {
+          "ann_off": 0.0522009699,
+          "ann_on": 0.0883219016,
+          "asset": "XLY",
+          "diff_ann": 0.0361209317,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=20.0]:XLY",
+          "months_off": 97,
+          "months_on": 94,
+          "p": 0.7085954997,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": 0.3737430413,
+          "variant": {
+            "op": ">",
+            "value": 20.0
+          }
+        },
+        {
+          "ann_off": 0.0670171027,
+          "ann_on": 0.0787980655,
+          "asset": "XLY",
+          "diff_ann": 0.0117809629,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": false,
+          "label": "regimen:vix_alto[op=>,value=25.0]:XLY",
+          "months_off": 143,
+          "months_on": 48,
+          "p": 0.9366562872,
+          "p_holm": 1.0,
+          "regime": "vix_alto",
+          "t": 0.07947315,
+          "variant": {
+            "op": ">",
+            "value": 25.0
+          }
+        },
+        {
+          "ann_off": 0.0591050887,
+          "ann_on": 0.1579946545,
+          "asset": "XLY",
+          "diff_ann": null,
+          "eval_end": "2014-11-28",
+          "eval_start": "1999-01-29",
+          "inconclusive": true,
+          "label": "regimen:vix_alto[op=>,value=30.0]:XLY",
+          "months_off": 170,
+          "months_on": 21,
+          "p": null,
+          "p_holm": null,
+          "regime": "vix_alto",
+          "t": null,
+          "variant": {
+            "op": ">",
+            "value": 30.0
+          }
+        }
+      ],
+      "selected": [],
+      "spec": {
+        "asset": null,
+        "assets": [
+          "XLB",
+          "XLE",
+          "XLF",
+          "XLI",
+          "XLK",
+          "XLP",
+          "XLU",
+          "XLV",
+          "XLY"
+        ],
+        "justification": "Niveles convencionales de estrés del VIX; se declara la malla completa (el 25 se usó antes en el análisis exploratorio)",
+        "min_months": 24,
+        "months": [],
+        "name": "vix_alto",
+        "op": ">",
+        "type": "threshold",
+        "values": [
+          20.0,
+          25.0,
+          30.0
+        ],
+        "variables": [
+          "^VIX"
+        ]
+      }
+    }
+  },
+  "registry_head": {
+    "last_hash": "226b87a10d97f839dc8fc6284e5221628ff45f58f6b2dbd8a1b1644733bbaa1d",
+    "n_lines": 180
+  },
+  "registry_head_before": {
+    "last_hash": "9697b5c99265f853add0525c9ea9811dd812c60348974cc46bdf5e558d3a875e",
+    "n_lines": 127
+  },
+  "result_version": "1.2",
+  "status": {
+    "econometric_quadrants": {},
+    "exploratory_reasons": [],
+    "lines_registered": 53,
+    "out_of_sample": "pendiente",
+    "significant_by_idea": {}
+  }
+}
