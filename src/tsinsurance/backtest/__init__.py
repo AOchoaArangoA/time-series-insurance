@@ -30,6 +30,7 @@ from tsinsurance.backtest.inference import (
     psr_from_moments,
     sharpe_difference,
     sharpe_inference,
+    sharpe_se_hac,
     spa_test,
 )
 from tsinsurance.backtest.lookahead import LookaheadReport, check_lookahead
@@ -105,6 +106,7 @@ __all__ = [
     "run_with_bt",
     "sharpe_difference",
     "sharpe_inference",
+    "sharpe_se_hac",
     "sma_crossover",
     "spa_test",
     "sweep",

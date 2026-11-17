@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tsinsurance"
-version = "0.1.0"
+version = "0.2.0"
 description = "Modelos de series de tiempo con metodología econométrica robusta para la gestión de inversiones de aseguradoras."
 readme = "README.md"
 requires-python = ">=3.11"

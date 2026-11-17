@@ -1,0 +1,12 @@
+{
+  "r_version": "R version 4.3.3 (2024-02-29)",
+  "sandwich_version": "3.1.0",
+  "input": "prewhite_input.csv",
+  "n": 2520,
+  "sharpe_per_period": 0.0728208764630457,
+  "newey_west_lags": 8,
+  "se_newey_west": 0.0259374465372435,
+  "se_prewhitened_qs": 0.0282248033906325,
+  "andrews_bandwidth": 1.34914048140806,
+  "settings": "kernHAC(prewhite=1, kernel='Quadratic Spectral', bw=bwAndrews, adjust=FALSE, ar.method='ols')"
+}

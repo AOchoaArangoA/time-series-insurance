@@ -1,7 +1,8 @@
 # Contrato de la línea de comandos (spec 004)
 
-Códigos de salida: `0` = éxito, `1` = error (causa en *stderr*), `2` = bitácora bloqueada
-por otra ejecución.
+Códigos de salida (convención vigente de la CLI): `0` = éxito; `1` = la verificación o
+validación no pasa; `2` = error de uso o de ejecución (causa en *stderr*); `3` = bitácora
+bloqueada por otra ejecución.
 
 ## `tsinsurance experiment run EXP.toml [--registry R] [--output DIR]`
 

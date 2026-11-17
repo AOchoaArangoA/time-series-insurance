@@ -260,7 +260,8 @@ Opciones útiles:
 - `--registry RUTA` usa otra bitácora, pero si difiere de la declarada el resultado
   queda **exploratorio**.
 
-Convención de errores: código de salida **0** = éxito y **1** = error. En el error, la
+Convención de errores: código de salida **0** = éxito, **1** = la validación o verificación
+no pasa, **2** = error de uso o de ejecución y **3** = bitácora bloqueada por otra ejecución. En el error, la
 causa aparece en *stderr* con la serie, el campo y la regla incumplida.
 
 ### Modo B, biblioteca Python

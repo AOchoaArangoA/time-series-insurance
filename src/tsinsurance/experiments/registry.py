@@ -5,21 +5,48 @@ ejecutar), ``signal`` (una configuración evaluada), ``econometric`` (una especi
 evaluada) o ``validation`` (una evaluación fuera de muestra). La bitácora alimenta el
 ajuste por pruebas múltiples de los experimentos siguientes; nunca se editan ni se
 borran líneas (Principio VIII). Cada línea guarda ``prev_hash`` (hash de la línea
-anterior), de modo que cualquier edición o borrado se detecta con
-:func:`verify_registry`.
+anterior), de modo que cualquier edición, reordenamiento o borrado intermedio se detecta
+con :func:`verify_registry`.
+
+La cadena sola no detecta un **recorte al final** (spec 004, US1). Para eso hay dos anclas:
+
+- cada ``result.json`` guarda el :class:`RegistryHead` de la bitácora al terminar, y
+  ``verify_registry(..., results=DIR)`` exige que la bitácora lo siga conteniendo;
+- ``verify_registry(..., base=ARCHIVO)`` exige que la bitácora comience byte a byte con la
+  de la rama base (lo usa la integración continua).
+
+Un solo escritor a la vez: :func:`registry_lock` crea ``<bitácora>.lock`` de forma
+exclusiva durante toda la ejecución; un bloqueo vencido sólo se libera con
+:func:`unlock_registry` (``tsinsurance experiment unlock``), nunca automáticamente.
 """
 
 from __future__ import annotations
 
+import contextlib
+import datetime as dt
 import hashlib
 import json
 import os
-from collections.abc import Iterable, Mapping
+import socket
+import sys
+from collections.abc import Iterable, Iterator, Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from tsinsurance.errors import RegistryLockedError
+
 __all__ = [
+    "GENESIS",
+    "STALE_HOURS",
+    "LockInfo",
+    "RegistryHead",
     "append_trials",
+    "lock_path",
+    "read_lock",
+    "registry_head",
+    "registry_lock",
+    "unlock_registry",
     "line_hash",
     "prior_information_ratios",
     "prior_specifications",
@@ -30,6 +57,7 @@ __all__ = [
 ]
 
 GENESIS = "0" * 64
+STALE_HOURS = 6.0
 
 
 def _canonical(obj: Any) -> str:
@@ -57,23 +85,120 @@ def read_registry(path: str | os.PathLike[str]) -> list[dict[str, Any]]:
     if not p.exists():
         return []
     rows = []
-    for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), start=1):
+    text = p.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    for n, line in enumerate(lines, start=1):
         if line.strip():
             try:
                 rows.append(json.loads(line))
             except json.JSONDecodeError as exc:
+                if n == len(lines) and not text.endswith("\n"):
+                    raise ValueError(
+                        f"{p}:{n} última línea incompleta (escritura interrumpida); "
+                        "repárela con `tsinsurance experiment unlock` (la aparta, no la borra)"
+                    ) from exc
                 raise ValueError(f"{p}:{n} no es JSON válido: {exc}") from exc
     return rows
 
 
-def verify_registry(path: str | os.PathLike[str]) -> list[str]:
-    """Verifica la cadena de hashes; devuelve los problemas (lista vacía = íntegra)."""
+@dataclass(frozen=True, slots=True)
+class RegistryHead:
+    """Estado de la bitácora: número de líneas y huella de la última (``GENESIS`` si vacía)."""
+
+    n_lines: int
+    last_hash: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Forma serializable (se guarda en ``result.json``)."""
+        return {"n_lines": self.n_lines, "last_hash": self.last_hash}
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> RegistryHead:
+        """Inversa de :meth:`to_dict`."""
+        return cls(int(d["n_lines"]), str(d["last_hash"]))
+
+
+def registry_head(path: str | os.PathLike[str]) -> RegistryHead:
+    """Estado actual de la bitácora (``RegistryHead(0, GENESIS)`` si no existe o está vacía)."""
+    rows = read_registry(path)
+    return RegistryHead(len(rows), line_hash(rows[-1]) if rows else GENESIS)
+
+
+def verify_registry(
+    path: str | os.PathLike[str],
+    *,
+    base: str | os.PathLike[str] | None = None,
+    results: str | os.PathLike[str] | None = None,
+) -> list[str]:
+    """Verifica la bitácora; devuelve los problemas (lista vacía = íntegra).
+
+    Parameters
+    ----------
+    path : PathLike
+        Bitácora a verificar. Siempre se verifica la cadena de hashes.
+    base : PathLike, optional
+        Bitácora de la rama base: ``path`` debe comenzar **byte a byte** con ella (sólo se
+        aceptan líneas agregadas al final). Si no existe, cualquier bitácora íntegra pasa.
+    results : PathLike, optional
+        Carpeta con ``result.json`` publicados: cada resultado de esta bitácora (según
+        ``provenance.registry_relpath``) exige que la línea ``registry_head.n_lines`` exista
+        y tenga la huella ``registry_head.last_hash``; así se detectan los recortes al final.
+    """
     problems = []
     prev = GENESIS
-    for n, row in enumerate(read_registry(path), start=1):
+    rows = read_registry(path)
+    for n, row in enumerate(rows, start=1):
         if row.get("prev_hash") != prev:
             problems.append(f"línea {n}: prev_hash no coincide (edición, borrado o reordenamiento)")
         prev = line_hash(row)
+    if base is not None:
+        problems += _verify_prefix(Path(path), Path(base))
+    if results is not None:
+        problems += _verify_against_results(Path(path), Path(results), rows)
+    return problems
+
+
+def _verify_prefix(path: Path, base: Path) -> list[str]:
+    if not base.exists():
+        return []
+    old, new = base.read_bytes(), path.read_bytes() if path.exists() else b""
+    if new.startswith(old):
+        return []
+    old_lines, new_lines = old.splitlines(keepends=True), new.splitlines(keepends=True)
+    for n, (a, b) in enumerate(zip(old_lines, new_lines, strict=False), start=1):
+        if a != b:
+            return [f"línea {n}: distinta de la base (sólo se permite agregar líneas al final)"]
+    return [
+        f"la bitácora tiene menos líneas que la base ({len(new_lines)} < {len(old_lines)}): "
+        "se borraron líneas"
+    ]
+
+
+def _verify_against_results(path: Path, results: Path, rows: list[dict[str, Any]]) -> list[str]:
+    problems = []
+    target = path.resolve()
+    for rfile in sorted(results.rglob("result.json")):
+        try:
+            data = json.loads(rfile.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        head = data.get("registry_head")
+        rel = data.get("provenance", {}).get("registry_relpath")
+        if not head or not rel or (rfile.parent / rel).resolve() != target:
+            continue  # resultado antiguo o de otra bitácora
+        expected = RegistryHead.from_dict(head)
+        if expected.n_lines == 0:
+            continue
+        if len(rows) < expected.n_lines:
+            problems.append(
+                f"recorte: {rfile} registra {expected.n_lines} líneas y la bitácora tiene "
+                f"{len(rows)}"
+            )
+        elif line_hash(rows[expected.n_lines - 1]) != expected.last_hash:
+            problems.append(
+                f"la línea {expected.n_lines} no coincide con la registrada en {rfile} "
+                "(recorte y reescritura del final)"
+            )
     return problems
 
 
@@ -90,6 +215,8 @@ def append_trials(path: str | os.PathLike[str], trials: Iterable[Mapping[str, An
             fh.write(_canonical(row) + "\n")
             prev = line_hash(row)
             count += 1
+        fh.flush()
+        os.fsync(fh.fileno())
     return count
 
 
@@ -135,3 +262,174 @@ def prior_specifications(rows: Iterable[Mapping[str, Any]], asset: str, exclude:
 def validation_seen(rows: Iterable[Mapping[str, Any]], key: str) -> int:
     """Veces que ya se abrió la misma ventana de validación (misma clave)."""
     return sum(1 for r in rows if r.get("kind") == "validation" and r.get("key") == key)
+
+
+# --- Bloqueo: un solo escritor a la vez --------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class LockInfo:
+    """Contenido de ``<bitácora>.lock``."""
+
+    path: str
+    pid: int
+    host: str
+    run_id: str
+    created_at: str
+    repaired: str | None = None
+
+    @property
+    def age_hours(self) -> float:
+        """Antigüedad del bloqueo en horas."""
+        created = dt.datetime.fromisoformat(self.created_at)
+        return (dt.datetime.now(dt.UTC) - created).total_seconds() / 3600
+
+    @property
+    def stale(self) -> bool:
+        """Vencido: en esta máquina, si el proceso no existe; en otra, si tiene > 6 h.
+
+        En la misma máquina con el proceso vivo nunca está vencido, por antiguo que sea
+        (sólo ``--force`` lo libera).
+        """
+        if self.host == socket.gethostname():
+            return not _pid_alive(self.pid)
+        return self.age_hours > STALE_HOURS
+
+    def describe(self) -> str:
+        """Descripción para mensajes."""
+        return (
+            f"run_id={self.run_id}, pid={self.pid}, máquina={self.host}, "
+            f"hace {self.age_hours:.1f} h"
+        )
+
+
+def lock_path(path: str | os.PathLike[str]) -> Path:
+    """Ruta del archivo de bloqueo de una bitácora."""
+    p = Path(path)
+    return p.with_name(p.name + ".lock")
+
+
+def _pid_alive(pid: int) -> bool:
+    if sys.platform == "win32":  # pragma: no cover - CI corre en Linux
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+        handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return False
+        code = ctypes.c_ulong()
+        ok = kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
+        kernel32.CloseHandle(handle)
+        return bool(ok) and code.value == 259  # STILL_ACTIVE
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def read_lock(path: str | os.PathLike[str]) -> LockInfo | None:
+    """Bloqueo vigente de la bitácora, o ``None`` si está libre."""
+    lp = lock_path(path)
+    try:
+        d = json.loads(lp.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    except (OSError, json.JSONDecodeError):
+        d = {"pid": -1, "host": "?", "run_id": "?", "created_at": "1970-01-01T00:00:00+00:00"}
+    return LockInfo(str(lp), int(d["pid"]), str(d["host"]), str(d["run_id"]), str(d["created_at"]))
+
+
+@contextlib.contextmanager
+def registry_lock(path: str | os.PathLike[str], run_id: str) -> Iterator[None]:
+    """Toma la bitácora en exclusiva mientras dura el bloque ``with``.
+
+    Raises
+    ------
+    RegistryLockedError
+        Si otra ejecución la tiene tomada (o quedó un bloqueo vencido sin liberar).
+    """
+    lp = lock_path(path)
+    lp.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(lp, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        info = read_lock(path)
+        detail = info.describe() if info else "desconocido"
+        hint = (
+            "El bloqueo está vencido: libérelo con `tsinsurance experiment unlock "
+            f"{os.fspath(path)}`."
+            if info is not None and info.stale
+            else "Espere a que termine esa ejecución."
+        )
+        raise RegistryLockedError(
+            f"La bitácora {os.fspath(path)} está bloqueada por otra ejecución ({detail}). " + hint
+        ) from None
+    try:
+        payload = {
+            "pid": os.getpid(),
+            "host": socket.gethostname(),
+            "run_id": run_id,
+            "created_at": dt.datetime.now(dt.UTC).isoformat(),
+        }
+        os.write(fd, json.dumps(payload).encode("utf-8"))
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    try:
+        yield
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            lp.unlink()
+
+
+def _repair_tail(path: Path) -> str | None:
+    """Aparta una última línea incompleta (escritura interrumpida); devuelve dónde quedó."""
+    if not path.exists():
+        return None
+    data = path.read_bytes()
+    if not data or data.endswith(b"\n"):
+        return None
+    cut = data.rfind(b"\n") + 1
+    tail = data[cut:]
+    try:
+        json.loads(tail)
+    except ValueError:
+        pass
+    else:
+        return None  # línea completa sin salto final: no es una escritura interrumpida
+    stamp = dt.datetime.now(dt.UTC).strftime("%Y%m%dT%H%M%SZ")
+    aside = path.with_name(f"{path.name}.partial-{stamp}")
+    aside.write_bytes(tail)
+    with path.open("r+b") as fh:
+        fh.truncate(cut)
+        fh.flush()
+        os.fsync(fh.fileno())
+    return str(aside)
+
+
+def unlock_registry(path: str | os.PathLike[str], *, force: bool = False) -> LockInfo | None:
+    """Libera un bloqueo vencido (o cualquiera con ``force``) y repara una escritura cortada.
+
+    Devuelve el bloqueo liberado (``None`` si no había). Si la bitácora termina en una línea
+    incompleta, esa línea se mueve a ``<bitácora>.partial-<fecha>`` (``LockInfo.repaired``).
+
+    Raises
+    ------
+    RegistryLockedError
+        Si el bloqueo no está vencido y no se usa ``force``.
+    """
+    info = read_lock(path)
+    if info is None:
+        return None
+    if not (force or info.stale):
+        raise RegistryLockedError(
+            f"El bloqueo sigue activo ({info.describe()}); use --force sólo si está seguro de "
+            "que esa ejecución terminó."
+        )
+    repaired = _repair_tail(Path(path))
+    with contextlib.suppress(FileNotFoundError):
+        lock_path(path).unlink()
+    return LockInfo(info.path, info.pid, info.host, info.run_id, info.created_at, repaired)

@@ -28,7 +28,7 @@ def kinds(path: Path) -> list[str]:
 def test_run_outputs_preregistration_and_validation(experiment_file: Path) -> None:
     res = run_experiment(experiment_file)
     data = json.loads((res.output_dir / "result.json").read_text())
-    assert data["result_version"] == "1.1" and data["experiment"]["sha256"]
+    assert data["result_version"] == "1.2" and data["experiment"]["sha256"]
     idea = data["ideas"]["tendencia"]
     assert idea["status"] == "evaluada"
     assert all(c["combinations"] == 2 and not c["failed"] for c in idea["lookahead"].values())

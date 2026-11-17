@@ -16,7 +16,7 @@ tsinsurance experiment verify recortada.jsonl --base registry.jsonl  # ⇒ salid
 ```
 
 **Escenario de bloqueo.** Lanzar dos `experiment run` a la vez: el segundo termina con
-salida 2 y nombra el `run_id` dueño del bloqueo.
+salida 3 y nombra el `run_id` dueño del bloqueo.
 
 ## 2. Validación única en dos fases (US2)
 

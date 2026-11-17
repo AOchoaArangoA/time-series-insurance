@@ -30,14 +30,21 @@ M1…) remiten a `research.md` R10.
 
 **Purpose**: versión, datos de prueba compartidos y referencias en R.
 
-- [ ] T001 Subir la versión a `0.2.0` en `pyproject.toml` y en `src/tsinsurance/__init__.py`; crear `CHANGELOG.md` con la sección 0.2.0, incluido el cambio incompatible "`experiment run` ya no abre la validación"
-- [ ] T002 [P] Crear el generador de paquetes sintéticos reutilizable en `tests/fixtures/synthetic_bundle.py`: precios, exógena de mercado con rezago, tasa libre de riesgo, parámetro `train_end` y una función `mutate_after(cut, kind)` para las categorías de mutación de SC-003
-- [ ] T003 [P] Crear el generador de series con versiones conocidas en `tests/fixtures/synthetic_vintages.py`, con:
+- [X] T001 Subir la versión a `0.2.0` en `pyproject.toml` y en `src/tsinsurance/__init__.py`; crear `CHANGELOG.md` con la sección 0.2.0, incluido el cambio incompatible "`experiment run` ya no abre la validación"
+- [X] T002 [P] Crear el generador de paquetes sintéticos reutilizable en `tests/fixtures/synthetic_bundle.py`: precios, exógena de mercado con rezago, tasa libre de riesgo, parámetro `train_end` y una función `mutate_after(cut, kind)` para las categorías de mutación de SC-003
+- [X] T003 [P] Crear el generador de series con versiones conocidas en `tests/fixtures/synthetic_vintages.py`, con:
   - versiones de un solo día;
   - una primera publicación tardía de un periodo anterior;
   - una revisión que cambia el año base;
   - la derivación de `first_release` desde el conjunto de todas las versiones (I5).
-- [ ] T004 [P] Guardar como datos de prueba versionados las salidas de R en `tests/data/reference/` (`ivx_*.json`, `prewhite_*.json`) junto con los scripts que las generan en `tests/reference/r/ivx_reference.R` y `tests/reference/r/prewhite_reference.R`, para que CI verifique sin R (I10)
+- [X] T004 [P] Guardar como datos de prueba versionados las salidas de R en `tests/data/reference/` (`ivx_*.json`, `prewhite_*.json`) junto con los scripts que las generan en `tests/reference/r/ivx_reference.R` y `tests/reference/r/prewhite_reference.R`, para que CI verifique sin R (I10)
+
+**Notas de implementación (2026-11-17)**:
+- T002: `mutate_after` implementa por ahora la categoría `observations`; las categorías de
+  tiempo real (versiones) se agregan con el contrato 1.1 en US4 (T039-T045).
+- T004: además se agregó `tests/reference/test_sharpe_hac_reference.py`. El Newey-West
+  actual coincide con `sandwich::NeweyWest` con una diferencia de 1e-16.
+- Código de salida de "bitácora bloqueada": **3** (el 2 ya es "error" en la CLI).
 
 ---
 
@@ -45,12 +52,12 @@ M1…) remiten a `research.md` R10.
 
 **Purpose**: campos de la bitácora y del resultado que usan varias historias.
 
-- [ ] T005 Escribir pruebas en `tests/experiments/test_registry_fields.py`: toda línea `signal`/`econometric` nueva trae:
+- [X] T005 Escribir pruebas en `tests/experiments/test_registry_fields.py`: toda línea `signal`/`econometric` nueva trae:
   - `n_obs`, igual al largo de la ventana del ratio en sus mismas unidades (días también en las econométricas; nunca `n_forecasts`, B6);
   - `eval_start`, `eval_end` y `sharpe_se_hac`.
-- [ ] T006 Registrar `n_obs`, `eval_start`, `eval_end` y `sharpe_se_hac` en las líneas `signal` y `econometric` de `src/tsinsurance/experiments/runner.py`; en las econométricas, `n_obs = len(bt.evaluation_window())`
-- [ ] T007 [P] Agregar las excepciones `ValidationPreconditionError`, `RegistryLockedError` y `RegistryTruncatedError` (subclases de `TSInsuranceError`) en `src/tsinsurance/errors.py`
-- [ ] T008 [P] Subir `RESULT_VERSION` a `"1.2"` y agregar `phase` y `status.out_of_sample` (`pendiente` | `abierta` | `ninguna`) en `src/tsinsurance/experiments/runner.py`; probar en `tests/experiments/test_result_v1_2.py` que las claves 1.1 se conservan
+- [X] T006 Registrar `n_obs`, `eval_start`, `eval_end` y `sharpe_se_hac` en las líneas `signal` y `econometric` de `src/tsinsurance/experiments/runner.py`; en las econométricas, `n_obs = len(bt.evaluation_window())`
+- [X] T007 [P] Agregar las excepciones `ValidationPreconditionError`, `RegistryLockedError` y `RegistryTruncatedError` (subclases de `TSInsuranceError`) en `src/tsinsurance/errors.py`
+- [X] T008 [P] Subir `RESULT_VERSION` a `"1.2"` y agregar `phase` y `status.out_of_sample` (`pendiente` | `abierta` | `ninguna`) en `src/tsinsurance/experiments/runner.py`; probar en `tests/experiments/test_result_v1_2.py` que las claves 1.1 se conservan
 
 **Checkpoint**: la suite actual sigue verde y los campos nuevos aparecen en la bitácora.
 
@@ -64,13 +71,13 @@ solo escritor a la vez.
 **Independent Test**:
 - borrar de 1 a N líneas del final ⇒ `verify --results` falla y nombra el resultado;
 - editar, reordenar o borrar líneas ⇒ `verify --base` falla;
-- dos ejecuciones a la vez ⇒ la segunda sale con código 2.
+- dos ejecuciones a la vez ⇒ la segunda sale con código 3.
 
 ### Tests (escribir primero)
 
-- [ ] T009 [P] [US1] Pruebas de `registry_head` y de `verify_registry(results=...)` en `tests/experiments/test_registry_head.py`: recortes de 1..N líneas detectados al 100 % (SC-001); resultados de otra bitácora ignorados al filtrar por `provenance.registry` (I14); bitácoras antiguas sin `registry_head` siguen verificando
-- [ ] T010 [P] [US1] Pruebas de `verify_registry(base=...)` en `tests/experiments/test_registry_prefix.py`: agregar líneas ⇒ acepta; editar, reordenar o borrar ⇒ rechaza con la primera línea distinta (SC-002); base vacía ⇒ acepta cualquier bitácora íntegra
-- [ ] T011 [P] [US1] Pruebas del bloqueo en `tests/experiments/test_lock.py`:
+- [X] T009 [P] [US1] Pruebas de `registry_head` y de `verify_registry(results=...)` en `tests/experiments/test_registry_head.py`: recortes de 1..N líneas detectados al 100 % (SC-001); resultados de otra bitácora ignorados al filtrar por `provenance.registry` (I14); bitácoras antiguas sin `registry_head` siguen verificando
+- [X] T010 [P] [US1] Pruebas de `verify_registry(base=...)` en `tests/experiments/test_registry_prefix.py`: agregar líneas ⇒ acepta; editar, reordenar o borrar ⇒ rechaza con la primera línea distinta (SC-002); base vacía ⇒ acepta cualquier bitácora íntegra
+- [X] T011 [P] [US1] Pruebas del bloqueo en `tests/experiments/test_lock.py`:
   - creación exclusiva;
   - una segunda ejecución recibe `RegistryLockedError`;
   - el bloqueo cubre la ejecución **entera**: una ejecución concurrente simulada no puede leer la bitácora entre la lectura y la escritura de otra (I1);
@@ -80,19 +87,19 @@ solo escritor a la vez.
 
 ### Implementation
 
-- [ ] T012 [US1] Implementar `RegistryHead` y `registry_head(path)` en `src/tsinsurance/experiments/registry.py` ("`n_lines` int ≥ 0; `last_hash` = `line_hash` de la línea `n_lines`; `GENESIS` si `n_lines = 0`")
-- [ ] T013 [US1] Extender `verify_registry(path, *, base=None, results=None)` en `src/tsinsurance/experiments/registry.py`: `base` exige prefijo byte a byte; `results` recorre `result.json` con `provenance.registry` igual a `path` y exige `len ≥ n_lines` y hash coincidente
-- [ ] T014 [US1] Implementar `registry_lock(path, run_id)` (gestor de contexto con `O_CREAT | O_EXCL`; JSON con `pid`, `host`, `run_id`, `created_at`; escritura con `flush` + `fsync`) y `unlock_registry(path, *, force=False)` en `src/tsinsurance/experiments/registry.py`. El PID vivo se comprueba con `os.kill(pid, 0)` en POSIX y con `OpenProcess` por ctypes en Windows (M1)
-- [ ] T015 [US1] En `src/tsinsurance/experiments/runner.py`: tomar el bloqueo **antes** de `verify_registry`/`read_registry` y liberarlo después de la última escritura (I1); guardar `registry_head_before` y `registry_head` en `result.json`
-- [ ] T016 [US1] En `src/tsinsurance/cli.py`:
+- [X] T012 [US1] Implementar `RegistryHead` y `registry_head(path)` en `src/tsinsurance/experiments/registry.py` ("`n_lines` int ≥ 0; `last_hash` = `line_hash` de la línea `n_lines`; `GENESIS` si `n_lines = 0`")
+- [X] T013 [US1] Extender `verify_registry(path, *, base=None, results=None)` en `src/tsinsurance/experiments/registry.py`: `base` exige prefijo byte a byte; `results` recorre `result.json` con `provenance.registry` igual a `path` y exige `len ≥ n_lines` y hash coincidente
+- [X] T014 [US1] Implementar `registry_lock(path, run_id)` (gestor de contexto con `O_CREAT | O_EXCL`; JSON con `pid`, `host`, `run_id`, `created_at`; escritura con `flush` + `fsync`) y `unlock_registry(path, *, force=False)` en `src/tsinsurance/experiments/registry.py`. El PID vivo se comprueba con `os.kill(pid, 0)` en POSIX y con `OpenProcess` por ctypes en Windows (M1)
+- [X] T015 [US1] En `src/tsinsurance/experiments/runner.py`: tomar el bloqueo **antes** de `verify_registry`/`read_registry` y liberarlo después de la última escritura (I1); guardar `registry_head_before` y `registry_head` en `result.json`
+- [X] T016 [US1] En `src/tsinsurance/cli.py`:
   - `experiment verify REGISTRY [--base BASE] [--results DIR]`;
   - `experiment unlock REGISTRY [--force]`;
-  - código de salida 2 cuando la bitácora está bloqueada (contracts/cli.md).
-- [ ] T017 [US1] Agregar a `.github/workflows/ci.yml` la verificación de prefijo:
+  - código de salida 3 cuando la bitácora está bloqueada (contracts/cli.md; el 2 ya es "error" en la CLI).
+- [X] T017 [US1] Agregar a `.github/workflows/ci.yml` la verificación de prefijo:
   - en `pull_request`, contra `origin/$GITHUB_BASE_REF`;
   - en `push` a `main`, contra `github.event.before`;
   - distinguir con `git cat-file -e` entre "no existe en la base" y un error (I14).
-- [ ] T018 [US1] Escribir la prueba de punta a punta del quickstart §1 en `tests/integration/test_registry_tamper.py`, usando `examples/integracion/`
+- [X] T018 [US1] Escribir la prueba de punta a punta del quickstart §1 en `tests/integration/test_registry_tamper.py`, usando `examples/integracion/`
 
 **Checkpoint**: US1 se puede demostrar sola; el MVP de integridad de la bitácora está completo.
 
@@ -370,7 +377,7 @@ exploratorio automáticas y explicadas (US7, SC-010).
   - `validate`, `verify --base/--results` y `unlock`;
   - `result.json` 1.2;
   - el contrato 1.1 y `vintage_mode`;
-  - el código de salida 2.
+  - el código de salida 3.
 - [ ] T068 [P] Actualizar `examples/integracion/` y su prueba al flujo de dos fases; reemplazar `head -n -3` en `specs/004-integridad-tiempo-real/quickstart.md` (M9, hecho en el diseño; verificar)
 - [ ] T069 [P] Declarar en `docs/politica-datos-y-publicacion.md` y en `docs/propuesta-proceso.md`:
   - los límites de la separación lógica (M10);

@@ -42,6 +42,7 @@ __all__ = [
     "SharpeInference",
     "clark_west",
     "deflated_sharpe",
+    "sharpe_se_hac",
     "effective_number_of_trials",
     "evaluate_forecasts",
     "expected_max_sharpe",
@@ -146,6 +147,33 @@ class SharpeInference(ResultMixin):
         )
 
 
+def _sharpe_se_hac(x: np.ndarray) -> float:
+    """EE HAC (Newey-West, método delta sobre ``(r, r²)``) del Sharpe por periodo."""
+    n = x.size
+    m1, m2 = x.mean(), (x**2).mean()
+    var = m2 - m1**2
+    if not var > 0:
+        return float("nan")
+    sigma = math.sqrt(var)
+    grad = np.array([m2 / sigma**3, -m1 / (2 * sigma**3)])
+    z = np.column_stack([x - m1, x**2 - m2])
+    lags = int(np.floor(4 * (n / 100) ** (2 / 9)))
+    cov = z.T @ z / n
+    for k in range(1, lags + 1):
+        g = z[k:].T @ z[:-k] / n
+        cov += (1 - k / (lags + 1)) * (g + g.T)
+    return math.sqrt(max(float(grad @ cov @ grad), 0.0) / n)
+
+
+def sharpe_se_hac(returns: pd.Series | np.ndarray) -> float:
+    """Error estándar HAC del Sharpe **por periodo** (``nan`` si la serie es constante).
+
+    Es el mismo estimador que usa :func:`sharpe_inference`, sin el bootstrap; se registra
+    en la bitácora para estandarizar pruebas de distinto largo (spec 004, R7).
+    """
+    return _sharpe_se_hac(_clean(returns, "sharpe_se_hac"))
+
+
 def sharpe_inference(
     returns: pd.Series | np.ndarray,
     periods_per_year: int,
@@ -161,17 +189,7 @@ def sharpe_inference(
     kurt = float(stats.kurtosis(x, fisher=False))
     ann = math.sqrt(periods_per_year)
     se_iid = math.sqrt(max(1 - skew * sr + (kurt - 1) / 4 * sr**2, 0.0) / n)
-    # Método delta con covarianza HAC (Newey-West) de (r, r²).
-    m1, m2 = x.mean(), (x**2).mean()
-    sigma = math.sqrt(m2 - m1**2)
-    grad = np.array([m2 / sigma**3, -m1 / (2 * sigma**3)])
-    z = np.column_stack([x - m1, x**2 - m2])
-    lags = int(np.floor(4 * (n / 100) ** (2 / 9)))
-    cov = z.T @ z / n
-    for k in range(1, lags + 1):
-        g = z[k:].T @ z[:-k] / n
-        cov += (1 - k / (lags + 1)) * (g + g.T)
-    se_hac = math.sqrt(max(float(grad @ cov @ grad), 0.0) / n)
+    se_hac = _sharpe_se_hac(x)
     block = _block(x)
     bs = StationaryBootstrap(block, x, seed=seed)
     ci = bs.conf_int(lambda y: np.array([_sr(y) * ann]), reps=reps, method="percentile")

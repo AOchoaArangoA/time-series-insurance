@@ -19,6 +19,7 @@ Salvaguardas (Principio VIII):
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import datetime as dt
 import hashlib
@@ -46,6 +47,7 @@ from tsinsurance.backtest import (
     monthly_returns,
     sharpe_difference,
     sharpe_inference,
+    sharpe_se_hac,
 )
 from tsinsurance.backtest.econometric import forecast_to_weights
 from tsinsurance.backtest.metrics import sharpe_per_period
@@ -57,6 +59,8 @@ from tsinsurance.experiments.registry import (
     prior_information_ratios,
     prior_specifications,
     read_registry,
+    registry_head,
+    registry_lock,
     trial_key,
     validation_seen,
     verify_registry,
@@ -67,7 +71,7 @@ from tsinsurance.results import to_jsonable
 
 __all__ = ["ExperimentResult", "run_experiment"]
 
-RESULT_VERSION = "1.1"
+RESULT_VERSION = "1.2"
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -152,6 +156,15 @@ def _econ_inputs(
     return y.loc[out.index], out
 
 
+def _se_hac(x: pd.Series) -> float | None:
+    """EE HAC del IR por periodo para la bitácora (``None`` si no es finito)."""
+    try:
+        v = sharpe_se_hac(x)
+    except TSInsuranceError:
+        return None
+    return v if np.isfinite(v) else None
+
+
 def _round(obj: Any, digits: int = 10) -> Any:
     if isinstance(obj, float):
         return round(obj, digits) if np.isfinite(obj) else None
@@ -195,12 +208,28 @@ def run_experiment(
     declared = load_experiment(path) if not isinstance(path, ExperimentSpec) else path
     spec = load_experiment(declared.path, registry=registry) if registry is not None else declared
     started = dt.datetime.now(dt.UTC).replace(microsecond=0)
+    exp_sha = hashlib.sha256(spec.path.read_bytes()).hexdigest()
+    run_id = started.strftime("%Y%m%dT%H%M%SZ") + "-" + exp_sha[:6]
+    # Un solo escritor: el bloqueo cubre TODA la ejecución, desde la lectura de la bitácora
+    # (pruebas previas para el DSR) hasta la última escritura (spec 004, revisión I1).
+    lock = registry_lock(spec.registry, run_id) if record else contextlib.nullcontext()
+    with lock:
+        return _run_locked(declared, spec, started, exp_sha, run_id, record, output_root)
+
+
+def _run_locked(
+    declared: ExperimentSpec,
+    spec: ExperimentSpec,
+    started: dt.datetime,
+    exp_sha: str,
+    run_id: str,
+    record: bool,
+    output_root: str | os.PathLike[str] | None,
+) -> ExperimentResult:
     bundle = Bundle.load(spec.bundle)
     eval_end = spec.train_end or spec.end
     prices = bundle.assets(spec.assets).loc[spec.start : spec.end]
     rf = bundle.risk_free()
-    exp_sha = hashlib.sha256(spec.path.read_bytes()).hexdigest()
-    run_id = started.strftime("%Y%m%dT%H%M%SZ") + "-" + exp_sha[:6]
     git = _git(spec.path.parent)
 
     reasons: list[str] = []
@@ -220,6 +249,7 @@ def run_experiment(
         raise TSInsuranceError("La bitácora fue alterada: " + "; ".join(integrity[:3]))
 
     history = read_registry(spec.registry)
+    head_before = registry_head(spec.registry)
     base_identity = {
         "bundle": bundle.sha256,
         "execution": _execution_identity(spec.execution),
@@ -269,8 +299,11 @@ def run_experiment(
             ],
         )
 
+    # Transitorio (spec 004): hasta US2, con train_end la misma ejecución calibra y valida.
+    phase = "calibration_and_validation" if spec.train_end else "full_sample"
     result: dict[str, Any] = {
         "result_version": RESULT_VERSION,
+        "phase": phase,
         "experiment": {
             "id": spec.id,
             "title": spec.title,
@@ -454,6 +487,11 @@ def run_experiment(
                 "oos_r2": ev.oos_r2,
                 "timing_ir_per_period": sharpe_per_period(econ_trial.active_returns),
                 "periods_per_year": bt.periods_per_year,
+                # n_obs en las unidades del IR (días), nunca n_forecasts (meses): revisión B6.
+                "n_obs": len(econ_trial.active_returns),
+                "eval_start": str(econ_trial.active_returns.index[0].date()),
+                "eval_end": str(econ_trial.active_returns.index[-1].date()),
+                "sharpe_se_hac": _se_hac(econ_trial.active_returns),
             }
         )
 
@@ -508,9 +546,10 @@ def run_experiment(
                         "timing_ir_per_period": sharpe_per_period(t.active_returns),
                         "exposure": t.exposure,
                         "periods_per_year": t.periods_per_year,
-                        "n_obs": len(t.excess_returns),
-                        "eval_start": str(t.excess_returns.index[0].date()),
-                        "eval_end": str(t.excess_returns.index[-1].date()),
+                        "n_obs": len(t.active_returns),
+                        "eval_start": str(t.active_returns.index[0].date()),
+                        "eval_end": str(t.active_returns.index[-1].date()),
+                        "sharpe_se_hac": _se_hac(t.active_returns),
                     }
                 )
     for idea in spec.ideas:
@@ -613,6 +652,7 @@ def run_experiment(
         "significant_by_idea": significant,
         "econometric_quadrants": econ_q,
         "lines_registered": written,
+        "out_of_sample": "abierta" if spec.train_end else "ninguna",
     }
     conclusion = [
         "## Conclusión automática",
@@ -629,6 +669,12 @@ def run_experiment(
 
     out_dir = (Path(output_root) if output_root else spec.path.parent / "results") / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
+    # Ancla contra recortes al final: el resultado publicado delata líneas borradas (US1).
+    result["registry_head_before"] = head_before.to_dict()
+    result["registry_head"] = registry_head(spec.registry).to_dict()
+    result["provenance"]["registry_relpath"] = os.path.relpath(
+        Path(spec.registry).resolve(), out_dir.resolve()
+    )
     clean = _round(to_jsonable(result))
     (out_dir / "result.json").write_text(
         json.dumps(clean, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8"
