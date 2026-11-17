@@ -94,3 +94,8 @@ def test_registry() -> None:
         cross_sectional_momentum(_prices(), top_k=0)
     with pytest.raises(TSInsuranceError, match="menor que el universo"):
         cross_sectional_momentum(_prices(), top_k=5)
+
+
+def test_listing_tolerates_signals_without_docstring() -> None:
+    register_portfolio_signal("sin_doc", lambda p: equal_weight(p))
+    assert available_portfolio_signals()["sin_doc"] == ""

@@ -242,6 +242,11 @@ min_train = 60                   # meses mínimos antes del primer pronóstico
 # n_specifications = 3           # declárelo si probó otras combinaciones de regresores
 ```
 
+**Carteras y regímenes** (bloques `[[portfolios]]`, `[[regimes]]` y
+`[[declared_prior_tests]]`): ver `AGENTS.md` y `docs/methodology/carteras-y-regimenes.md`.
+En `result.json` aparecen como `portfolios.<nombre>` y `regimes.<nombre>` (calibración) y
+`validation.portfolios` / `validation.regimes` (validación).
+
 Señales incluidas: `sma_crossover` (`fast`, `slow`), `tsmom` (`lookback`, `skip`),
 `ewma_vol_target` (`target`, `lam`), `tsmom_vol_target` (`lookback`, `skip`, `target`).
 

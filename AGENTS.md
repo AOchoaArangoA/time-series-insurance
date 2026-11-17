@@ -103,6 +103,39 @@ position = "long_cash"            # long_cash, long_short, proportional
 min_train = 60
 ```
 
+## Carteras y regímenes (spec 005)
+
+```toml
+[[portfolios]]                       # pesos ENTRE activos (p. ej. rotación sectorial)
+name = "rotacion"
+universe = ["XLB", "XLE", "XLF", "XLK"]
+signal = "cross_sectional_momentum"  # o "inverse_volatility", o register_portfolio_signal
+  [portfolios.grid]
+  lookback_m = [6, 12]
+  top_k = [2, 3]
+
+[[regimes]]                          # estado del ciclo al cierre de mes → retorno del mes siguiente
+name = "vix_alto"
+type = "threshold"                   # threshold | spread (variables = [a, b]) | trend (asset, months)
+variable = "^VIX"
+op = ">"
+value = [20.0, 25.0]                 # cada umbral es una prueba
+justification = "referencia o razón previa"   # obligatoria; sin ella es exploratorio
+
+[[declared_prior_tests]]             # lo probado FUERA de la bitácora: cuenta en N y en "ya visto"
+kind = "portfolio"                   # portfolio | regime | signal
+n_tests = 4
+universe = ["XLB", "XLE", "XLF", "XLK"]
+period_start = "1999-01-01"
+period_end = "2026-10-31"
+script_sha256 = "..."
+```
+
+Benchmark de una cartera: igual ponderado de los elegibles, con los mismos costos y
+rebalanceo mensual. La memoria de pruebas es por universo parecido (Jaccard ≥ 0,5). En
+la validación, estrategias y regímenes son familias de Holm separadas (0,8α y 0,2α).
+Metodología: `docs/methodology/carteras-y-regimenes.md`.
+
 ## `result.json` (versión 1.2)
 
 `phase` dice qué es cada resultado: `calibration` (selección hasta `train_end`;

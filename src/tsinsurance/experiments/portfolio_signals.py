@@ -116,7 +116,10 @@ def register_portfolio_signal(name: str, fn: PortfolioSignalFn) -> None:
 
 def available_portfolio_signals() -> dict[str, str]:
     """Señales de cartera registradas con la primera línea de su descripción."""
-    return {k: (v.__doc__ or "").strip().splitlines()[0] for k, v in sorted(_REGISTRY.items())}
+    return {
+        k: next(iter((v.__doc__ or "").strip().splitlines()), "")
+        for k, v in sorted(_REGISTRY.items())
+    }
 
 
 def get_portfolio_signal(name: str) -> PortfolioSignalFn:

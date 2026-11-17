@@ -15,6 +15,14 @@ semántico.
 
 ### Agregado
 
+- Spec 005:
+  - ideas de cartera (`[[portfolios]]`) con benchmark igual ponderado de los elegibles,
+    rebalanceo mensual y memoria por universo parecido (Jaccard ≥ 0,5);
+  - regímenes del ciclo (`[[regimes]]`) punto en el tiempo, con HC3, Holm con variantes
+    previas y justificación obligatoria;
+  - `[[declared_prior_tests]]` para lo probado fuera de la bitácora;
+  - familias de Holm separadas en la validación (estrategias 0,8α, regímenes 0,2α).
+
 - Validación única en dos fases: `Bundle.as_of`, evento `calibration` con lo fijado,
   `validate_experiment` con precondiciones (bitácora declarada, mismos datos hasta el
   corte, mismo experimento y versión, git limpio), detección de periodos ya vistos por

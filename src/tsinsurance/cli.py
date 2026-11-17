@@ -189,8 +189,14 @@ def _experiment_command(args: argparse.Namespace) -> int:
                 f"{r.get('asset')} {r.get('idea')} {r.get('params')}"
             )
         return 0
+    from tsinsurance.experiments.portfolio_signals import available_portfolio_signals
+
+    print("Señales por activo ([[ideas]]):")
     for name, doc in available_signals().items():
-        print(f"  {name:<18} {doc}")
+        print(f"  {name:<26} {doc}")
+    print("Señales de cartera ([[portfolios]]):")
+    for name, doc in available_portfolio_signals().items():
+        print(f"  {name:<26} {doc}")
     return 0
 
 

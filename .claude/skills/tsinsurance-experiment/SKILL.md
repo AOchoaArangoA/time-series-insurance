@@ -30,6 +30,11 @@ Sigue `AGENTS.md` (raíz del repositorio). Resumen operativo:
    - `significant` exige DSR > 1 − α y SPA p < α (deflactado con todo lo probado);
    - modelos econométricos: reporta cuadrante + marcas (exploratorio, no concluyente,
      diagnósticos no superados), R² fuera de muestra y la prueba económica.
+5b. **Carteras y regímenes.** Para rotaciones o pesos entre activos usa
+   `[[portfolios]]`; para estados del ciclo, `[[regimes]]` (con `justification`). Si antes
+   probaste algo fuera de la bitácora (un script o un notebook), decláralo con
+   `[[declared_prior_tests]]`: si no lo haces, el ajuste por pruebas múltiples queda
+   subestimado.
 6. **Reporta** al usuario: hipótesis, datos (fuente, licencia, ventana), supuestos,
    número de pruebas acumuladas, resultado con incertidumbre y limitaciones. Nunca
    presentes un Sharpe alto como evidencia si `significant` es falso.
