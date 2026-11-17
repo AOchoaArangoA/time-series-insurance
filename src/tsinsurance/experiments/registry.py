@@ -49,6 +49,9 @@ __all__ = [
     "unlock_registry",
     "line_hash",
     "prior_information_ratios",
+    "jaccard",
+    "prior_portfolio_trials",
+    "prior_regime_variants",
     "prior_specifications",
     "prior_trials_after",
     "read_registry",
@@ -257,7 +260,7 @@ def _prior_rows(
     rows: Iterable[Mapping[str, Any]], skip: set[str], periods_per_year: int | None
 ) -> Iterator[Mapping[str, Any]]:
     for r in rows:
-        if r.get("kind") not in ("signal", "econometric") or "key" not in r:
+        if r.get("kind") not in ("signal", "econometric", "portfolio") or "key" not in r:
             continue
         if r["key"] in skip:
             continue
@@ -484,3 +487,85 @@ def unlock_registry(path: str | os.PathLike[str], *, force: bool = False) -> Loc
     with contextlib.suppress(FileNotFoundError):
         lock_path(path).unlink()
     return LockInfo(info.path, info.pid, info.host, info.run_id, info.created_at, repaired)
+
+
+# --- Memoria de carteras y regímenes (spec 005) -------------------------------------------
+
+JACCARD_MIN = 0.5
+
+
+def jaccard(a: Iterable[str], b: Iterable[str]) -> float:
+    """Similitud de Jaccard entre dos universos."""
+    sa, sb = set(a), set(b)
+    return len(sa & sb) / len(sa | sb) if sa | sb else 0.0
+
+
+def prior_portfolio_trials(
+    rows: Iterable[Mapping[str, Any]],
+    universe: Iterable[str],
+    *,
+    exclude_keys: Iterable[str] = (),
+    periods_per_year: int | None = None,
+    cut: str | None = None,
+) -> tuple[list[float], int]:
+    """Pruebas de cartera previas sobre universos parecidos (Jaccard ≥ 0,5; revisión B3).
+
+    Devuelve ``(ratios, extra)``: los ratios de *timing* por periodo de las pruebas con la
+    misma frecuencia y ventana terminada antes del corte (entran en la varianza del umbral
+    del DSR) y el número de pruebas que sólo cuentan en N (ventana posterior al corte, otra
+    frecuencia o declaradas fuera de la bitácora con ``declared_prior``). Cambiar un
+    constituyente del universo no reinicia la cuenta.
+    """
+    uni = list(universe)
+    skip = set(exclude_keys)
+    latest: dict[str, tuple[float, bool]] = {}
+    extra = 0
+    for r in rows:
+        kind = r.get("kind")
+        if kind == "declared_prior" and r.get("declared_kind") == "portfolio":
+            if jaccard(r.get("universe", []), uni) >= JACCARD_MIN:
+                extra += int(r.get("n_tests", 0))
+            continue
+        if kind != "portfolio" or "key" not in r or r["key"] in skip:
+            continue
+        if jaccard(r.get("universe", []), uni) < JACCARD_MIN:
+            continue
+        same_freq = periods_per_year is None or r.get("periods_per_year") in (
+            None,
+            periods_per_year,
+        )
+        in_window = cut is None or _ends_by(r, cut)
+        ir = r.get("timing_ir_per_period")
+        latest[r["key"]] = (0.0 if ir is None else float(ir), same_freq and in_window)
+    ratios = [ir for ir, ok in latest.values() if ok]
+    extra += sum(1 for _, ok in latest.values() if not ok)
+    return ratios, extra
+
+
+def prior_regime_variants(
+    rows: Iterable[Mapping[str, Any]],
+    asset: str,
+    memory_key: str,
+    *,
+    exclude_keys: Iterable[str] = (),
+) -> int:
+    """Variantes previas de un régimen sobre ``asset`` con la misma clave de memoria (B1).
+
+    Cuenta variantes distintas (umbral u op) ya registradas, más las declaradas fuera de la
+    bitácora; entran en la m de Holm de la calibración.
+    """
+    skip = set(exclude_keys)
+    variants: set[str] = set()
+    declared = 0
+    for r in rows:
+        if r.get("kind") == "regime" and r.get("asset") == asset:
+            if r.get("regime_key") == memory_key and r.get("key") not in skip:
+                variants.add(_canonical(r.get("variant")))
+        elif (
+            r.get("kind") == "declared_prior"
+            and r.get("declared_kind") == "regime"
+            and asset in r.get("assets", [])
+            and r.get("regime_key") in (memory_key, "", None)
+        ):
+            declared += int(r.get("n_tests_per_asset", r.get("n_tests", 0)))
+    return len(variants) + declared

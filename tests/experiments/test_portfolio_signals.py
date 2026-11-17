@@ -12,6 +12,7 @@ from tsinsurance.experiments.portfolio_signals import (
     equal_weight,
     get_portfolio_signal,
     inverse_volatility,
+    month_end_mask,
     register_portfolio_signal,
 )
 
@@ -23,28 +24,31 @@ def _prices(n: int = 900, k: int = 5, seed: int = 1) -> pd.DataFrame:
     return pd.DataFrame(100 * np.exp(np.cumsum(r, axis=0)), index=idx, columns=list("ABCDE"))
 
 
-def test_momentum_picks_top_k_and_sums_to_one() -> None:
+def test_momentum_picks_top_k_on_month_ends() -> None:
     px = _prices()
     w = cross_sectional_momentum(px, lookback_m=6, skip_m=1, top_k=2)
-    full = w.iloc[-1]
-    assert full.sum() == pytest.approx(1.0) and (full > 0).sum() == 2
-    mom = px.shift(21) / px.shift(21 * 7) - 1
-    assert set(full[full > 0].index) == set(mom.iloc[-1].nlargest(2).index)
-    assert (w.iloc[: 21 * 7] == 0).all().all()  # sin historia: efectivo
+    ends = month_end_mask(pd.DatetimeIndex(px.index))
+    assert w[~ends].isna().all().all()  # sólo decide en cierres de mes
+    last = w[ends].iloc[-1]
+    assert last.sum() == pytest.approx(1.0) and (last > 0).sum() == 2
+    closes = px[ends]
+    mom = closes.shift(1) / closes.shift(7) - 1
+    assert set(last[last > 0].index) == set(mom.iloc[-1].nlargest(2).index)
+    assert (w[ends].iloc[:7] == 0).all().all()  # sin historia: efectivo
 
 
-def test_momentum_ties_are_deterministic_by_column_order() -> None:
+def test_momentum_ties_are_broken_by_sorted_id() -> None:
     idx = pd.bdate_range("2010-01-01", periods=200)
     px = pd.DataFrame({"B": 100.0, "A": 100.0, "C": 100.0}, index=idx)
-    w = cross_sectional_momentum(px, lookback_m=2, skip_m=0, top_k=1)
-    assert w.iloc[-1].to_dict() == {"B": 1.0, "A": 0.0, "C": 0.0}
+    w = cross_sectional_momentum(px, lookback_m=2, skip_m=0, top_k=1).dropna()
+    assert w.iloc[-1].to_dict() == {"B": 0.0, "A": 1.0, "C": 0.0}
 
 
 def test_assets_without_history_do_not_compete() -> None:
     px = _prices()
     px.loc[: px.index[600], "E"] = np.nan  # E empieza tarde
     w = cross_sectional_momentum(px, lookback_m=6, top_k=2)
-    assert (w["E"].iloc[: 600 + 21 * 7] == 0).all()
+    assert (w["E"].iloc[: 600 + 21 * 7].fillna(0) == 0).all()
     ew = equal_weight(px)
     assert ew.iloc[100].to_dict()["E"] == 0 and ew.iloc[100].sum() == pytest.approx(1.0)
 
@@ -52,7 +56,7 @@ def test_assets_without_history_do_not_compete() -> None:
 def test_inverse_volatility_weights() -> None:
     px = _prices()
     px["E"] = 100 * np.exp(np.cumsum(np.random.default_rng(2).normal(0, 0.03, len(px))))
-    w = inverse_volatility(px, lookback=63)
+    w = inverse_volatility(px, lookback=63).dropna()
     last = w.iloc[-1]
     assert last.sum() == pytest.approx(1.0) and last["E"] == last.min()
 
@@ -88,3 +92,5 @@ def test_registry() -> None:
         get_portfolio_signal("nope")
     with pytest.raises(TSInsuranceError):
         cross_sectional_momentum(_prices(), top_k=0)
+    with pytest.raises(TSInsuranceError, match="menor que el universo"):
+        cross_sectional_momentum(_prices(), top_k=5)
