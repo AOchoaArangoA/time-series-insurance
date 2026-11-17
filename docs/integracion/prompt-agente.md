@@ -50,7 +50,9 @@ económico).
    repositorio a una carpeta de trabajo y ejecuta allí:
      python generar_paquete_sintetico.py data
      tsinsurance bundle validate data            -> "Paquete válido: data"
-     tsinsurance experiment run experiment.toml  -> "... línea(s) registradas ..."
+     tsinsurance experiment run experiment.toml  -> calibración: "... línea(s) registradas ..."
+     tsinsurance experiment validate experiment.toml --calibration RUN_ID
+                                                 -> validación única (sin git: exploratoria)
      tsinsurance experiment verify registry.jsonl -> "Bitácora íntegra."
      python senal_propia.py                      -> idea "evaluada"
    Criterio de éxito: todo con código de salida 0, existe results/<run_id>/result.json,

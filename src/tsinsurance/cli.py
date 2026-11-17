@@ -64,12 +64,21 @@ def _parser() -> argparse.ArgumentParser:
 
     e = sub.add_parser("experiment", help="Experimentos declarativos registrados.")
     esub = e.add_subparsers(dest="experiment_command", required=True)
-    er = esub.add_parser("run", help="Ejecuta experiment.toml y lo registra en la bitácora.")
+    er = esub.add_parser(
+        "run",
+        help="Ejecuta experiment.toml y lo registra (con train_end: sólo calibra; valide después).",
+    )
     er.add_argument("path")
     er.add_argument("--registry", help="Bitácora alternativa (marca el resultado exploratorio).")
     er.add_argument(
         "--output", help="Carpeta de resultados (por defecto results/ del experimento)."
     )
+    va = esub.add_parser(
+        "validate", help="Abre UNA vez la validación fuera de muestra de una calibración."
+    )
+    va.add_argument("path")
+    va.add_argument("--calibration", required=True, help="run_id de la calibración registrada.")
+    va.add_argument("--output", help="Carpeta de resultados (por defecto results/).")
     ev = esub.add_parser(
         "verify", help="Verifica la bitácora: cadena de hashes, prefijo de la base y resultados."
     )
@@ -134,6 +143,21 @@ def _experiment_command(args: argparse.Namespace) -> int:
         except RegistryLockedError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return EXIT_LOCKED
+        print(res.report)
+        print(res.summary())
+        return 0
+    if args.experiment_command == "validate":
+        from tsinsurance.errors import ValidationPreconditionError
+        from tsinsurance.experiments import validate_experiment
+
+        try:
+            res = validate_experiment(args.path, args.calibration, output_root=args.output)
+        except RegistryLockedError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return EXIT_LOCKED
+        except ValidationPreconditionError as exc:
+            print(f"precondición no cumplida: {exc}", file=sys.stderr)
+            return 1
         print(res.report)
         print(res.summary())
         return 0

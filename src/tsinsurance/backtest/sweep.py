@@ -8,6 +8,7 @@ pruebas) y la prueba SPA de Hansen frente a comprar y mantener (Principio VIII).
 from __future__ import annotations
 
 import itertools
+import warnings
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -200,11 +201,14 @@ def select(
     reps: int = 500,
     seed: int = 0,
     prior_information_ratios: Mapping[str, Sequence[float]] | None = None,
+    prior_extra_trials: Mapping[str, int] | None = None,
 ) -> pd.DataFrame:
     """Mejor configuración de ``current`` por activo, deflactada con TODO el registro.
 
     Llamar después de evaluar todas las ideas: el número de pruebas no depende del
-    orden en que se evaluaron.
+    orden en que se evaluaron. ``prior_extra_trials`` suma pruebas previas al número N
+    sin entrar en la varianza del umbral (p. ej. pruebas cuya ventana pasa del corte de
+    la calibración; spec 004, FR-022a).
     """
     rows = []
     for asset, trials in current.items():
@@ -217,9 +221,10 @@ def select(
         best = trials[best_i]
         ppy = best.periods_per_year
         var_ir = float(np.var(irs_all, ddof=1)) if len(irs_all) > 1 else 0.0
+        n_trials = len(irs_all) + int((prior_extra_trials or {}).get(asset, 0))
         if float(best.active_returns.std()) > 0:
             # N bruto: el N efectivo por autovalores sub-deflacta con un factor común (SC-003).
-            dsr_value = deflated_sharpe(best.active_returns, len(irs_all), var_ir).dsr
+            dsr_value = deflated_sharpe(best.active_returns, n_trials, var_ir).dsr
         else:
             dsr_value = float("nan")
         common = active_all.dropna()
@@ -240,7 +245,7 @@ def select(
                 "ir_vs_bh": _ir(best.active_vs_buy_hold) * np.sqrt(ppy),
                 "exposure": best.exposure,
                 "timing_ir": irs_now[best_i] * np.sqrt(ppy),
-                "n_trials": len(irs_all),
+                "n_trials": n_trials,
                 "n_effective": effective_number_of_trials(active_all),
                 "dsr": dsr_value,
                 "spa_p": spa_p,
@@ -351,6 +356,7 @@ class CalibrationResult(ResultMixin):
     def summary(self) -> str:
         """Resumen legible."""
         lines = [
+            "EXPLORATORIO: calibra y valida en la misma llamada (sin registro).",
             f"Calibración hasta {self.train_end.date()} ({self.n_trials} configuraciones por "
             "activo); validación evaluada una sola vez, sin re-optimizar:",
             self.table.to_string(float_format=lambda v: f"{v:.3f}"),
@@ -375,9 +381,22 @@ def calibrate_validate(
 ) -> CalibrationResult:
     """Elige parámetros con datos hasta ``train_end`` y evalúa una vez después.
 
+    .. deprecated:: 0.2.0
+        Calibra y abre la validación en la misma llamada, así que quien itera ve el
+        periodo fuera de muestra en cada vuelta y nada lo registra. Su resultado es
+        **exploratorio**. Para una validación única use ``experiment.toml`` con
+        ``tsinsurance experiment run`` (calibración) y ``tsinsurance experiment validate``
+        (spec 004, US2).
+
     Las señales se calculan con toda la historia (son causales); la selección sólo
     mira el periodo de calibración.
     """
+    warnings.warn(
+        "calibrate_validate calibra y valida en una sola llamada (resultado exploratorio); "
+        "use `tsinsurance experiment run` + `tsinsurance experiment validate`.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     cfg = config or ExecutionConfig()
     cut = pd.Timestamp(train_end)
     combos = _grid(grid)

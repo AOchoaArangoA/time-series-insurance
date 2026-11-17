@@ -118,13 +118,13 @@ periodos ya vistos, ajuste de Holm y modelos econométricos incluidos.
 
 ### Tests (escribir primero)
 
-- [ ] T019 [P] [US2] Pruebas de `Bundle.as_of(cut)` en `tests/data/test_bundle_as_of.py`:
+- [X] T019 [P] [US2] Pruebas de `Bundle.as_of(cut)` en `tests/data/test_bundle_as_of.py`:
   - activos y tasa libre de riesgo con `date ≤ cut`;
   - exógenas con disponibilidad ≤ `cut`;
   - `sha256` del completo y `as_of_sha256` del truncado;
   - el objeto truncado no expone el original.
-- [ ] T020 [P] [US2] Prueba SC-003 en `tests/experiments/test_two_phase_isolation.py`. Con una copia fija de la bitácora y para cada categoría de `mutate_after` (observaciones posteriores al corte; versiones posteriores al corte de periodos anteriores; `realtime_end > cut`; primeras publicaciones tardías de periodos anteriores), la calibración es idéntica número a número, salvo los campos de procedencia del paquete completo (I6)
-- [ ] T021 [P] [US2] Pruebas de precondiciones en `tests/experiments/test_validate_preconditions.py`. Cada uno de estos casos lanza `ValidationPreconditionError` con su causa (SC-004, B5):
+- [X] T020 [P] [US2] Prueba SC-003 en `tests/experiments/test_two_phase_isolation.py`. Con una copia fija de la bitácora y para cada categoría de `mutate_after` (observaciones posteriores al corte; versiones posteriores al corte de periodos anteriores; `realtime_end > cut`; primeras publicaciones tardías de periodos anteriores), la calibración es idéntica número a número, salvo los campos de procedencia del paquete completo (I6)
+- [X] T021 [P] [US2] Pruebas de precondiciones en `tests/experiments/test_validate_preconditions.py`. Cada uno de estos casos lanza `ValidationPreconditionError` con su causa (SC-004, B5):
   - sin evento `calibration`;
   - otra huella del experimento;
   - otra huella de `as_of(train_end)`;
@@ -133,27 +133,27 @@ periodos ya vistos, ajuste de Holm y modelos econométricos incluidos.
   - archivo no rastreado en el directorio del experimento.
 
   Sin git, el resultado queda exploratorio.
-- [ ] T022 [P] [US2] Pruebas de reapertura en `tests/experiments/test_validate_reopen.py`. Quedan exploratorias, con la ejecución y el experimento que vieron el periodo (FR-009, FR-009a, B1):
+- [X] T022 [P] [US2] Pruebas de reapertura en `tests/experiments/test_validate_reopen.py`. Quedan exploratorias, con la ejecución y el experimento que vieron el periodo (FR-009, FR-009a, B1):
   - validar dos veces;
   - renombrar `experiment.id`;
   - volver a descargar el paquete (otra huella completa, mismo `as_of`);
   - extender `end`;
   - una línea `full_sample` previa sobre el activo;
   - una validación de otro experimento.
-- [ ] T023 [P] [US2] Pruebas econométricas por fase en `tests/experiments/test_econometric_phases.py`:
+- [X] T023 [P] [US2] Pruebas econométricas por fase en `tests/experiments/test_econometric_phases.py`:
   - en calibración, el walk-forward termina en `train_end`;
   - en validación, el veredicto usa sólo pronósticos con fecha **objetivo** > `train_end` y `n_specifications` congelado (M6);
   - la validación escribe `kind = "validation"` y nunca `econometric` (I3).
-- [ ] T024 [P] [US2] Pruebas de inferencia de la validación en `tests/experiments/test_validation_inference.py`:
+- [X] T024 [P] [US2] Pruebas de inferencia de la validación en `tests/experiments/test_validation_inference.py`:
   - Holm sobre la familia pre-registrada;
   - p frente a efectivo con EE HAC o bootstrap estacionario;
   - exposición constante tomada de la calibración, no de la media fuera de muestra (I7, FR-009b).
-- [ ] T025 [P] [US2] Prueba de FR-022a en `tests/backtest/test_prior_window.py`: en calibración, la varianza del umbral del DSR excluye las líneas con `eval_end > cut`; N las incluye; las líneas `validation` nunca entran en `prior_information_ratios` (I3)
+- [X] T025 [P] [US2] Prueba de FR-022a en `tests/backtest/test_prior_window.py`: en calibración, la varianza del umbral del DSR excluye las líneas con `eval_end > cut`; N las incluye; las líneas `validation` nunca entran en `prior_information_ratios` (I3)
 
 ### Implementation
 
-- [ ] T026 [US2] Implementar `Bundle.as_of(cut)` en `src/tsinsurance/data/bundle.py` (vista en memoria; `as_of_date`; `as_of_sha256` = huella de datos truncados + declaraciones + `cut`)
-- [ ] T027 [US2] Reorganizar `run_experiment` en `src/tsinsurance/experiments/runner.py`:
+- [X] T026 [US2] Implementar `Bundle.as_of(cut)` en `src/tsinsurance/data/bundle.py` (vista en memoria; `as_of_date`; `as_of_sha256` = huella de datos truncados + declaraciones + `cut`)
+- [X] T027 [US2] Reorganizar `run_experiment` en `src/tsinsurance/experiments/runner.py`:
   - con `train_end`, fase `calibration` sobre `bundle.as_of(train_end)`, aplicado antes de cualquier otro uso;
   - `quality_warnings`, `window` y `asset_start` sobre `as_of` (M8);
   - claves de prueba con `as_of_sha256` (I6);
@@ -162,17 +162,29 @@ periodos ya vistos, ajuste de Holm y modelos econométricos incluidos.
   - imprimir el comando de validación;
   - sin `train_end`, fase `full_sample`.
 - [ ] T028 [US2] Exigir que `train_end` sea una fecha de decisión mensual (o aplicar un embargo del mes que la cruza) en `src/tsinsurance/experiments/spec.py` (M6)
-- [ ] T029 [US2] Separar `prior_information_ratios` en dos conjuntos en `src/tsinsurance/experiments/registry.py`: "para N" (todas) y "para V" (`eval_end ≤ cut`). Excluir `kind = "validation"`. Usar ambos en `src/tsinsurance/backtest/sweep.py` (FR-022a)
-- [ ] T030 [US2] Implementar en `src/tsinsurance/experiments/validate.py`:
+- [X] T029 [US2] Separar `prior_information_ratios` en dos conjuntos en `src/tsinsurance/experiments/registry.py`: "para N" (todas) y "para V" (`eval_end ≤ cut`). Excluir `kind = "validation"`. Usar ambos en `src/tsinsurance/backtest/sweep.py` (FR-022a)
+- [X] T030 [US2] Implementar en `src/tsinsurance/experiments/validate.py`:
   - `validate_experiment(path, calibration_run_id, *, registry=None, output_root=None)`;
   - las precondiciones de contracts/cli.md (sólo la bitácora declarada; `git status --porcelain` con archivos no rastreados);
   - la detección de periodos ya vistos por `(asset, oos_start, oos_end)` en toda la bitácora;
   - la evaluación de las configuraciones fijadas, con Holm, valores p robustos y la exposición de la calibración;
   - eventos `validation` con `calibration_run_id`, `frozen_sha256`, `model`, `oos_start` y `oos_end`.
-- [ ] T031 [US2] Calibración y validación econométricas en `src/tsinsurance/experiments/runner.py` y `src/tsinsurance/experiments/validate.py`: walk-forward hasta `train_end` en calibración; en validación, continuación con la especificación fijada y veredicto sólo sobre pronósticos con fecha objetivo > `train_end`
-- [ ] T032 [US2] Agregar `experiment validate EXP --calibration RUN_ID [--output DIR]` en `src/tsinsurance/cli.py`; exportar `validate_experiment` en `src/tsinsurance/experiments/__init__.py`
-- [ ] T033 [US2] Deprecar `calibrate_validate` en `src/tsinsurance/backtest/sweep.py` (`DeprecationWarning`; resultado marcado exploratorio) (I12)
-- [ ] T034 [US2] Actualizar `tests/integration/test_integracion_ejemplo.py` y `tests/integration/test_inverse_treasury_experiment.py` al flujo de dos fases
+- [X] T031 [US2] Calibración y validación econométricas en `src/tsinsurance/experiments/runner.py` y `src/tsinsurance/experiments/validate.py`: walk-forward hasta `train_end` en calibración; en validación, continuación con la especificación fijada y veredicto sólo sobre pronósticos con fecha objetivo > `train_end`
+- [X] T032 [US2] Agregar `experiment validate EXP --calibration RUN_ID [--output DIR]` en `src/tsinsurance/cli.py`; exportar `validate_experiment` en `src/tsinsurance/experiments/__init__.py`
+- [X] T033 [US2] Deprecar `calibrate_validate` en `src/tsinsurance/backtest/sweep.py` (`DeprecationWarning`; resultado marcado exploratorio) (I12)
+- [X] T034 [US2] Actualizar `tests/integration/test_integracion_ejemplo.py` y `tests/integration/test_inverse_treasury_experiment.py` al flujo de dos fases
+
+**Notas de implementación de US2 (2026-11-17)**:
+- T028 queda **pendiente**. La validación ya filtra los pronósticos por mes objetivo
+  posterior al corte (M6), pero todavía no se exige que `train_end` sea una fecha de
+  decisión.
+- Además se hicieron:
+  - "diagnósticos de modelos no superados" pasó a ser una razón de exploratorio
+    (hallazgo P1 del experimento sectorial);
+  - las advertencias de calidad de datos usan escala local, ignoran los movimientos de
+    todo el universo y van en un anexo (P2);
+  - el archivo `*.jsonl.lock` queda fuera de git.
+- La precondición de huellas de señales (T038) llega con US3.
 
 **Checkpoint**: US1 y US2 funcionan juntas; ningún resultado de calibración puede ver el periodo de validación.
 

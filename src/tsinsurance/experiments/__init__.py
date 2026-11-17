@@ -7,6 +7,7 @@ from tsinsurance.experiments.registry import append_trials, prior_information_ra
 from tsinsurance.experiments.runner import ExperimentResult, run_experiment
 from tsinsurance.experiments.signals import available_signals, get_signal, register_signal
 from tsinsurance.experiments.spec import EconometricSpec, ExperimentSpec, IdeaSpec, load_experiment
+from tsinsurance.experiments.validate import validate_experiment
 
 __all__ = [
     "EconometricSpec",
@@ -21,4 +22,5 @@ __all__ = [
     "read_registry",
     "register_signal",
     "run_experiment",
+    "validate_experiment",
 ]

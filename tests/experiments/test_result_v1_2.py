@@ -26,9 +26,9 @@ def test_result_1_2_is_additive(experiment_file: Path) -> None:
 
 def test_phase_and_out_of_sample_with_train_end(experiment_file: Path) -> None:
     r = run_experiment(experiment_file).result
-    # Transitorio hasta US2: la ejecución calibra y abre la validación a la vez.
-    assert r["phase"] == "calibration_and_validation"
-    assert r["status"]["out_of_sample"] == "abierta"
+    # US2: con train_end la ejecución sólo calibra; la validación queda pendiente.
+    assert r["phase"] == "calibration"
+    assert r["status"]["out_of_sample"] == "pendiente"
 
 
 def test_phase_full_sample_without_train_end(experiment_file: Path) -> None:

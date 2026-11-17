@@ -98,7 +98,7 @@ autosuficiente con datos simulados. Cópiela al proyecto consumidor y ejecute:
 ```bash
 python generar_paquete_sintetico.py data          # 1. escribe y sella data/
 tsinsurance bundle validate data                  # 2. ⇒ "Paquete válido: data"
-tsinsurance experiment run experiment.toml        # 3. ⇒ "... línea(s) registradas; resultados en .../results/<run_id>"
+tsinsurance experiment run experiment.toml        # 3. ⇒ calibración: "... línea(s) registradas; resultados en .../results/<run_id>"
 tsinsurance experiment verify registry.jsonl      # 4. ⇒ "Bitácora íntegra."
 python senal_propia.py                            # 5. (opcional) señal propia desde Python
 ```
@@ -250,10 +250,22 @@ Señales incluidas: `sma_crossover` (`fast`, `slow`), `tsmom` (`lookback`, `skip
 ### Modo A, línea de comandos
 
 ```bash
-tsinsurance experiment run experimentos/mi_experimento/experiment.toml
-tsinsurance experiment verify experimentos/registry.jsonl
+tsinsurance experiment run experimentos/mi_experimento/experiment.toml        # 1. calibración
+git add -A && git commit -m "Calibración"                                     # 2. confirmar
+tsinsurance experiment validate experimentos/mi_experimento/experiment.toml \
+    --calibration RUN_ID                                                      # 3. validación única
+tsinsurance experiment verify experimentos/registry.jsonl --results experimentos
 tsinsurance experiment list experimentos/registry.jsonl
 ```
+
+**Dos fases (desde 0.2.0).** Con `train_end`, `run` sólo **calibra**: recibe los datos
+truncados en esa fecha y fija las configuraciones en la bitácora. `validate` abre el
+periodo posterior **una vez** y exige: la calibración registrada, el mismo
+`experiment.toml`, los mismos datos hasta `train_end`, la misma versión del paquete y git
+sin cambios (incluidos archivos no rastreados en la carpeta del experimento). Si ese
+periodo ya lo miró cualquier experimento para el mismo activo, el resultado es
+exploratorio. La validación ajusta por Holm la familia de hipótesis fijada en la
+calibración.
 
 Opciones útiles:
 - `--output DIR` cambia la carpeta de resultados.
@@ -299,14 +311,16 @@ Funciones de nivel más bajo, si se necesitan:
   `backtest_econometric`;
 - `tsinsurance.diagnostics`, para las pruebas de estacionariedad.
 
-## 9. Interfaz de salida: `result.json` (versión 1.1)
+## 9. Interfaz de salida: `result.json` (versión 1.2)
 
 Cada ejecución escribe `results/<run_id>/result.json` y `report.md`, y agrega líneas a
 la bitácora. El `run_id` tiene la forma `AAAAMMDDTHHMMSSZ-<hash>`.
 
 | Clave | Contenido |
 |-------|-----------|
-| `result_version` | `"1.1"`. Lea primero esta clave; los cambios incompatibles suben el número mayor |
+| `result_version` | `"1.2"`. Lea primero esta clave; los cambios incompatibles suben el número mayor |
+| `phase` | `calibration` (validación pendiente), `validation` o `full_sample` (sin validación fuera de muestra) |
+| `registry_head_before`, `registry_head` | estado de la bitácora antes y después de la ejecución |
 | `experiment` | `id`, `title`, `author`, `hypothesis`, `file`, `sha256` del `experiment.toml` |
 | `provenance` | `run_id`, `package_version`, `git`, `bundle` (huella SHA-256), `seed`, `registry`, `prior_trials_by_asset` |
 | `assumptions` | `execution`, `alpha`, `train_end`, `window`, `selection_window_end`, `risk_free`, `asset_start` |
@@ -315,7 +329,9 @@ la bitácora. El `run_id` tiene la forma `AAAAMMDDTHHMMSSZ-<hash>`.
 | `ideas.<nombre>.lookahead` | por activo: combinaciones probadas y las que fallaron, con su resumen |
 | `ideas.<nombre>.selection` | por activo: `best`, `sharpe`, `psr`, `ir_vs_bh`, `exposure`, `timing_ir`, `n_trials` (incluye la bitácora), `dsr`, `spa_p`, `spa_p_holm`, `significant` |
 | `ideas.<nombre>.configurations` | métricas de cada combinación de parámetros |
-| `calibration.<nombre>.assets[]` | validación única fuera de muestra: `params`, `sharpe_oos`, `ci95`, `p_vs_cash`, `buy_hold_sharpe_oos`, `exposure_oos`, `timing_sharpe_diff`, `timing_p` |
+| `calibration` | fase de calibración: `frozen` (parámetros, exposición, especificaciones y familia de hipótesis fijados) y `validate_with` |
+| `validation.ideas.<nombre>.assets[]` | fase de validación: `params`, `sharpe_oos`, `ci95`, `p_vs_cash_hac`, `buy_hold_sharpe_oos`, `exposure_calibration`, `timing_sharpe_diff`, `timing_p`, `p_holm`, `previously_seen_in` |
+| `validation.econometric.<nombre>` | fase de validación: veredicto con pronósticos posteriores a `train_end`, `p_holm` |
 | `econometric.<nombre>` | `verdict` (`quadrant`, `statistical`, `economic`, `exploratory`, `inconclusive`, `diagnostics_passed`, `explanation`), `oos_r2`, `clark_west_p`, `pesaran_timmermann_p`, `hit_rate`, `sharpe_model`, `sharpe_benchmark_rule`, `economic_p`, `n_forecasts`, `warnings` |
 
 **Formato de las tablas.** `selection` y `configurations` vienen orientadas por columna,
@@ -336,7 +352,9 @@ print(sel[["best", "sharpe", "dsr", "spa_p", "significant"]])
 
 **Razones de "exploratorio"** (`status.exploratory_reasons`): cambios sin confirmar en
 git; bitácora distinta de la declarada; ejecución sin registro (`record=False`);
-paquete sin sellar; variables no punto-en-el-tiempo; validación ya abierta antes.
+paquete sin sellar; variables no punto-en-el-tiempo; diagnósticos de modelos no
+superados; periodo de validación ya visto por otra ejecución; sin repositorio git al
+validar.
 
 ## 10. Reglas de interpretación (obligatorias para cualquier consumidor)
 

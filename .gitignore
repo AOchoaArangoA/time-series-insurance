@@ -27,3 +27,6 @@ examples/data/fred_daily/
 examples/integracion/data/
 examples/integracion/results/
 examples/integracion/registry.jsonl
+
+# Bloqueo de la bitácora (un solo escritor; spec 004)
+*.jsonl.lock

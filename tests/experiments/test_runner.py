@@ -25,7 +25,7 @@ def kinds(path: Path) -> list[str]:
     return [r["kind"] for r in read_registry(path)]
 
 
-def test_run_outputs_preregistration_and_validation(experiment_file: Path) -> None:
+def test_run_outputs_preregistration_and_calibration(experiment_file: Path) -> None:
     res = run_experiment(experiment_file)
     data = json.loads((res.output_dir / "result.json").read_text())
     assert data["result_version"] == "1.2" and data["experiment"]["sha256"]
@@ -34,23 +34,28 @@ def test_run_outputs_preregistration_and_validation(experiment_file: Path) -> No
     assert all(c["combinations"] == 2 and not c["failed"] for c in idea["lookahead"].values())
     # La selección sólo mira la calibración.
     assert all(str(d)[:10] <= "2016-12-30" for d in idea["selection"]["eval_end"].values())
-    assert data["calibration"]["tendencia"]["times_opened_before"] == 0
+    # US2: con train_end la ejecución sólo calibra y fija la configuración elegida.
+    frozen = data["calibration"]["frozen"]["ideas"]["tendencia"]["assets"]
+    assert set(frozen) == {"AAA", "BBB"}
     assert data["econometric"]["macro"]["n_specifications_counted"] == 1
     reg = experiment_file.parent / "registry.jsonl"
     k = kinds(reg)
     assert k[0] == "preregistration" and k.count("signal") == 4
-    assert k.count("econometric") == 1 and k.count("validation") == 1
+    assert k.count("econometric") == 1 and k.count("calibration") == 1
+    assert "validation" not in k
     assert verify_registry(reg) == []
-    assert not res.exploratory and "Conclusión automática" in res.report
+    assert "Conclusión automática" in res.report and "PENDIENTE" in res.report
+    # Sólo puede ser exploratorio por diagnósticos del modelo sintético, nunca "confirmatorio".
+    assert "confirmatorio" not in res.report.split("Estado:")[1].split("\n")[0].replace(
+        "evidencia confirmatoria", ""
+    )
 
 
-def test_repeat_does_not_inflate_but_reopened_validation_is_flagged(experiment_file: Path) -> None:
+def test_repeat_does_not_inflate_trial_count(experiment_file: Path) -> None:
     first = run_experiment(experiment_file)
     n1 = first.result["ideas"]["tendencia"]["selection"]["n_trials"]
     again = run_experiment(experiment_file)
     assert again.result["ideas"]["tendencia"]["selection"]["n_trials"] == n1
-    assert again.exploratory
-    assert any("ya abierta" in r for r in again.result["status"]["exploratory_reasons"])
     assert again.result["econometric"]["macro"]["n_specifications_counted"] == 1
     text = experiment_file.read_text().replace("fast = [20, 50]", "fast = [20, 50, 100]")
     experiment_file.write_text(text.replace("min_train = 36", "min_train = 48"))

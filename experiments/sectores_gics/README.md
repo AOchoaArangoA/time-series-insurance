@@ -14,11 +14,14 @@ Calibración 1999-2014 y validación 2015-2026.
 pruebas múltiples. Los modelos de ciclo tienen R² fuera de muestra negativo. XLK sale
 "solo estadística": acierta la dirección, pero sin valor económico.
 
-**Advertencias:**
+**Advertencias (resultado `20261117T192634Z-fc940b`, previo a US2):**
 - El estado "confirmatorio" del informe es engañoso: los modelos econométricos se
-  evaluaron sobre toda la ventana, que es el defecto que corrige la spec 004 (US2).
-- Las 49 advertencias de calidad de datos son falsos positivos en caídas reales (2008,
-  2020).
+  evaluaron sobre toda la ventana. La US2 de la spec 004 ya lo corrige: hoy `run` sólo
+  calibra y la validación se abre con `experiment validate`.
+- Las 49 advertencias de calidad de datos eran falsos positivos en caídas reales (2008,
+  2020). Con la regla nueva (escala local, sin movimientos de todo el mercado) son 0.
+- Para estos activos, el periodo 2015-2026 **ya fue visto**: toda validación futura con
+  ese corte saldrá exploratoria automáticamente.
 
 ```bash
 uv run tsinsurance bundle fetch experiments/sectores_gics/recipe.toml experiments/sectores_gics/data

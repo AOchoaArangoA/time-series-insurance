@@ -50,6 +50,7 @@ __all__ = [
     "line_hash",
     "prior_information_ratios",
     "prior_specifications",
+    "prior_trials_after",
     "read_registry",
     "trial_key",
     "validation_seen",
@@ -225,15 +226,36 @@ def prior_information_ratios(
     *,
     exclude_keys: Iterable[str] = (),
     periods_per_year: int | None = None,
+    max_eval_end: str | None = None,
 ) -> dict[str, list[float]]:
     """Ratios de *timing* por periodo de pruebas previas, por activo.
 
     Cuenta cada clave una sola vez (re-ejecuciones idénticas). Sólo combina pruebas con
     la misma frecuencia (``periods_per_year``) para no mezclar escalas. Las pruebas de
     señales y las econométricas cuentan por igual: ambas son intentos sobre el activo.
+    Las líneas ``validation`` nunca entran.
+
+    Con ``max_eval_end`` (fecha de corte de una calibración) sólo devuelve las pruebas
+    cuya ventana termina en o antes del corte: sus ratios no contienen información del
+    periodo de validación (spec 004, FR-022a). Las demás se cuentan con
+    :func:`prior_trials_after`.
     """
     skip = set(exclude_keys)
     latest: dict[str, tuple[str, float]] = {}
+    for r in _prior_rows(rows, skip, periods_per_year):
+        if max_eval_end is not None and not _ends_by(r, max_eval_end):
+            continue
+        ir = r.get("timing_ir_per_period")
+        latest[r["key"]] = (str(r["asset"]), 0.0 if ir is None else float(ir))
+    out: dict[str, list[float]] = {}
+    for asset, ir in latest.values():
+        out.setdefault(asset, []).append(ir)
+    return out
+
+
+def _prior_rows(
+    rows: Iterable[Mapping[str, Any]], skip: set[str], periods_per_year: int | None
+) -> Iterator[Mapping[str, Any]]:
     for r in rows:
         if r.get("kind") not in ("signal", "econometric") or "key" not in r:
             continue
@@ -244,11 +266,40 @@ def prior_information_ratios(
             periods_per_year,
         ):
             continue
-        ir = r.get("timing_ir_per_period")
-        latest[r["key"]] = (str(r["asset"]), 0.0 if ir is None else float(ir))
-    out: dict[str, list[float]] = {}
-    for asset, ir in latest.values():
-        out.setdefault(asset, []).append(ir)
+        yield r
+
+
+def _ends_by(row: Mapping[str, Any], cut: str) -> bool:
+    """``True`` si la ventana de la prueba termina en o antes de ``cut``.
+
+    Una línea sin ``eval_end`` (versiones anteriores; p. ej. modelos econométricos de la
+    v0.1 evaluados sobre toda la ventana) se trata como posterior al corte.
+    """
+    end = row.get("eval_end")
+    return end is not None and str(end)[:10] <= str(cut)[:10]
+
+
+def prior_trials_after(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    exclude_keys: Iterable[str] = (),
+    periods_per_year: int | None = None,
+    cut: str | None = None,
+) -> dict[str, int]:
+    """Pruebas previas por activo cuya ventana pasa del corte (o es desconocida).
+
+    Cuentan en el número de pruebas N del Sharpe deflactado (conservador), pero no en la
+    varianza de su umbral (FR-022a). Sin ``cut`` devuelve un diccionario vacío.
+    """
+    if cut is None:
+        return {}
+    keys: dict[str, str] = {}
+    for r in _prior_rows(rows, set(exclude_keys), periods_per_year):
+        if not _ends_by(r, cut):
+            keys[r["key"]] = str(r["asset"])
+    out: dict[str, int] = {}
+    for asset in keys.values():
+        out[asset] = out.get(asset, 0) + 1
     return out
 
 

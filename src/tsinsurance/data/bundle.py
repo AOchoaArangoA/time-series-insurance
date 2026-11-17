@@ -25,6 +25,7 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any, Literal
 
+import numpy as np
 import pandas as pd
 from pandas.tseries.frequencies import to_offset
 
@@ -163,6 +164,8 @@ class Bundle:
     created_at: str = ""
     sha256: str = ""
     notes: tuple[str, ...] = field(default=())
+    as_of_date: str = ""
+    as_of_sha256: str = ""
 
     # --- Construcción ---------------------------------------------------------------
 
@@ -343,33 +346,91 @@ class Bundle:
         daily.index = pd.DatetimeIndex(daily.index) + lag
         return daily.rename("rf_daily")
 
+    def as_of(self, cut: str | pd.Timestamp) -> Bundle:
+        """Paquete truncado en ``cut``: sólo lo que se conocía al cierre de esa fecha.
+
+        Activos: observaciones con fecha ≤ ``cut``. Tasa libre de riesgo y exógenas: las
+        **disponibles** en ``cut`` (fecha + rezago de publicación; fin de periodo + rezago
+        en series mensuales y semanales). ``sha256`` conserva la huella del paquete completo
+        (procedencia) y ``as_of_sha256`` identifica los datos truncados + declaraciones +
+        ``cut`` (spec 004, US2: la calibración nunca recibe el periodo de validación).
+        """
+        from tsinsurance.backtest.pit import Exogenous
+
+        if self.as_of_date:
+            raise ValueError(f"El paquete ya está truncado en {self.as_of_date}.")
+        ts = pd.Timestamp(cut)
+        keep = pd.Series(False, index=self.data.index)
+        for spec in self.series:
+            rows = self.data["series_id"] == spec.id
+            dates = pd.DatetimeIndex(self.data.loc[rows, "date"])
+            if spec.role == "asset":
+                avail = dates
+            elif spec.role == "risk_free":
+                avail = dates + to_offset(spec.release_lag)
+            else:
+                freq = str(self.data.loc[rows, "frequency"].iloc[0])
+                values = pd.Series(1.0, index=dates)
+                avail = Exogenous(
+                    spec.id,
+                    values,
+                    freq,  # type: ignore[arg-type]
+                    release_lag=spec.release_lag,
+                ).availability(dates)
+            keep.loc[rows] = np.asarray(avail <= ts)
+        data = self.data[keep.to_numpy()].reset_index(drop=True)
+        decl = self.manifest()["series"]
+        digest = hashlib.sha256(
+            (seal_hash(data, decl) + "|as_of=" + ts.date().isoformat()).encode("utf-8")
+        ).hexdigest()
+        return dataclasses.replace(
+            self, data=data, as_of_date=ts.date().isoformat(), as_of_sha256=digest
+        )
+
     @property
     def sealed(self) -> bool:
         """``True`` si el paquete tiene huella (verificada al cargar)."""
         return bool(self.sha256)
 
-    def quality_warnings(self, threshold: float = 8.0) -> list[str]:
-        """Posibles datos erróneos en precios: picos seguidos de reversión.
+    def quality_warnings(self, threshold: float = 8.0, window: int = 63) -> list[str]:
+        """Posibles datos erróneos en precios: picos idiosincráticos seguidos de reversión.
 
-        Marca días con |r| > ``threshold`` desviaciones robustas (MAD) cuyo retorno
-        siguiente revierte más de la mitad. No modifica los datos.
+        Marca días con |r| > ``threshold`` desviaciones robustas **locales** (MAD de los
+        ``window`` retornos previos, para no confundir un periodo de volatilidad alta con
+        un error) cuyo retorno siguiente revierte más de la mitad, salvo que el resto del
+        universo se haya movido igual ese día (caída y rebote de todo el mercado, como en
+        2008 o marzo de 2020: no es un dato erróneo). No modifica los datos.
         """
-        out = []
+        rets: dict[str, pd.Series] = {}
         for sid in self.ids("asset"):
             rows = self.data[self.data["series_id"] == sid]
             px = pd.Series(rows["value"].to_numpy(), index=pd.DatetimeIndex(rows["date"])).dropna()
-            r = px.pct_change().dropna()
-            if len(r) < 30:
+            rets[sid] = px.pct_change().dropna()
+        wide = pd.DataFrame(rets)
+        out = []
+        for sid, r in rets.items():
+            if len(r) < max(30, window // 2):
                 continue
-            mad = float((r - r.median()).abs().median()) * 1.4826
-            if mad == 0:
-                continue
+            dev = (r - r.rolling(window, min_periods=window // 2).median()).abs()
+            scale = (dev.rolling(window, min_periods=window // 2).median() * 1.4826).shift(1)
+            scale = scale.fillna(float((r - r.median()).abs().median()) * 1.4826)
             nxt = r.shift(-1)
-            flag = (r.abs() > threshold * mad) & (nxt * r < 0) & (nxt.abs() > 0.5 * r.abs())
+            flag = (
+                (scale > 0)
+                & (r.abs() > threshold * scale)
+                & (nxt * r < 0)
+                & (nxt.abs() > 0.5 * r.abs())
+            )
+            others = wide.drop(columns=[sid])
+            if others.shape[1] > 0:
+                market = others.median(axis=1).reindex(r.index)
+                market_wide = (market * r > 0) & (market.abs() >= 0.5 * r.abs())
+                flag &= ~market_wide.fillna(False)
             for d in r.index[flag.to_numpy()]:
                 out.append(
                     f"{sid} {d.date()}: retorno {r[d]:+.2%} y {nxt[d]:+.2%} al día siguiente "
-                    f"(> {threshold:g} desviaciones robustas): posible dato erróneo"
+                    f"(> {threshold:g} desviaciones robustas locales, sin movimiento similar del "
+                    "resto del universo): posible dato erróneo"
                 )
         return out
 

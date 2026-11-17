@@ -382,6 +382,7 @@ def backtest_econometric(
     point_in_time: bool = True,
     reps: int = 1000,
     seed: int = 0,
+    evaluation_start: str | pd.Timestamp | None = None,
 ) -> EconometricBacktest:
     """Validación doble de una señal econométrica sobre un activo.
 
@@ -407,6 +408,11 @@ def backtest_econometric(
         Especificaciones probadas para llegar a esta (> 1 ⇒ veredicto exploratorio).
     point_in_time : bool
         ``False`` si alguna variable es revisable y se usa su versión actual.
+    evaluation_start : str or Timestamp, optional
+        Fecha de corte de la validación (spec 004, US2): el walk-forward usa toda la
+        historia, pero la evaluación estadística y la económica usan sólo los pronósticos
+        cuyo periodo objetivo empieza después del corte (decididos en la última fecha de
+        decisión ≤ corte o después) y los retornos posteriores al corte.
     """
     if alpha not in ALPHAS:
         raise DataValidationError(f"alpha debe ser uno de {ALPHAS}.")
@@ -431,6 +437,17 @@ def backtest_econometric(
     wf = model.walk_forward(y, X)
     validation = model.validate(y, X, alpha=alpha)
     mask = wf.forecasts.notna() & wf.realized.notna()
+    cut: pd.Timestamp | None = None
+    if evaluation_start is not None:
+        cut = pd.Timestamp(evaluation_start)
+        decided = y.index[y.index <= cut]
+        if len(decided) == 0:
+            raise DataValidationError("evaluation_start es anterior a la primera decisión.")
+        mask &= pd.Series(wf.forecasts.index >= decided.max(), index=wf.forecasts.index)
+        notes.append(
+            f"Evaluación fuera de muestra sólo con pronósticos cuyo mes objetivo es posterior "
+            f"a {cut.date()} (validación única)."
+        )
     evaluation = evaluate_forecasts(
         wf.realized[mask], wf.benchmark_forecasts[mask], wf.forecasts[mask]
     )
@@ -447,6 +464,8 @@ def backtest_econometric(
         prices, w_bench.rename(name).dropna(), cfg, risk_free=risk_free, name="media_historica"
     )
     start = max(t for t in (bt_model.warmup_end, bt_bench.warmup_end) if t is not None)
+    if cut is not None:
+        start = max(start, cut + pd.Timedelta(days=1))
     a = bt_model.excess_returns.loc[start:]
     b = bt_bench.excess_returns.loc[start:]
     econ = sharpe_difference(a, b, periods_per_year=bt_model.periods_per_year, reps=reps, seed=seed)

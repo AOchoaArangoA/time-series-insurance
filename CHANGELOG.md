@@ -7,12 +7,27 @@ semántico.
 
 ### Cambios incompatibles
 
-- `tsinsurance experiment run` dejará de abrir la validación fuera de muestra en la misma
-  ejecución: calibrará y la validación se abrirá con `tsinsurance experiment validate`
-  (US2). Mientras US2 no esté implementada, `result.json` marca esas ejecuciones con
-  `phase = "calibration_and_validation"`.
+- `tsinsurance experiment run` ya **no** abre la validación fuera de muestra: con
+  `train_end` sólo calibra (recibe los datos truncados en esa fecha) y fija la
+  configuración. La validación se abre una vez con `tsinsurance experiment validate EXP
+  --calibration RUN_ID` (spec 004, US2).
+- `calibrate_validate` queda obsoleta (`DeprecationWarning`; resultado exploratorio).
 
 ### Agregado
+
+- Validación única en dos fases: `Bundle.as_of`, evento `calibration` con lo fijado,
+  `validate_experiment` con precondiciones (bitácora declarada, mismos datos hasta el
+  corte, mismo experimento y versión, git limpio), detección de periodos ya vistos por
+  cualquier experimento, Holm sobre la familia pre-registrada, valor p HAC frente al
+  efectivo y exposición de la calibración en la comparación de timing. Los modelos
+  econométricos se calibran hasta el corte y se validan sólo con pronósticos posteriores.
+- La varianza del umbral del DSR en calibración sólo usa pruebas previas cuya ventana
+  termina antes del corte; las demás cuentan en N.
+- "Diagnósticos de modelos no superados" es razón de exploratorio; el informe nunca dice
+  "confirmatorio" en la fase de calibración.
+- Advertencias de calidad de datos con escala local y sin marcar movimientos de todo el
+  universo (49 falsos positivos → 0 en los ETFs sectoriales); van en un anexo.
+- Conector de Yahoo: omite días sin cotización y admite `kind`/`unit` por bloque.
 
 - Bitácora a prueba de recortes: `registry_head_before`/`registry_head` en cada
   `result.json`; `tsinsurance experiment verify REGISTRY --base BASE --results DIR`.

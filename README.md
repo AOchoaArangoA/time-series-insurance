@@ -50,7 +50,8 @@ descargar datos de FRED; se lee del entorno y nunca se versiona.
 uv run tsinsurance bundle template mi_exp/data            # 1. paquete de insumos para llenar (o:)
 uv run tsinsurance bundle fetch recipe.toml mi_exp/data    #    descargarlo con una receta
 uv run tsinsurance bundle validate mi_exp/data             # 2. contrato, manifiesto y huella
-uv run tsinsurance experiment run mi_exp/experiment.toml   # 3. ejecutar y registrar
+uv run tsinsurance experiment run mi_exp/experiment.toml   # 3. calibrar y registrar
+uv run tsinsurance experiment validate mi_exp/experiment.toml --calibration RUN_ID  # validación única
 uv run tsinsurance experiment verify experiments/registry.jsonl   # 4. integridad de la bitácora
 ```
 
