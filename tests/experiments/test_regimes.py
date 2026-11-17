@@ -162,3 +162,11 @@ def test_validation_has_separate_regime_family(experiment_file: Path) -> None:
     v = validate_experiment(experiment_file, cal.run_id).result
     assert v["assumptions"]["regime_family"] == frozen["regime_family"]
     assert "0,8α" in v["assumptions"]["multiple_testing"]
+
+
+def test_spread_memory_key_is_order_invariant() -> None:
+    """M7: a − b < v y b − a > −v son la misma hipótesis."""
+    ab = _spec(type="spread", variables=["A", "B"], op="<", values=[0.0])
+    ba = _spec(type="spread", variables=["B", "A"], op=">", values=[0.5])
+    assert ab.memory_key == ba.memory_key == "spread:A-B"
+    assert ba.canonical_variant({"op": ">", "value": 0.5}) == {"op": "<", "value": -0.5}

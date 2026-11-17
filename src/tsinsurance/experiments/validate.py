@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pandas as pd
 from scipy import stats
 
 from tsinsurance import __version__
@@ -41,13 +42,13 @@ from tsinsurance.backtest import (
     PredictiveRegression,
     backtest_econometric,
     run_backtest,
-    sharpe_difference,
     sharpe_inference,
+    sharpe_se_hac,
 )
 from tsinsurance.backtest.metrics import sharpe_per_period
 from tsinsurance.backtest.sweep import holm
 from tsinsurance.data.bundle import Bundle
-from tsinsurance.errors import ValidationPreconditionError
+from tsinsurance.errors import TSInsuranceError, ValidationPreconditionError
 from tsinsurance.experiments.portfolio_eval import portfolio_backtests
 from tsinsurance.experiments.regimes import analyze_regime, one_sided_p
 from tsinsurance.experiments.registry import (
@@ -92,6 +93,28 @@ def _untracked(directory: Path) -> list[str] | None:
     return [ln[3:] for ln in out.splitlines() if ln.startswith("??") and not ln.endswith(".lock")]
 
 
+def _python_changed_since(directory: Path, commit: str | None) -> list[str]:
+    """Archivos .py del repositorio que cambiaron entre ``commit`` y HEAD (revisión I2).
+
+    Control provisional hasta que la identidad de cada prueba incluya la huella del código
+    de su señal (spec 004, US3): cualquier cambio de código Python entre las dos fases
+    impide validar.
+    """
+    if not commit:
+        return []
+    try:
+        out = subprocess.run(
+            ["git", "diff", "--name-only", commit, "HEAD"],
+            cwd=directory,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return []
+    return [f for f in out.splitlines() if f.endswith(".py")]
+
+
 def _seen_after(rows: list[dict[str, Any]], asset: str, cut: str, exclude_run: str) -> list[str]:
     """Ejecuciones previas que ya miraron fechas posteriores a ``cut`` en ``asset``."""
     # Validaciones antiguas sin activo: se infieren de las señales de la misma ejecución.
@@ -124,15 +147,40 @@ def _seen_after(rows: list[dict[str, Any]], asset: str, cut: str, exclude_run: s
                 seen.append(f"{r.get('experiment_id')} [declarada fuera de la bitácora]")
         elif kind == "validation":
             if r.get("asset") is not None:
-                if r["asset"] == asset:
+                if r["asset"] == asset or asset in r.get("universe", []):
                     seen.append(label)
             elif asset in assets_by_run_idea.get((str(r.get("run_id")), str(r.get("idea"))), set()):
                 seen.append(label)
     return sorted(set(seen))
 
 
+def _active_ir_test(
+    strategy: pd.Series, benchmark: pd.Series, exposure: float, periods_per_year: int
+) -> tuple[float, float]:
+    """IR anualizado de ``a = r − e_cal·b`` y valor p unilateral H0: IR ≤ 0 (EE HAC).
+
+    Es el MISMO estadístico que seleccionó la calibración (ratio de información del retorno
+    activo frente a la exposición de la calibración; revisión B1): a diferencia de una
+    diferencia de Sharpe, depende de ``e_cal``.
+    """
+    bench = benchmark.reindex(strategy.index).fillna(0.0)
+    active = (strategy - exposure * bench).dropna()
+    ir = sharpe_per_period(active)
+    try:
+        se = sharpe_se_hac(active)
+    except TSInsuranceError:
+        return float("nan"), float("nan")
+    p = _p_hac_positive(ir, se)
+    return float(ir * np.sqrt(periods_per_year)), p
+
+
 def _fmt(p: float | None) -> str:
     return "n/a" if p is None else f"{p:.3f}"
+
+
+def _after(cut: str) -> pd.Timestamp:
+    """Primer día estrictamente posterior al corte (no descarta un día si el corte es feriado)."""
+    return pd.Timestamp(cut) + pd.Timedelta(days=1)
 
 
 def _p_hac_positive(sharpe_ann: float, se_ann: float) -> float:
@@ -221,7 +269,7 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             f"{__version__}: valide con la misma versión."
         )
     git = _git(spec.path.parent)
-    reasons: list[str] = []
+    reasons: list[str] = [f"calibración: {r}" for r in cal.get("exploratory_reasons", [])]
     if git["commit"] is None:
         reasons.append("sin repositorio git: no se puede verificar que no hubo cambios")
     else:
@@ -229,6 +277,12 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             raise ValidationPreconditionError(
                 "Hay cambios sin confirmar en git: confirme la calibración (resultados y "
                 "bitácora) y el código antes de validar."
+            )
+        changed = _python_changed_since(spec.path.parent, cal.get("git_commit"))
+        if changed:
+            raise ValidationPreconditionError(
+                "El código Python cambió desde la calibración (señales o paquete): "
+                f"{changed[:5]}. Vuelva a calibrar con el código actual."
             )
         untracked = _untracked(spec.path.parent) or []
         if untracked:
@@ -267,12 +321,12 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             px = prices[[asset]].dropna()
             params = chosen["params"]
             bt = run_backtest(px, fn(px, **params), spec.execution, risk_free=rf)
-            after = bt.excess_returns.loc[cut:].iloc[1:]
+            after = bt.excess_returns.loc[_after(cut) :]
             assert bt.benchmark_excess_returns is not None
             bench = bt.benchmark_excess_returns.loc[after.index]
             exp_cal = float(chosen["exposure_calibration"])
             inf = sharpe_inference(after, bt.periods_per_year, reps=spec.reps, seed=spec.seed)
-            timing = sharpe_difference(after, exp_cal * bench, reps=spec.reps, seed=spec.seed)
+            ir_oos, timing_p = _active_ir_test(after, bench, exp_cal, bt.periods_per_year)
             row = {
                 "asset": asset,
                 "params": params,
@@ -283,14 +337,15 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
                 "buy_hold_sharpe_oos": sharpe_per_period(bench) * np.sqrt(bt.periods_per_year),
                 "exposure_calibration": exp_cal,
                 "exposure_oos": float(bt.weights.abs().sum(axis=1).loc[after.index].mean()),
-                "timing_sharpe_diff": timing.difference,
-                "timing_p": timing.p_value,
+                "timing_ir_oos": ir_oos,
+                "timing_p": timing_p,
                 "oos_start": str(after.index[0].date()),
                 "oos_end": str(after.index[-1].date()),
                 "previously_seen_in": seen[asset],
+                "times_seen_before": len(seen[asset]),
             }
             per.append(row)
-            hyp.append({"id": f"idea:{name}:{asset}", "p": timing.p_value, "row": row})
+            hyp.append({"id": f"idea:{name}:{asset}", "p": timing_p, "row": row})
         ideas_out[name] = {"signal": v["signal"], "assets": per}
 
     econ_out: dict[str, Any] = {}
@@ -351,11 +406,11 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
         )
         px = full.assets(pspec.universe).loc[spec.start : spec.end]
         strat, ew = portfolio_backtests(px, pspec, v["params"], spec.execution, rf)
-        after = strat.excess_returns.loc[cut:].iloc[1:]
+        after = strat.excess_returns.loc[_after(cut) :]
         bex = ew.excess_returns.reindex(after.index)
         exp_cal = float(v["exposure_calibration"])
         inf = sharpe_inference(after, strat.periods_per_year, reps=spec.reps, seed=spec.seed)
-        diff = sharpe_difference(after, exp_cal * bex, reps=spec.reps, seed=spec.seed)
+        ir_oos, p_port = _active_ir_test(after, bex, exp_cal, strat.periods_per_year)
         seen_const = [a for a in pspec.universe if seen.get(a)]
         row = {
             "universe_id": v["universe_id"],
@@ -364,8 +419,8 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             "ci95": [inf.ci_low, inf.ci_high],
             "equal_weight_sharpe_oos": sharpe_per_period(bex) * np.sqrt(strat.periods_per_year),
             "exposure_calibration": exp_cal,
-            "diff_vs_equal_weight": diff.difference,
-            "p": diff.p_value,
+            "ir_vs_equal_weight_oos": ir_oos,
+            "p": p_port,
             "constituents_seen": f"{len(seen_const)}/{len(pspec.universe)}",
             "previously_seen_in": seen.get(v["universe_id"], []),
         }
@@ -375,7 +430,7 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
                 f"periodo posterior a {cut} ya visto"
             )
         ports_out[name] = row
-        hyp.append({"id": f"cartera:{name}", "p": diff.p_value, "row": row})
+        hyp.append({"id": f"cartera:{name}", "p": p_port, "row": row})
 
     # Familia de regímenes: sólo las hipótesis seleccionadas en calibración, unilaterales.
     reg_hyp: list[dict[str, Any]] = []
@@ -389,9 +444,9 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             sub = dataclasses.replace(
                 rspec,
                 assets=[h["asset"]],
-                values=[h["variant"]["value"]] if "value" in h["variant"] else rspec.values,
+                values=[h["variant"]["value"]] if "value" in h["variant"] else rspec.values,  # noqa: PD011 - campo de RegimeSpec, no pandas
                 months=[h["variant"]["months"]] if "months" in h["variant"] else rspec.months,
-                min_months=min(rspec.min_months, 6),
+                min_months=rspec.min_months,
             )
             res_rows = analyze_regime(full, sub, start=spec.start, end=spec.end, after=cut)
             r = res_rows[0]
@@ -502,7 +557,9 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             "regime_family": [h["id"] for h in reg_hyp],
             "multiple_testing": "Holm por familia pre-registrada: estrategias 0,8α, regímenes 0,2α",
             "p_vs_cash": "unilateral con EE HAC del Sharpe",
-            "timing_benchmark": "exposición media de la calibración × comprar y mantener",
+            "timing_test": (
+                "IR de r − e_cal·b (mismo estadístico que la calibración), unilateral, EE HAC"
+            ),
         },
         "validation": {
             "ideas": ideas_out,
@@ -531,14 +588,14 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             f"## Idea `{name}`",
             "",
             "| Activo | Parámetros | Sharpe fuera de muestra | IC 95 % | p vs efectivo (HAC) | "
-            "Sharpe comprar y mantener | Dif. vs exposición de la calibración (p · Holm) |",
+            "Sharpe comprar y mantener | IR vs exposición de la calibración (p · Holm) |",
             "|---|---|---|---|---|---|---|",
         ]
         for r in v["assets"]:
             report.append(
                 f"| {r['asset']} | {r['params']} | {r['sharpe_oos']:+.2f} | "
                 f"[{r['ci95'][0]:+.2f}; {r['ci95'][1]:+.2f}] | {r['p_vs_cash_hac']:.3f} | "
-                f"{r['buy_hold_sharpe_oos']:+.2f} | {r['timing_sharpe_diff']:+.2f} "
+                f"{r['buy_hold_sharpe_oos']:+.2f} | IR {r['timing_ir_oos']:+.2f} "
                 f"({r['timing_p']:.3f} · {r['p_holm']:.3f}) |"
             )
         report.append("")
@@ -548,7 +605,7 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             "",
             f"- Sharpe fuera de muestra {r['sharpe_oos']:+.2f} "
             f"[{r['ci95'][0]:+.2f}; {r['ci95'][1]:+.2f}] frente a igual ponderado "
-            f"{r['equal_weight_sharpe_oos']:+.2f} · diferencia {r['diff_vs_equal_weight']:+.2f} "
+            f"{r['equal_weight_sharpe_oos']:+.2f} · IR activo {r['ir_vs_equal_weight_oos']:+.2f} "
             f"(p {r['p']:.3f} · Holm {r['p_holm']:.3f}) · constituyentes ya vistos "
             f"{r['constituents_seen']}",
             "",

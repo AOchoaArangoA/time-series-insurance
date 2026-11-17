@@ -24,7 +24,11 @@ import pandas as pd
 from tsinsurance.backtest import ExecutionConfig, check_lookahead, run_backtest
 from tsinsurance.backtest.engine import BacktestResult
 from tsinsurance.backtest.sweep import Trial
-from tsinsurance.experiments.portfolio_signals import get_portfolio_signal, month_end_mask
+from tsinsurance.experiments.portfolio_signals import (
+    accepts_eligible,
+    get_portfolio_signal,
+    month_end_mask,
+)
 from tsinsurance.experiments.spec import PortfolioSpec
 
 __all__ = ["PortfolioRun", "combos", "evaluate_portfolio", "portfolio_backtests"]
@@ -54,11 +58,20 @@ def _weights_fn(
     fn = get_portfolio_signal(pspec.signal)
 
     def weights(p: pd.DataFrame) -> pd.DataFrame:
-        w = fn(p, **params)
         elig = _eligible(p, pspec.min_history_m)
+        if accepts_eligible(fn):
+            # Ranking y normalización sólo entre elegibles (revisión I6).
+            w = fn(p, **params, eligible=elig)
+        else:
+            # Señal propia sin máscara: se anulan los no elegibles y se renormaliza a la
+            # misma exposición bruta de la señal.
+            raw = fn(p, **params)
+            gross = raw.abs().sum(axis=1)
+            masked = raw.where(elig, 0.0)
+            kept = masked.abs().sum(axis=1).replace(0.0, np.nan)
+            w = masked.mul(gross / kept, axis=0).fillna(0.0).where(raw.notna().any(axis=1))
         decided = w.notna().any(axis=1)
-        masked = w.where(elig, 0.0)
-        return masked.where(decided, np.nan)
+        return w.where(elig, 0.0).where(decided, np.nan)
 
     return weights
 

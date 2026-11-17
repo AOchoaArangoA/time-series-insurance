@@ -98,9 +98,25 @@ class RegimeSpec:
 
     @property
     def memory_key(self) -> str:
-        """Clave de memoria entre experimentos: tipo y variables (o activo de referencia)."""
-        ref = self.asset if self.type == "trend" else "-".join(self.variables)
+        """Clave de memoria entre experimentos: tipo y variables (o activo de referencia).
+
+        En ``spread`` las variables se ordenan: ``a − b < v`` y ``b − a > −v`` son la misma
+        hipótesis y comparten memoria (revisión M7).
+        """
+        if self.type == "trend":
+            ref = str(self.asset)
+        elif self.type == "spread":
+            ref = "-".join(sorted(self.variables))
+        else:
+            ref = "-".join(self.variables)
         return f"{self.type}:{ref}"
+
+    def canonical_variant(self, variant: dict[str, Any]) -> dict[str, Any]:
+        """Variante en la orientación canónica de la clave de memoria."""
+        if self.type != "spread" or self.variables == sorted(self.variables):
+            return dict(variant)
+        flipped = "<" if variant["op"] == ">" else ">"
+        return {"op": flipped, "value": -float(variant["value"])}
 
     def variants(self) -> list[dict[str, Any]]:
         """Cada umbral (o número de meses) declarado es una hipótesis distinta."""
@@ -338,6 +354,8 @@ def _declared(raw: dict[str, Any]) -> list[DeclaredPriorSpec]:
         kind = str(_require(block, "kind", where))
         if kind not in ("portfolio", "regime", "signal"):
             raise TSInsuranceError(f"{where}.kind debe ser portfolio, regime o signal.")
+        if not block.get("assets") and not block.get("universe"):
+            raise TSInsuranceError(f"{where}: declare 'assets' o 'universe' (a qué se probó).")
         n = int(_require(block, "n_tests", where))
         if n < 1:
             raise TSInsuranceError(f"{where}.n_tests debe ser ≥ 1.")

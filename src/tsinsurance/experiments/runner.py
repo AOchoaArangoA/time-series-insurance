@@ -5,16 +5,18 @@ Salvaguardas (Principio VIII):
 1. **Pre-registro**: antes de ejecutar se agrega a la bitácora el hash de
    ``experiment.toml`` y del paquete de insumos.
 2. **Anticipación**: cada combinación de cada idea pasa :func:`check_lookahead`.
-3. **Calibración separada**: con ``train_end`` el barrido y la selección sólo miran el
-   periodo de calibración; la validación se abre una vez por clave y queda registrada.
-   Volver a abrir la misma validación marca el resultado como exploratorio.
+3. **Calibración separada (spec 004, US2)**: con ``train_end`` la ejecución recibe el
+   paquete truncado en esa fecha (``Bundle.as_of``), selecciona y FIJA la configuración
+   en un evento ``calibration``; la validación se abre después, una vez, con
+   :func:`tsinsurance.experiments.validate_experiment`.
 4. **Pruebas múltiples**: todas las pruebas (señales y modelos econométricos) de todas
    las ejecuciones se cuentan por activo en el DSR (identidad completa: señal,
    parámetros, ejecución, ventana, huella del paquete); la selección se calcula al final
    (independiente del orden de las ideas) y la SPA se ajusta por activos (Holm).
 5. **Marcas automáticas**: el resultado es exploratorio si git está sucio, la bitácora no
    es la declarada, no se registra, el paquete no está sellado, hay variables no
-   punto-en-el-tiempo o se reabre una validación.
+   punto-en-el-tiempo, los diagnósticos de algún modelo no se superan o un régimen no
+   declara la justificación de sus umbrales (la validación hereda estas razones).
 """
 
 from __future__ import annotations
@@ -356,7 +358,7 @@ def _run_locked(
     prior_extra = prior_trials_after(
         history, exclude_keys=excluded, periods_per_year=252, cut=spec.train_end
     )
-    lines: list[dict[str, Any]] = [{**d} for d in declared_lines]
+    lines: list[dict[str, Any]] = []
     common = {
         "experiment_id": spec.id,
         "run_id": run_id,
@@ -366,6 +368,7 @@ def _run_locked(
         "git_commit": git["commit"],
         "seed": spec.seed,
     }
+    lines += [{**common, **d} for d in declared_lines]
     if record:
         append_trials(
             spec.registry,
@@ -380,7 +383,7 @@ def _run_locked(
             ],
         )
 
-    # Transitorio (spec 004): hasta US2, con train_end la misma ejecución calibra y valida.
+    # Con train_end la ejecución sólo calibra (spec 004, US2); sin él, muestra completa.
     phase = "calibration" if spec.train_end else "full_sample"
     result: dict[str, Any] = {
         "result_version": RESULT_VERSION,
@@ -683,6 +686,13 @@ def _run_locked(
             "",
         ]
 
+    failed_diag = [n for n, e in result["econometric"].items() if not e["diagnostics_passed"]]
+    if failed_diag:
+        reasons.append(f"diagnósticos de modelos no superados: {failed_diag}")
+    # La validación hereda las razones de exploratorio de la calibración (revisión I1).
+    for ln in lines:
+        if ln.get("kind") == "calibration":
+            ln["exploratory_reasons"] = list(reasons)
     written = append_trials(spec.registry, lines) + 1 if record else 0
     significant = {
         n: [
@@ -698,9 +708,6 @@ def _run_locked(
         if "selection" in e
     }
     econ_q = {n: e["verdict"]["quadrant"] for n, e in result["econometric"].items()}
-    failed_diag = [n for n, e in result["econometric"].items() if not e["diagnostics_passed"]]
-    if failed_diag:
-        reasons.append(f"diagnósticos de modelos no superados: {failed_diag}")
     result["status"] = {
         "exploratory_reasons": reasons,
         "significant_by_idea": significant,
@@ -758,6 +765,7 @@ def _declared_lines(spec: ExperimentSpec, history: list[dict[str, Any]]) -> list
         if key in known:
             continue
         assets = sorted({*d.assets, *d.universe})
+        per_asset = -(-d.n_tests // len(assets)) if assets else 0  # I4: assets ∪ universe
         out.append(
             {
                 "kind": "declared_prior",
@@ -765,7 +773,7 @@ def _declared_lines(spec: ExperimentSpec, history: list[dict[str, Any]]) -> list
                 "experiment_id": spec.id,
                 "declared_kind": d.kind,
                 "n_tests": d.n_tests,
-                "n_tests_per_asset": -(-d.n_tests // max(len(d.assets), 1)) if d.assets else 0,
+                "n_tests_per_asset": per_asset,
                 "universe": sorted(d.universe),
                 "assets": assets,
                 "period_start": d.period_start,
@@ -877,7 +885,8 @@ def _portfolios_and_regimes(
             f"mismos costos, rebalanceo mensual · ventana desde {entry['window_start']}",
             f"- Mejor configuración: {best_label} · Sharpe {row['sharpe']:.2f} · "
             f"IR frente al igual ponderado {row['timing_ir']:+.2f} · "
-            f"pruebas N={int(row['n_trials'])} (incluye universos parecidos) · "
+            f"pruebas N={int(row['n_trials'])} (incluye universos parecidos y pruebas "
+            f"declaradas, que pueden repetir configuraciones registradas: conservador) · "
             f"DSR {row['dsr']:.3f} · SPA p {row['spa_p']:.3f} · "
             f"significativa: {'sí' if bool(row['significant']) else 'no'}",
             "",
@@ -896,11 +905,21 @@ def _portfolios_and_regimes(
     valid = [(rs, r) for rs, r in all_rows if not r.inconclusive]
     current_variants: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for rs, r in valid:
-        current_variants.setdefault((r.asset, rs.memory_key), []).append(r.variant)
-    extra_m = sum(
-        prior_regime_variants(history, asset, mk, exclude_variants=vs)
-        for (asset, mk), vs in current_variants.items()
-    )
+        current_variants.setdefault((r.asset, rs.memory_key), []).append(
+            rs.canonical_variant(r.variant)
+        )
+    # Las pruebas declaradas SIN clave de régimen cuentan una sola vez por activo (M1).
+    extra_m = 0
+    unkeyed_counted: set[str] = set()
+    for (asset, mk), vs in current_variants.items():
+        extra_m += prior_regime_variants(
+            history,
+            asset,
+            mk,
+            exclude_variants=vs,
+            include_unkeyed_declared=asset not in unkeyed_counted,
+        )
+        unkeyed_counted.add(asset)
     adjusted = holm_extended([r.p for _, r in valid], extra_m) if valid else []
     holm_by_label = {r.label: p for (_, r), p in zip(valid, adjusted, strict=True)}
     for rs in spec.regimes:
@@ -940,7 +959,8 @@ def _portfolios_and_regimes(
                     "asset": r.asset,
                     "regime": rs.name,
                     "regime_key": rs.memory_key,
-                    "variant": r.variant,
+                    "variant": rs.canonical_variant(r.variant),
+                    "variant_declared": r.variant,
                     "months_on": r.months_on,
                     "months_off": r.months_off,
                     "diff_ann": None if r.inconclusive else r.diff_ann,

@@ -175,7 +175,8 @@ def analyze_regime(
                     p=p,
                     inconclusive=inconclusive,
                     eval_start=str(d.index.min().date()) if len(d) else "",
-                    eval_end=str(d.index.max().date()) if len(d) else "",
+                    # Fin del mes OBJETIVO del último resultado (revisión M2).
+                    eval_end=str((d.index.max() + pd.offsets.MonthEnd(1)).date()) if len(d) else "",
                 )
             )
     return rows

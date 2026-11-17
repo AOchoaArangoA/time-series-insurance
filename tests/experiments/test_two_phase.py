@@ -88,7 +88,8 @@ def test_validate_happy_path_in_git(experiment_file: Path) -> None:
     _commit(exp)
     v = validate_experiment(experiment_file, run_id)
     assert v.result["phase"] == "validation" and v.result["calibration_run_id"] == run_id
-    assert v.result["status"]["exploratory_reasons"] == []
+    # Sólo razones heredadas de la calibración (diagnósticos del modelo sintético; I1).
+    assert all(r.startswith("calibración: ") for r in v.result["status"]["exploratory_reasons"])
     vals = [r for r in read_registry(exp / "registry.jsonl") if r["kind"] == "validation"]
     assert len(vals) == 2 + 1  # 2 activos × 1 idea + 1 modelo
     assert all("timing_ir_per_period" not in r for r in vals)  # nunca entran al DSR (I3)
@@ -260,7 +261,7 @@ def test_prior_split_by_window() -> None:
     assert v == {"X": [0.1]}
     assert prior_trials_after(rows, periods_per_year=252, cut="2016-12-30") == {"X": 2}
     assert prior_information_ratios(rows, periods_per_year=252) == {"X": [0.1, 0.2, 0.3]}
-    assert prior_trials_after(rows, cut=None) == {}
+    assert prior_trials_after(rows, cut=None) == {}  # sin declaradas de señal
 
 
 def test_cli_validate(experiment_file: Path, tmp_path: Path) -> None:
@@ -279,3 +280,78 @@ def test_cli_validate(experiment_file: Path, tmp_path: Path) -> None:
     )
     assert code == 0 and any(out.rglob("result.json"))
     shutil.rmtree(out)
+
+
+# --- Regresiones de la revisión de implementación ------------------------------------------
+
+
+def test_validation_statistic_depends_on_calibration_exposure() -> None:
+    """B1: la prueba de validación es el IR de r − e·b, no una diferencia de Sharpe."""
+    import numpy as np
+    import pandas as pd
+
+    from tsinsurance.experiments.validate import _active_ir_test
+
+    rng = np.random.default_rng(3)
+    idx = pd.bdate_range("2015-01-01", periods=1500)
+    bench = pd.Series(rng.normal(3e-4, 0.01, len(idx)), index=idx)
+    strat = 0.5 * bench + pd.Series(rng.normal(1e-4, 0.004, len(idx)), index=idx)
+    p_low = _active_ir_test(strat, bench, 0.3, 252)[1]
+    p_true = _active_ir_test(strat, bench, 0.5, 252)[1]
+    assert p_low != pytest.approx(p_true, abs=1e-3)
+
+
+def test_portfolio_validation_marks_constituents_as_seen() -> None:
+    """B2: una validación de cartera cuenta como periodo visto para cada constituyente."""
+    from tsinsurance.experiments.validate import _seen_after
+
+    rows = [
+        {
+            "kind": "validation",
+            "asset": "U:A+B",
+            "universe": ["A", "B"],
+            "experiment_id": "rot",
+            "run_id": "r1",
+        },
+    ]
+    assert _seen_after(rows, "A", "2014-12-31", exclude_run="x")
+    assert not _seen_after(rows, "C", "2014-12-31", exclude_run="x")
+
+
+def test_code_change_between_phases_blocks_validation(experiment_file: Path) -> None:
+    """I2: cambiar código Python entre calibración y validación impide validar."""
+    exp = _repo(experiment_file.parent)
+    run_id = _calibrate(experiment_file)
+    _commit(exp)
+    (exp / "mi_senal.py").write_text("def f():\n    return 1\n")
+    _commit(exp)
+    with pytest.raises(ValidationPreconditionError, match="código Python cambió"):
+        validate_experiment(experiment_file, run_id)
+
+
+def test_declared_signal_tests_count_in_n() -> None:
+    """I3: las pruebas declaradas de tipo señal suman en N por activo."""
+    rows = [
+        {
+            "kind": "declared_prior",
+            "declared_kind": "signal",
+            "assets": ["X", "Y"],
+            "n_tests_per_asset": 3,
+        }
+    ]
+    assert prior_trials_after(rows, cut="2016-12-30") == {"X": 3, "Y": 3}
+    assert prior_trials_after(rows, cut=None) == {"X": 3, "Y": 3}
+
+
+def test_declared_without_assets_is_rejected(experiment_file: Path) -> None:
+    """I4: una prueba declarada debe decir a qué activos o universo se aplicó."""
+    from tsinsurance.errors import TSInsuranceError
+    from tsinsurance.experiments.spec import load_experiment
+
+    experiment_file.write_text(
+        experiment_file.read_text()
+        + '\n[[declared_prior_tests]]\nkind = "regime"\nn_tests = 3\nperiod_start = "2010-01-01"'
+        + '\nperiod_end = "2019-12-31"\nscript_sha256 = "x"\n'
+    )
+    with pytest.raises(TSInsuranceError, match="assets"):
+        load_experiment(experiment_file)

@@ -111,3 +111,42 @@ Los criterios de 5 % + 2,5 errores de Monte Carlo se toman de la spec 004 (I11).
 | I5 | Definición de las señales | `cross_sectional_momentum` con **cierres de fin de mes**. Fuera de la ventana común no hay posiciones. Se rechaza `top_k ≥ |U|`. Empates por **id ordenado** (coherente con la identidad). `inverse_volatility` con piso de σ (1e-4 diario), ventana de `lookback` días hasta t incluido, al menos `lookback` observaciones, y pesos que sólo cambian a fin de mes (rebalanceo M) |
 | I6 | Tiempos de los regímenes | **Convención declarada (descriptiva, no es estrategia):** estado al cierre de d, resultado = exceso de retorno del mes calendario siguiente desde ese cierre, sin rezago de ejecución. `spread`: si la última observación de cualquiera de las dos variables tiene más de 5 días hábiles de antigüedad en d, el estado es faltante |
 | M1-M4 | `spa_p_holm` = `spa_p` con un solo universo (se documenta); IV-bis y `docs/methodology/` en el plan; exclusión por `min_months` válida porque sólo depende de S; SPY sólo informativo | Aceptados |
+
+## R7. Revisión de implementación (2026-11-17)
+
+Antes de integrar, el subagente `econometrics-reviewer` revisó el código de la spec 004
+(US2) y de esta spec. Encontró 2 bloqueantes, 6 importantes y 9 menores, todos corregidos
+y con pruebas de regresión en `tests/experiments/test_two_phase.py`,
+`test_portfolio_signals.py` y `test_regimes.py`.
+
+**Bloqueantes:**
+- **B1.** La validación usaba una diferencia de Sharpe, que no cambia al escalar el
+  benchmark: la exposición de la calibración no tenía efecto. Ahora prueba el **mismo
+  estadístico** que la calibración: el IR de `r − e_cal·b`, unilateral y con EE HAC.
+- **B2.** Las validaciones de cartera no marcaban como vistos a sus constituyentes. Ahora
+  sí.
+
+**Importantes:**
+- **I1.** La validación hereda las razones de exploratorio de la calibración.
+- **I2.** Control provisional hasta US3: si cambió código Python entre las dos fases, la
+  validación se rechaza.
+- **I3.** Las pruebas declaradas de tipo `signal` cuentan en N.
+- **I4.** Una prueba declarada exige `assets` o `universe`, y el conteo por activo usa la
+  unión de ambos.
+- **I5.** Los cierres de mes siguen el calendario de NYSE (Memorial Day, Viernes Santo) y
+  el momentum se mide en meses calendario.
+- **I6.** La elegibilidad se aplica **antes** del ranking y de la normalización.
+
+**Menores:**
+- **M1.** Las pruebas declaradas sin clave cuentan una sola vez por activo.
+- **M2.** `eval_end` de un régimen es el fin del mes objetivo.
+- **M3.** La validación empieza el día siguiente al corte, sin descartar un día válido.
+- **M4.** La validación usa el mismo `min_months` que la calibración.
+- **M5.** Las líneas declaradas llevan la procedencia de la ejecución.
+- **M6.** Se actualizaron los docstrings.
+- **M7.** La clave de memoria de `spread` no depende del orden de las variables.
+- **M8.** Se reporta cuántas ejecuciones vieron el periodo.
+- **M9.** El informe aclara que N puede contar dos veces las pruebas declaradas
+  (conservador).
+
+**Sigue pendiente:** T028 de la spec 004, que `train_end` sea una fecha de decisión.

@@ -54,3 +54,12 @@ Resultados:
 
 Nota: las 33 pruebas de régimen se declararon sin clave de memoria, así que cuentan para
 cada tipo de régimen. Es conservador (m de Holm mayor).
+
+> **Nota (revisión de implementación, 2026-11-17).** Las ejecuciones `20261117T201317Z-2133a5`
+> y `20261117T201350Z-2133a5-val` se hicieron **antes** de corregir dos cosas:
+> - la validación usaba una diferencia de Sharpe, que ignora la exposición de la
+>   calibración; hoy usa el IR del retorno activo;
+> - los cierres de mes ignoraban los feriados de NYSE.
+>
+> Las conclusiones no cambian (sin evidencia; periodo ya visto), pero las cifras exactas de
+> esas dos ejecuciones corresponden al código anterior. Se conservan como registro.

@@ -294,15 +294,19 @@ def prior_trials_after(
     Cuentan en el número de pruebas N del Sharpe deflactado (conservador), pero no en la
     varianza de su umbral (FR-022a). Sin ``cut`` devuelve un diccionario vacío.
     """
-    if cut is None:
-        return {}
     keys: dict[str, str] = {}
-    for r in _prior_rows(rows, set(exclude_keys), periods_per_year):
-        if not _ends_by(r, cut):
-            keys[r["key"]] = str(r["asset"])
+    if cut is not None:
+        for r in _prior_rows(rows, set(exclude_keys), periods_per_year):
+            if not _ends_by(r, cut):
+                keys[r["key"]] = str(r["asset"])
     out: dict[str, int] = {}
     for asset in keys.values():
         out[asset] = out.get(asset, 0) + 1
+    # Pruebas de señales declaradas fuera de la bitácora: sólo cuentan en N (revisión I3).
+    for r in rows:
+        if r.get("kind") == "declared_prior" and r.get("declared_kind") == "signal":
+            for asset in r.get("assets", []):
+                out[asset] = out.get(asset, 0) + int(r.get("n_tests_per_asset", 0))
     return out
 
 
@@ -549,6 +553,7 @@ def prior_regime_variants(
     *,
     exclude_keys: Iterable[str] = (),
     exclude_variants: Iterable[Mapping[str, Any]] = (),
+    include_unkeyed_declared: bool = True,
 ) -> int:
     """Variantes previas de un régimen sobre ``asset`` con la misma clave de memoria (B1).
 
@@ -572,7 +577,10 @@ def prior_regime_variants(
             r.get("kind") == "declared_prior"
             and r.get("declared_kind") == "regime"
             and asset in r.get("assets", [])
-            and r.get("regime_key") in (memory_key, "", None)
+            and (
+                r.get("regime_key") == memory_key
+                or (include_unkeyed_declared and r.get("regime_key") in ("", None))
+            )
         ):
             declared += int(r.get("n_tests_per_asset", r.get("n_tests", 0)))
     return len(variants) + declared

@@ -99,3 +99,19 @@ def test_registry() -> None:
 def test_listing_tolerates_signals_without_docstring() -> None:
     register_portfolio_signal("sin_doc", lambda p: equal_weight(p))
     assert available_portfolio_signals()["sin_doc"] == ""
+
+
+def test_month_end_respects_exchange_holidays() -> None:
+    """I5: si el último día hábil del mes es feriado bursátil, decide el día anterior."""
+    idx = pd.bdate_range("2002-03-01", "2002-04-30")  # 2002-03-29 fue Viernes Santo
+    ends = idx[month_end_mask(idx)]
+    assert list(ends.strftime("%Y-%m-%d")) == ["2002-03-28", "2002-04-30"]
+
+
+def test_eligible_mask_restricts_ranking() -> None:
+    """I6: sólo compiten los elegibles; no se elige un activo no elegible."""
+    px = _prices()
+    eligible = px.notna()
+    eligible["A"] = False
+    w = cross_sectional_momentum(px, lookback_m=6, top_k=2, eligible=eligible).dropna()
+    assert (w["A"] == 0).all() and (w.iloc[-1].sum() == pytest.approx(1.0))
