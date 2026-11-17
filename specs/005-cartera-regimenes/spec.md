@@ -155,13 +155,18 @@ razones de exploratorio esperadas.
   Las señales propias MUST poder registrarse.
 - **FR-003**: Cada configuración MUST pasar la prueba de anticipación sobre el universo
   completo antes de evaluarse.
-- **FR-004**: El benchmark MUST ser la cartera igual ponderada del mismo universo (sólo
-  activos disponibles en cada fecha), con los mismos costos y rebalanceo. El ratio de
-  información frente a ella es la medida de habilidad.
+- **FR-004**: El benchmark MUST ser la cartera igual ponderada de los activos
+  **elegibles del bloque** (≥ `min_history_m` meses de historia), ejecutada con el mismo
+  motor, costos y rebalanceo mensual. Estrategia y benchmark usan la misma elegibilidad y
+  la misma ventana común. El retorno activo frente a ella es la medida de habilidad.
 - **FR-005**: La identidad de una prueba de cartera MUST incluir la identidad del
   universo (conjunto ordenado de activos), la señal, sus parámetros, la ejecución, la
-  ventana y los datos. El ajuste por pruebas múltiples MUST contar todas las pruebas
-  registradas sobre el mismo universo.
+  ventana y los datos. El Sharpe deflactado MUST contar todas las pruebas de cartera
+  previas, registradas o declaradas, cuyo universo comparta al menos el 50 % de los
+  constituyentes (Jaccard ≥ 0,5). La SPA usa el universo exacto.
+- **FR-005a**: El experimento MUST poder declarar pruebas hechas fuera de la bitácora
+  (`[[declared_prior_tests]]`: tipo, universo o activos, número, periodo, hash del
+  script). Cuentan en N y en la detección de periodo visto.
 - **FR-006**: Las ideas de cartera MUST seguir las dos fases de la spec 004:
   - calibración con datos truncados en el corte;
   - configuración fijada;
@@ -184,8 +189,15 @@ razones de exploratorio esperadas.
 - **FR-009**: Para cada (estado, activo) MUST reportarse:
   - meses en el estado y fuera de él;
   - exceso anualizado del mes siguiente en cada caso;
-  - la diferencia con su t y valor p HAC;
-  - el valor p ajustado por Holm sobre todas las combinaciones del experimento.
+  - la diferencia con su t y valor p robustos a heterocedasticidad (HC3);
+  - el valor p de Holm con m = hipótesis actuales + variantes previas con la misma clave
+    de memoria (activo, tipo, variables).
+- **FR-009a**: Los regímenes MUST admitir mallas de umbrales, todas contadas, y declarar
+  `justification`; sin ella el resultado es exploratorio.
+- **FR-009b**: En la validación, las estrategias (ideas, modelos y carteras) y los
+  regímenes MUST ser familias separadas con α pre-declarado (0,8α y 0,2α). Sólo se
+  validan las hipótesis de régimen seleccionadas en la calibración, unilaterales en el
+  signo calibrado.
 - **FR-010**: Las combinaciones con menos meses que el mínimo MUST marcarse "no
   concluyente" y quedar fuera de la familia.
 - **FR-011**: Cada combinación evaluada MUST registrarse en la bitácora. En la
@@ -213,17 +225,20 @@ razones de exploratorio esperadas.
 
 ### Measurable Outcomes
 
-- **SC-001**: Con universos sintéticos sin habilidad (≥ 500 réplicas), la fracción de
-  ideas de cartera declaradas significativas es ≤ 5 % + 2,5 errores de Monte Carlo.
+- **SC-001**: Con universos sintéticos sin habilidad (medias iguales, factor común
+  ρ ≈ 0,6, inicios distintos, costos; ≥ 500 réplicas), la fracción de ideas de cartera
+  declaradas significativas es ≤ 5 % + 2,5 errores de Monte Carlo.
 - **SC-002**: Con un universo sintético con momentum relativo real (persistencia de
   retornos relativos), la rotación supera al igual ponderado con potencia ≥ 80 % en el
   diseño declarado en el plan.
 - **SC-003**: El 100 % de las señales de cartera con información futura (incluido el
   ranking con precios futuros) se rechazan por anticipación.
-- **SC-004**: Con estados sin efecto sobre el retorno siguiente (≥ 500 réplicas, 11
-  activos × 3 estados), la tasa de al menos un falso positivo tras Holm es ≤ 5 % + 2,5
-  errores de Monte Carlo. Con un efecto de 1 % mensual en un estado activo un 20 % del
-  tiempo y 300 meses, la potencia es ≥ 80 %.
+- **SC-004**: Con estados sin efecto (≥ 500 réplicas, 9 activos × 3 estados, uno de ellos
+  endógeno), la probabilidad de al menos un falso positivo tras Holm es ≤ 5 % + 2,5
+  errores de Monte Carlo. Con un efecto de 0,6σ mensual en un activo, en un estado activo
+  el 20 % del tiempo y T = 300, la potencia para ese activo es ≥ 80 %. El informe declara
+  que, con la volatilidad sectorial real, la potencia para efectos de ~1 % mensual es
+  baja.
 - **SC-005**: Alterar las observaciones posteriores a cada fecha de decisión no cambia
   ningún estado de esa fecha (100 % de los casos de prueba).
 - **SC-006**: Una segunda idea de cartera sobre el mismo universo cuenta todas las
@@ -245,6 +260,11 @@ razones de exploratorio esperadas.
 ## Clarifications
 
 ### Session 2026-11-17
+
+- Revisión econométrica del diseño: 4 bloqueantes (memoria de regímenes y umbrales,
+  pruebas fuera de la bitácora, memoria por universo, benchmark del motor) e importantes
+  I1-I6, resueltos en FR-004, FR-005, FR-005a, FR-009, FR-009a, FR-009b, SC-001, SC-004
+  y research R6.
 
 - Q: ¿Spec pequeña o dentro de la 004? → A: Spec aparte y pequeña (hallazgos C1 y C2),
   sobre el flujo de dos fases de la spec 004.
