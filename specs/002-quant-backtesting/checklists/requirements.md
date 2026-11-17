@@ -34,5 +34,5 @@
 - La sección Clarifications registra la evaluación de librerías (bt, vectorbt,
   backtesting.py); se considera decisión de alcance, no detalle de implementación de la
   spec. El cómo está en plan.md.
-- Decisiones por defecto a confirmar con el usuario: TFT → TLT; subpaquete en lugar de
+- TFT → TLT confirmado por el usuario (2026-11-17). Pendiente de confirmar: subpaquete en lugar de
   paquete separado.

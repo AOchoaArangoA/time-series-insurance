@@ -25,9 +25,12 @@ uv run tsinsurance bundle fetch recipe.toml data
 uv run tsinsurance experiment run experiment.toml
 ```
 
-> **TFT**: no existe en Yahoo Finance. Junto con TBX y TBF forma la familia de ETFs
-> inversos del Tesoro de ProShares cuyo tercer miembro es **TBT** (UltraShort 20+ años,
-> −2x diario); se usó TBT. TLT (subyacente de TBT/TBF) se incluye como referencia.
+> **TFT**: no existe en Yahoo Finance. En esta ejecución se asumió **TBT** (UltraShort
+> 20+ años, −2x diario, de la misma familia que TBX y TBF). **El usuario aclaró después
+> (2026-11-17) que "TFT" era TLT** (iShares 20+ Year Treasury Bond). Este experimento se
+> conserva como quedó registrado; el análisis de TLT está en
+> `examples/backtest_01_tendencia_volatilidad_etfs.py` y `backtest_02_macro_tlt.py`, y
+> falta una ejecución registrada con TLT.
 
 ## Hipótesis (pre-registrada)
 

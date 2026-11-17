@@ -110,7 +110,8 @@ mi_paquete/
 
 ## 5. Próximos pasos propuestos
 
-1. Confirmar TFT → TBT y la publicación del repositorio (licencia, datos, rama principal).
+1. ~~Confirmar TFT y la publicación del repositorio~~: hecho (TFT = TLT; repositorio
+   público y `main` integrada).
 2. Fusionar la rama de trabajo en `main` mediante un PR revisado.
 3. Spec 001 US2-US5 (ARIMA/GARCH, pronóstico, VaR/ES, reportes de comité).
 4. Adaptador para la fuente de datos oficial de la aseguradora (precios de retorno total

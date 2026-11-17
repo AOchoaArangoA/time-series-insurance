@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-08
 
-**Status**: Implemented v0.1 (decisiones por defecto pendientes de confirmación: TFT → TLT, subpaquete)
+**Status**: Implemented v0.1 (TFT → TLT confirmado por el usuario el 2026-11-17; subpaquete pendiente de confirmación)
 
 **Input**: User description: "Agregar una parte de backtesting basada en modelos
 econométricos de series de tiempo y enfocada en estrategias cuantitativas: ingresar una
@@ -288,7 +288,7 @@ pruebas múltiples incluido.
 ### Session 2026-11-08
 
 - Q: ¿Qué ETF es "TFT"? → A: El ticker TFT no existe en Yahoo Finance; se asume **TLT**
-  (iShares 20+ Year Treasury Bond ETF, renta fija larga). *Decisión por defecto, confirmar.*
+  (iShares 20+ Year Treasury Bond ETF, renta fija larga). **Confirmado por el usuario (2026-11-17).**
 - Q: ¿Reutilizar una librería de backtesting? → A: Se evaluaron bt, vectorbt y
   backtesting.py con pandas 3.1. Se adopta **bt** (MIT, multi-activo, compatible) como
   motor de referencia opcional y un motor vectorizado propio, validado contra bt, para
