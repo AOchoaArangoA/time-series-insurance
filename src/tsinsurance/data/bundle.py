@@ -328,6 +328,32 @@ class Bundle:
             )
         return out
 
+    def variable(self, series_id: str) -> Any:
+        """Una exógena o la tasa libre de riesgo como :class:`Exogenous` (nivel, con rezago).
+
+        Sirve para definir estados del ciclo (spec 005): la tasa libre de riesgo se usa en
+        su unidad original (p. ej. % anual) con su rezago de publicación declarado.
+        """
+        from tsinsurance.backtest.pit import Exogenous
+
+        spec = self.spec(series_id)
+        if spec.role == "exogenous":
+            return self.exogenous([series_id])[0]
+        if spec.role != "risk_free":
+            raise TSInsuranceError(
+                f"'{series_id}' es un activo: use una exógena o la tasa libre de riesgo."
+            )
+        rows = self.data[self.data["series_id"] == series_id]
+        series = pd.Series(rows["value"].to_numpy(), index=pd.DatetimeIndex(rows["date"]))
+        return Exogenous(
+            series_id,
+            series.dropna(),
+            str(rows["frequency"].iloc[0]),  # type: ignore[arg-type]
+            release_lag=spec.release_lag,
+            transform="level",
+            point_in_time=True,
+        )
+
     def risk_free(self) -> pd.Series | None:
         """Tasa libre de riesgo por día hábil, indexada por fecha de disponibilidad."""
         from tsinsurance.backtest.pit import dtb3_to_daily

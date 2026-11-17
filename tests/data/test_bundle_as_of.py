@@ -58,3 +58,11 @@ def test_cannot_cut_twice_later(bundle: Bundle) -> None:
     cut = bundle.as_of(CUT)
     with pytest.raises(ValueError, match="ya está truncado"):
         cut.as_of("2018-12-31")
+
+
+def test_variable_accepts_exogenous_and_risk_free(bundle: Bundle) -> None:
+    rf = bundle.variable("RF")
+    assert rf.name == "RF" and rf.transform == "level" and str(rf.release_lag) == "1B"
+    assert bundle.variable("SPREAD").name == "SPREAD"
+    with pytest.raises(Exception, match="activo"):
+        bundle.variable("AAA")
