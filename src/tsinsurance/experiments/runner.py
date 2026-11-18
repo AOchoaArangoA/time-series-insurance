@@ -54,6 +54,8 @@ from tsinsurance.backtest.metrics import sharpe_per_period
 from tsinsurance.backtest.sweep import Trial, evaluate_grid, select
 from tsinsurance.data.bundle import Bundle
 from tsinsurance.errors import TSInsuranceError
+from tsinsurance.experiments.fingerprint import fingerprint
+from tsinsurance.experiments.portfolio_signals import get_portfolio_signal
 from tsinsurance.experiments.registry import (
     append_trials,
     prior_information_ratios,
@@ -179,7 +181,11 @@ def _frozen(
                 "params": {k: v for k, v in best.params.items() if k != "idea"},
                 "exposure_calibration": best.exposure,
             }
-        ideas[name] = {"signal": idea.signal, "assets": chosen}
+        ideas[name] = {
+            "signal": idea.signal,
+            "assets": chosen,
+            "fingerprint": result["ideas"][name]["fingerprint"]["hash"],
+        }
     econ = {
         es.name: {
             "spec": dataclasses.asdict(es),
@@ -194,6 +200,7 @@ def _frozen(
             "universe": v["universe"],
             "universe_id": v["universe_id"],
             "signal": v["signal"],
+            "fingerprint": v["fingerprint"]["hash"],
             "min_history_m": v["min_history_m"],
             "params": v["best_params"],
             "exposure_calibration": v["best_exposure"],
@@ -334,9 +341,22 @@ def _run_locked(
         "end": eval_end,
     }
 
+    # Huella del código de cada señal en la identidad de la prueba (spec 004, US3).
+    fingerprints = {i.signal: fingerprint(get_signal(i.signal)) for i in spec.ideas}
+    for ps in spec.portfolios:
+        fingerprints[f"cartera:{ps.signal}"] = fingerprint(get_portfolio_signal(ps.signal))
+    weak = sorted(name for name, fp in fingerprints.items() if fp.coverage in ("partial", "none"))
+    if weak:
+        reasons.append(f"huella de código incompleta en las señales: {weak}")
+
     def signal_key(asset: str, signal: str, params: Mapping[str, Any]) -> str:
         return trial_key(
-            kind="signal", asset=asset, signal=signal, params=dict(params), **base_identity
+            kind="signal",
+            asset=asset,
+            signal=signal,
+            signal_fingerprint=fingerprints[signal].hash,
+            params=dict(params),
+            **base_identity,
         )
 
     current_keys = [
@@ -458,7 +478,12 @@ def _run_locked(
                 if rep.has_lookahead or not rep.conclusive:
                     bad.append({"params": combo, "summary": rep.summary()})
             checks[asset] = {"combinations": len(_combos(idea.grid)), "failed": bad}
-        entry: dict[str, Any] = {"signal": idea.signal, "grid": idea.grid, "lookahead": checks}
+        entry: dict[str, Any] = {
+            "signal": idea.signal,
+            "grid": idea.grid,
+            "lookahead": checks,
+            "fingerprint": fingerprints[idea.signal].to_dict(),
+        }
         result["ideas"][idea.name] = entry
         if any(c["failed"] for c in checks.values()):
             entry["status"] = "rechazada_por_anticipacion"
@@ -807,7 +832,9 @@ def _portfolios_and_regimes(
     for ps in spec.portfolios:
         px = bundle.assets(ps.universe).loc[spec.start : spec.end]
         run = evaluate_portfolio(px, ps, spec.execution, rf, seed=spec.seed)
+        fp = fingerprint(get_portfolio_signal(ps.signal))
         entry: dict[str, Any] = {
+            "fingerprint": fp.to_dict(),
             "universe": sorted(ps.universe),
             "universe_id": run.universe_id,
             "signal": ps.signal,
@@ -826,6 +853,7 @@ def _portfolios_and_regimes(
         keys = [
             trial_key(
                 kind="portfolio",
+                signal_fingerprint=fp.hash,
                 universe=run.universe_id,
                 signal=ps.signal,
                 params={k: v for k, v in t.params.items() if k != "idea"},

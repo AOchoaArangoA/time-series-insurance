@@ -355,3 +355,51 @@ def test_declared_without_assets_is_rejected(experiment_file: Path) -> None:
     )
     with pytest.raises(TSInsuranceError, match="assets"):
         load_experiment(experiment_file)
+
+
+def test_changed_signal_code_blocks_validation(experiment_file: Path) -> None:
+    """T038: si el código de la señal registrada cambió, la validación se rechaza."""
+    from tsinsurance.experiments import register_signal
+    from tsinsurance.experiments.signals import get_signal
+
+    original = get_signal("sma_crossover")
+    run_id = _calibrate(experiment_file)
+
+    def otra(p, fast=50, slow=200):  # type: ignore[no-untyped-def]
+        return (p.rolling(fast).mean() > p.rolling(slow).mean() * 1.01).astype(float)
+
+    register_signal("sma_crossover", otra)
+    try:
+        with pytest.raises(ValidationPreconditionError, match="código de las señales"):
+            validate_experiment(experiment_file, run_id)
+    finally:
+        register_signal("sma_crossover", original)
+    assert validate_experiment(experiment_file, run_id).result["phase"] == "validation"
+
+
+def test_fingerprint_enters_identity_and_result(experiment_file: Path) -> None:
+    """T037: la huella está en el resultado y en la identidad de las pruebas."""
+    from tsinsurance.experiments import register_signal
+    from tsinsurance.experiments.signals import get_signal
+
+    first = run_experiment(experiment_file, record=False).result
+    fp = first["ideas"]["tendencia"]["fingerprint"]
+    assert fp["coverage"] == "builtin" and len(fp["hash"]) == 32
+    reg = experiment_file.parent / "registry.jsonl"
+    run_experiment(experiment_file)
+    keys1 = {r["key"] for r in read_registry(reg) if r["kind"] == "signal"}
+    original = get_signal("sma_crossover")
+
+    def otra(p, fast=50, slow=200):  # type: ignore[no-untyped-def]
+        return (p.rolling(fast).mean() >= p.rolling(slow).mean()).astype(float)
+
+    register_signal("sma_crossover", otra)
+    try:
+        res = run_experiment(experiment_file)
+    finally:
+        register_signal("sma_crossover", original)
+    keys2 = {r["key"] for r in read_registry(reg) if r["kind"] == "signal"} - keys1
+    assert len(keys2) == 4  # mismo nombre, código distinto: pruebas nuevas
+    n = res.result["ideas"]["tendencia"]["selection"]["n_trials"]["0"]
+    # 2 configuraciones actuales + 1 modelo + 2 previas con el código anterior (sobre AAA).
+    assert n == 2 + 1 + 2

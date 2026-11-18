@@ -305,6 +305,12 @@ register_signal("ruptura", ruptura)
 run_experiment("experiment_senal_propia.toml")
 ```
 
+**Huella del código.** El paquete identifica cada señal por su código: el AST, los
+valores por defecto, las funciones y constantes que usa y, si no hay código fuente, el
+*bytecode*. Cambiar una línea de la señal cuenta como una prueba nueva, y la validación
+exige la misma huella que la calibración. Una cobertura `partial` (algún objeto que no
+se pudo resumir) deja el resultado como exploratorio.
+
 Si la señal mira el futuro, la idea sale `"status": "rechazada_por_anticipacion"` con
 las fechas afectadas, y no se evalúa. Ejemplo completo en
 `examples/integracion/senal_propia.py`.

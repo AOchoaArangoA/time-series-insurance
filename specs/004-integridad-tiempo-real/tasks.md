@@ -199,7 +199,7 @@ mismo código ⇒ la misma identidad, en procesos distintos.
 
 ### Tests (escribir primero)
 
-- [ ] T035 [P] [US3] Pruebas en `tests/experiments/test_fingerprint.py`. Cambian la huella: el cuerpo; un valor por defecto; una constante global del módulo (`VENTANA = 120`); una función auxiliar de otro módulo del usuario llamada como `mi_lib.f`; un `functools.partial`; un arreglo de numpy cerrado por la función (hash de bytes). No la cambian: comentarios, docstrings ni espacios. Además (I2):
+- [X] T035 [P] [US3] Pruebas en `tests/experiments/test_fingerprint.py`. Cambian la huella: el cuerpo; un valor por defecto; una constante global del módulo (`VENTANA = 120`); una función auxiliar de otro módulo del usuario llamada como `mi_lib.f`; un `functools.partial`; un arreglo de numpy cerrado por la función (hash de bytes). No la cambian: comentarios, docstrings ni espacios. Además (I2):
   - la huella es determinista entre procesos (sin direcciones `0x…`);
   - una lambda sin fuente usa `coverage = "bytecode"`;
   - lo no hasheable da `coverage = "partial"` con su lista;
@@ -207,14 +207,14 @@ mismo código ⇒ la misma identidad, en procesos distintos.
 
 ### Implementation
 
-- [ ] T036 [US3] Implementar `SignalFingerprint` y `fingerprint(fn)` en `src/tsinsurance/experiments/fingerprint.py`:
+- [X] T036 [US3] Implementar `SignalFingerprint` y `fingerprint(fn)` en `src/tsinsurance/experiments/fingerprint.py`:
   - AST sin docstrings;
   - recorrido transitivo de `Name`/`Attribute` y `co_names` hacia llamables del usuario, fuera de site-packages y de la biblioteca estándar, entre módulos;
   - valores no llamables por hash canónico (arreglos y DataFrames por sus bytes);
   - respaldo por bytecode;
   - campo `coverage` en `builtin`, `source`, `bytecode`, `partial` o `none`.
-- [ ] T037 [US3] Incluir `signal_fingerprint` en `trial_key` de las señales en `src/tsinsurance/experiments/runner.py`; registrar la huella en `result.json` (`ideas.<n>.fingerprint`); agregar una razón de exploratorio si `coverage ∈ {partial, none}`; conservar las líneas antiguas (FR-013)
-- [ ] T038 [US3] Agregar la precondición de US2 en `src/tsinsurance/experiments/validate.py`: las huellas recalculadas deben coincidir con las de `frozen` (B5); el chequeo de no rastreados cubre los módulos de las huellas. Probarlo en `tests/experiments/test_validate_preconditions.py`
+- [X] T037 [US3] Incluir `signal_fingerprint` en `trial_key` de las señales en `src/tsinsurance/experiments/runner.py`; registrar la huella en `result.json` (`ideas.<n>.fingerprint`); agregar una razón de exploratorio si `coverage ∈ {partial, none}`; conservar las líneas antiguas (FR-013)
+- [X] T038 [US3] Agregar la precondición de US2 en `src/tsinsurance/experiments/validate.py`: las huellas recalculadas deben coincidir con las de `frozen` (B5); el chequeo de no rastreados cubre los módulos de las huellas. Probarlo en `tests/experiments/test_validate_preconditions.py`
 
 **Checkpoint**: US3 completa y conectada con la validación.
 

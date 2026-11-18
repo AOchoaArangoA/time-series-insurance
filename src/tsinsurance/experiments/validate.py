@@ -49,7 +49,9 @@ from tsinsurance.backtest.metrics import sharpe_per_period
 from tsinsurance.backtest.sweep import holm
 from tsinsurance.data.bundle import Bundle
 from tsinsurance.errors import TSInsuranceError, ValidationPreconditionError
+from tsinsurance.experiments.fingerprint import fingerprint
 from tsinsurance.experiments.portfolio_eval import portfolio_backtests
+from tsinsurance.experiments.portfolio_signals import get_portfolio_signal
 from tsinsurance.experiments.regimes import analyze_regime, one_sided_p
 from tsinsurance.experiments.registry import (
     append_trials,
@@ -291,6 +293,22 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             )
     if not full.sealed:
         reasons.append("paquete de insumos sin sellar (sin huella)")
+    # Huellas del código de las señales (spec 004, US3: T038): deben ser las fijadas.
+    changed_signals = []
+    for name, v in frozen["ideas"].items():
+        expected = v.get("fingerprint")
+        if expected and fingerprint(get_signal(v["signal"])).hash != expected:
+            changed_signals.append(f"idea {name} ({v['signal']})")
+    for name, v in frozen.get("portfolios", {}).items():
+        expected = v.get("fingerprint")
+        if expected and fingerprint(get_portfolio_signal(v["signal"])).hash != expected:
+            changed_signals.append(f"cartera {name} ({v['signal']})")
+    if changed_signals:
+        raise ValidationPreconditionError(
+            "El código de las señales no es el de la calibración: "
+            + ", ".join(changed_signals)
+            + ". Vuelva a calibrar: validar otro código no es una validación única."
+        )
 
     frozen_ports = frozen.get("portfolios", {})
     frozen_regs = frozen.get("regimes", {})

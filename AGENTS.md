@@ -155,6 +155,16 @@ Metodología: `docs/methodology/carteras-y-regimenes.md`.
 | `registry_head_before`, `registry_head` | estado de la bitácora antes y después (detecta recortes) |
 | `econometric.<nombre>` | `verdict` (cuadrante, exploratorio, no concluyente, diagnósticos), `oos_r2`, `clark_west_p`, `pesaran_timmermann_p`, Sharpe del modelo vs la regla con media histórica y su valor p |
 
+## Huella del código de las señales
+
+Cada prueba se identifica por **lo que hace la señal**, no por su nombre
+(`ideas.<n>.fingerprint`). Si cambia el código de una señal registrada con
+`register_signal`, incluido el de una función auxiliar o una constante que use, se cuenta
+como una prueba nueva. Si la huella no coincide con la de la calibración, `experiment
+validate` rechaza la validación. Para una huella completa, define las señales en un
+archivo `.py` versionado, no en una celda interactiva (ahí la cobertura sería
+`bytecode`).
+
 ## Reglas no negociables para agentes
 
 1. **No borre ni edite** `experiments/registry.jsonl`. Es la memoria de todo lo probado y

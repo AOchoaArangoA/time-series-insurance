@@ -15,6 +15,16 @@ semántico.
 
 ### Agregado
 
+- Spec 004 US3: **huella del código de las señales** en la identidad de cada prueba
+  (`tsinsurance.experiments.fingerprint`). Cubre el AST sin docstrings ni formato, los
+  valores por defecto, las variables de cierre, las funciones y constantes del usuario
+  referenciadas (también entre módulos), `functools.partial`, y arreglos y DataFrames por
+  sus bytes. Sin código fuente usa el *bytecode*. Si la cobertura es parcial, el resultado
+  es exploratorio. Cambiar el código de una señal con el mismo nombre cuenta como pruebas
+  nuevas, y la validación se rechaza si la huella no es la de la calibración. Las pruebas
+  registradas antes de esta versión no tienen huella: sus claves no coinciden con las
+  nuevas, así que re-ejecutarlas cuenta como pruebas adicionales (conservador, FR-013).
+
 - Spec 005:
   - ideas de cartera (`[[portfolios]]`) con benchmark igual ponderado de los elegibles,
     rebalanceo mensual y memoria por universo parecido (Jaccard ≥ 0,5);
