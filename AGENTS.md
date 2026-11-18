@@ -5,6 +5,11 @@ propios) que deba usar el paquete para probar ideas cuantitativas o modelos
 econométricos. Para *desarrollar* el paquete, lea además `CLAUDE.md` y la constitución
 `.specify/memory/constitution.md`.
 
+> ¿Integra el paquete desde otro sistema (otro proyecto, orquestador, lenguaje o agente)?
+> Empiece por [`docs/integracion/manual-de-uso.md`](docs/integracion/manual-de-uso.md)
+> (instalación, prueba de conexión, interfaces de entrada y salida) y el prompt listo para
+> entregar a un agente [`docs/integracion/prompt-agente.md`](docs/integracion/prompt-agente.md).
+
 ## Qué es
 
 Un paquete Python de series de tiempo para decisiones cuantitativas de inversión con
@@ -25,11 +30,15 @@ uv run tsinsurance bundle validate mi_exp/data        #    debe decir "Paquete v
 # 2. Experimento: mi_exp/experiment.toml (ver ejemplo abajo)
 uv run tsinsurance experiment signals                 #    señales disponibles
 
-# 3. Ejecutar (registra cada prueba en la bitácora)
-uv run tsinsurance experiment run mi_exp/experiment.toml
+# 3. Calibrar (registra cada prueba; con train_end NO mira el periodo de validación)
+uv run tsinsurance experiment run mi_exp/experiment.toml      # imprime el RUN_ID
 
-# 4. Leer mi_exp/results/<run_id>/result.json  (máquina) y report.md (humanos)
-# 5. Reportar según las reglas de interpretación (abajo)
+# 4. Confirmar en git la calibración (resultados + bitácora) y abrir la validación UNA vez
+git add -A && git commit -m "Calibración mi_exp"
+uv run tsinsurance experiment validate mi_exp/experiment.toml --calibration RUN_ID
+
+# 5. Leer results/<run_id>/result.json (máquina) y report.md (humanos) de ambas fases
+# 6. Reportar según las reglas de interpretación (abajo)
 ```
 
 Ejemplo completo y real: `experiments/inverse_treasury/` (receta, experimento, resultados).
@@ -94,7 +103,44 @@ position = "long_cash"            # long_cash, long_short, proportional
 min_train = 60
 ```
 
-## `result.json` (versión 1.0)
+## Carteras y regímenes (spec 005)
+
+```toml
+[[portfolios]]                       # pesos ENTRE activos (p. ej. rotación sectorial)
+name = "rotacion"
+universe = ["XLB", "XLE", "XLF", "XLK"]
+signal = "cross_sectional_momentum"  # o "inverse_volatility", o register_portfolio_signal
+  [portfolios.grid]
+  lookback_m = [6, 12]
+  top_k = [2, 3]
+
+[[regimes]]                          # estado del ciclo al cierre de mes → retorno del mes siguiente
+name = "vix_alto"
+type = "threshold"                   # threshold | spread (variables = [a, b]) | trend (asset, months)
+variable = "^VIX"
+op = ">"
+value = [20.0, 25.0]                 # cada umbral es una prueba
+justification = "referencia o razón previa"   # obligatoria; sin ella es exploratorio
+
+[[declared_prior_tests]]             # lo probado FUERA de la bitácora: cuenta en N y en "ya visto"
+kind = "portfolio"                   # portfolio | regime | signal
+n_tests = 4
+universe = ["XLB", "XLE", "XLF", "XLK"]
+period_start = "1999-01-01"
+period_end = "2026-10-31"
+script_sha256 = "..."
+```
+
+Benchmark de una cartera: igual ponderado de los elegibles, con los mismos costos y
+rebalanceo mensual. La memoria de pruebas es por universo parecido (Jaccard ≥ 0,5). En
+la validación, estrategias y regímenes son familias de Holm separadas (0,8α y 0,2α).
+Metodología: `docs/methodology/carteras-y-regimenes.md`.
+
+## `result.json` (versión 1.2)
+
+`phase` dice qué es cada resultado: `calibration` (selección hasta `train_end`;
+`status.out_of_sample = "pendiente"`), `validation` (evaluación única posterior) o
+`full_sample` (sin `train_end`: nunca es evidencia fuera de muestra).
 
 | Clave | Contenido |
 |-------|-----------|
@@ -103,7 +149,10 @@ min_train = 60
 | `ideas.<nombre>.lookahead` | prueba de anticipación por activo (`has_lookahead`, `conclusive`) |
 | `ideas.<nombre>.selection` | por activo: mejor configuración, `sharpe`, `info_ratio` (vs comprar y mantener), `n_trials` (incluye bitácora), `dsr`, `spa_p`, `significant` |
 | `ideas.<nombre>.configurations` | métricas de cada configuración |
-| `calibration.<nombre>` | elección en calibración y resultado fuera de muestra (una sola vez) |
+| `calibration` | (fase de calibración) `frozen`: parámetros, exposición y especificaciones fijadas, familia de hipótesis; `validate_with`: el comando para validar |
+| `validation.ideas.<nombre>.assets[]` | (fase de validación) `sharpe_oos`, `ci95`, `p_vs_cash_hac`, `timing_sharpe_diff`, `timing_p`, `p_holm`, `previously_seen_in` |
+| `validation.econometric.<nombre>` | (fase de validación) veredicto con pronósticos posteriores a `train_end`, `p_holm` |
+| `registry_head_before`, `registry_head` | estado de la bitácora antes y después (detecta recortes) |
 | `econometric.<nombre>` | `verdict` (cuadrante, exploratorio, no concluyente, diagnósticos), `oos_r2`, `clark_west_p`, `pesaran_timmermann_p`, Sharpe del modelo vs la regla con media histórica y su valor p |
 
 ## Reglas no negociables para agentes

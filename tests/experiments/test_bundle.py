@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -149,3 +150,38 @@ def test_generated_bundle_requires_explicit_declarations(tmp_path: Path) -> None
 def test_digest_changes(bundle_dir: Path) -> None:
     d = bundle_digest(bundle_dir)
     assert len(d) == 64 and d == bundle_digest(bundle_dir)
+
+
+def _scaled(b: Bundle, ids: list[str], pos: int, factor: float) -> Bundle:
+    """Multiplica por ``factor`` el precio de ``ids`` desde la posición ``pos`` en adelante."""
+    from dataclasses import replace
+
+    data = b.data.copy()
+    for sid in ids:
+        idx = data.index[data["series_id"] == sid]
+        data.loc[idx[pos:], "value"] *= factor
+        data.loc[idx[pos + 1 :], "value"] /= factor * 0.95  # rebote al día siguiente
+    return replace(b, data=data)
+
+
+def test_market_wide_crash_is_not_flagged(bundle_dir: Path) -> None:
+    """Una caída y rebote que comparten todos los activos no es un dato erróneo (2008, 2020)."""
+    b = Bundle.load(bundle_dir)
+    assert not _scaled(b, ["AAA", "BBB"], 800, 0.85).quality_warnings()
+    # El mismo movimiento en un solo activo sí se marca.
+    assert any("AAA" in w for w in _scaled(b, ["AAA"], 800, 0.85).quality_warnings())
+
+
+def test_high_volatility_regime_scales_threshold(bundle_dir: Path) -> None:
+    """En un periodo de volatilidad alta, un movimiento grande es normal para ese periodo."""
+    from dataclasses import replace
+
+    b = Bundle.load(bundle_dir)
+    data = b.data.copy()
+    idx = data.index[data["series_id"] == "AAA"]
+    px = data.loc[idx, "value"].to_numpy()
+    r = np.diff(np.log(px))
+    r[700:900] *= 6  # régimen de volatilidad 6 veces mayor
+    r[800], r[801] = -0.12, 0.10
+    data.loc[idx, "value"] = px[0] * np.exp(np.concatenate([[0.0], np.cumsum(r)]))
+    assert not replace(b, data=data).quality_warnings()

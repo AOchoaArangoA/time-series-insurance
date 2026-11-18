@@ -13,7 +13,10 @@ __all__ = [
     "InadequateModelWarning",
     "InsufficientDataError",
     "LookaheadBiasError",
+    "RegistryLockedError",
+    "RegistryTruncatedError",
     "TSInsuranceError",
+    "ValidationPreconditionError",
 ]
 
 
@@ -69,3 +72,15 @@ class InadequateModelWarning(UserWarning):
 
 class LookaheadBiasError(TSInsuranceError):
     """Una señal usa información no disponible en la fecha de decisión."""
+
+
+class ValidationPreconditionError(TSInsuranceError):
+    """No se cumple una precondición para abrir la validación fuera de muestra."""
+
+
+class RegistryLockedError(TSInsuranceError):
+    """Otra ejecución tiene tomada la bitácora (un solo escritor a la vez)."""
+
+
+class RegistryTruncatedError(TSInsuranceError):
+    """La bitácora tiene menos líneas de las que registra un resultado publicado."""

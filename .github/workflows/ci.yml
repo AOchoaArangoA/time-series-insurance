@@ -21,3 +21,9 @@ jobs:
       - run: uv run ruff format --check src tests
       - run: uv run mypy
       - run: uv run pytest
+      - name: Bitácora sólo agrega líneas (pull request)
+        if: github.event_name == 'pull_request' && matrix.python-version == '3.12'
+        run: .github/scripts/check-registry.sh "$GITHUB_BASE_REF"
+      - name: Bitácora sólo agrega líneas (push a main)
+        if: github.event_name == 'push' && matrix.python-version == '3.12'
+        run: .github/scripts/check-registry.sh "${{ github.event.before }}"

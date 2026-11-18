@@ -138,6 +138,8 @@ def test_sweep_and_calibration(prices: pd.DataFrame) -> None:
     assert set(sel.index) == {"A0", "A1"} and (sel["n_trials"] == 4).all()
     assert (sel["n_effective"] <= 4).all() and sel["dsr"].between(0, 1).all()
     assert "Barrido" in res.summary()
-    cal = calibrate_validate(prices, signal, grid, prices.index[1000], reps=200)
+    with pytest.warns(DeprecationWarning, match="experiment validate"):
+        cal = calibrate_validate(prices, signal, grid, prices.index[1000], reps=200)
+    assert "EXPLORATORIO" in cal.summary()
     assert set(cal.table.columns) >= {"sharpe_in_sample", "sharpe_out_of_sample"}
     assert "una sola vez" in cal.summary()

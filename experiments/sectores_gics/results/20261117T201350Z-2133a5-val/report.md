@@ -1,0 +1,10 @@
+# Validación única — experimento sectores-gics-rotacion-regimenes
+
+- Calibración `20261117T201317Z-2133a5` · validación `20261117T201350Z-2133a5-val` · periodo posterior a 2014-12-31
+- Estado: EXPLORATORIO — periodo posterior a 2014-12-31 de XLB ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]; periodo posterior a 2014-12-31 de XLE ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]; periodo posterior a 2014-12-31 de XLF ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]; periodo posterior a 2014-12-31 de XLI ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]; periodo posterior a 2014-12-31 de XLK ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]; periodo posterior a 2014-12-31 de XLP ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]; periodo posterior a 2014-12-31 de XLU ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]; periodo posterior a 2014-12-31 de XLV ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]; periodo posterior a 2014-12-31 de XLY ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (None) [declarada fuera de la bitácora]; cartera 'rotacion_momentum': 9/9 constituyentes con el periodo posterior a 2014-12-31 ya visto
+- Familia de hipótesis (1), ajuste de Holm: significativas = ninguna
+
+## Cartera `rotacion_momentum` (U:XLB+XLE+XLF+XLI+XLK+XLP+XLU+XLV+XLY)
+
+- Sharpe fuera de muestra +0.64 [+0.26; +1.04] frente a igual ponderado +0.64 · diferencia -0.01 (p 0.562 · Holm 0.562) · constituyentes ya vistos 9/9
+

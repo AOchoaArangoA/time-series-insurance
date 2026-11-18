@@ -35,6 +35,7 @@ descargar datos de FRED; se lee del entorno y nunca se versiona.
 | Necesito… | Dónde |
 |-----------|-------|
 | Entender el proceso completo y el flujo de la información | [`docs/propuesta-proceso.md`](docs/propuesta-proceso.md) |
+| **Conectar otro sistema** (instalación, prueba de conexión, entrada/salida) y prompt para agentes | [`docs/integracion/manual-de-uso.md`](docs/integracion/manual-de-uso.md) · [`docs/integracion/prompt-agente.md`](docs/integracion/prompt-agente.md) |
 | Usar el paquete desde **otro agente o herramienta** | [`AGENTS.md`](AGENTS.md) · habilidad [`.claude/skills/tsinsurance-experiment`](.claude/skills/tsinsurance-experiment/SKILL.md) |
 | Ver un experimento real registrado (TBT, TBX, TBF) | [`experiments/inverse_treasury/`](experiments/inverse_treasury/README.md) |
 | Resultados y validaciones realizadas hasta hoy | [`docs/resumen-procesos-y-resultados.md`](docs/resumen-procesos-y-resultados.md) |
@@ -49,7 +50,8 @@ descargar datos de FRED; se lee del entorno y nunca se versiona.
 uv run tsinsurance bundle template mi_exp/data            # 1. paquete de insumos para llenar (o:)
 uv run tsinsurance bundle fetch recipe.toml mi_exp/data    #    descargarlo con una receta
 uv run tsinsurance bundle validate mi_exp/data             # 2. contrato, manifiesto y huella
-uv run tsinsurance experiment run mi_exp/experiment.toml   # 3. ejecutar y registrar
+uv run tsinsurance experiment run mi_exp/experiment.toml   # 3. calibrar y registrar
+uv run tsinsurance experiment validate mi_exp/experiment.toml --calibration RUN_ID  # validación única
 uv run tsinsurance experiment verify experiments/registry.jsonl   # 4. integridad de la bitácora
 ```
 

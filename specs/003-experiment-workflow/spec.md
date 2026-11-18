@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-09
 
-**Status**: Implemented v0.1 (decisión por defecto a confirmar: TFT → TBT)
+**Status**: Implemented v0.1 (TFT = TLT según el usuario, 2026-11-17; la ejecución registrada usó TBT, ver Clarifications)
 
 **Input**: User description: "Testear los ETFs TFT, TBX y TBF y registrarlo como muestra de
 la funcionalidad. Entregar el paquete a otro agente para que sea capaz de usarlo y se
@@ -123,7 +123,11 @@ principal, visibilidad).
 
 - Q: ¿"TFT"? → A: No existe en Yahoo Finance; con TBX y TBF forma la familia de ETFs
   inversos del Tesoro de ProShares cuyo tercer miembro es **TBT** (UltraShort 20+ años).
-  Se asume TBT y se agrega TLT como referencia. *Decisión por defecto, confirmar.*
+  Se asumió TBT y se agregó TLT como referencia.
+  **Corrección del usuario (2026-11-17): "TFT" era TLT**, como en la spec 002. La ejecución
+  confirmatoria registrada (TBT, TBX, TBF) se conserva tal cual en la bitácora (no se
+  reescribe la historia); el conjunto pedido era TLT, TBX y TBF. Queda pendiente una
+  ejecución registrada con TLT, que contará como pruebas nuevas en la bitácora.
 - Q: ¿Formato base? → A: paquete de insumos (manifiesto TOML + CSV del contrato v1.0);
   las fuentes son adaptadores. La receta de descarga es un archivo aparte.
 - Q: ¿Variables macro para el experimento? → A: sólo series públicas y sin revisiones

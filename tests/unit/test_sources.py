@@ -119,3 +119,35 @@ def test_registry() -> None:
     assert "dummy" in available_sources()
     with pytest.raises(TSInsuranceError, match="no disponible"):
         get_source("bloomberg")
+
+
+def test_yahoo_drops_days_without_quote() -> None:
+    """Un día sin cotización (NaN) es una observación ausente, no un precio inválido."""
+
+    def download(ticker: str, s: str | None, e: str | None) -> pd.DataFrame:
+        idx = pd.to_datetime(["2024-01-02", "2024-01-03", "2024-01-04"])
+        return pd.DataFrame({"Close": [13.2, float("nan"), 14.1]}, index=idx)
+
+    snap = YahooSource(download=download).fetch(["^VIX"], "2024-01-02", "2024-01-04")
+    assert list(snap.data["date"].dt.strftime("%Y-%m-%d")) == ["2024-01-02", "2024-01-04"]
+
+
+def test_yahoo_all_nan_raises() -> None:
+    def download(ticker: str, s: str | None, e: str | None) -> pd.DataFrame:
+        return pd.DataFrame({"Close": [float("nan")]}, index=pd.to_datetime(["2024-01-02"]))
+
+    with pytest.raises(TSInsuranceError):
+        YahooSource(download=download).fetch(["X"], "2024-01-02", "2024-01-02")
+
+
+def test_yahoo_rate_index_can_be_zero_or_negative() -> None:
+    """^IRX fue 0 o negativo en 2020: declarado como tasa, el contrato lo acepta."""
+
+    def download(ticker: str, s: str | None, e: str | None) -> pd.DataFrame:
+        idx = pd.to_datetime(["2020-03-26", "2020-03-27"])
+        return pd.DataFrame({"Close": [0.0, -0.05]}, index=idx)
+
+    snap = YahooSource(kind="rate", unit="percent", download=download).fetch(["^IRX"])
+    assert set(snap.data["kind"]) == {"rate"} and list(snap.data["value"]) == [0.0, -0.05]
+    with pytest.raises(TSInsuranceError):
+        YahooSource(download=download).fetch(["^IRX"])  # como precio, es inválido

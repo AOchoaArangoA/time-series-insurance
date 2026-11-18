@@ -1,0 +1,36 @@
+# Experimento mínimo de prueba de conexión (datos sintéticos de
+# generar_paquete_sintetico.py). Sirve para verificar la instalación, no para decidir.
+
+[experiment]
+id = "prueba-conexion"
+hypothesis = "Prueba de conexión: con datos simulados sin habilidad no debe aparecer nada significativo."
+registry = "registry.jsonl"      # bitácora del proyecto consumidor (relativa a este archivo)
+
+[data]
+bundle = "data"
+assets = ["ACT_A", "ACT_B"]
+
+[execution]
+lag = 1
+cost_bps = 5.0
+
+[validation]
+alpha = 0.05
+reps = 200
+seed = 1
+train_end = "2019-12-31"
+
+[[ideas]]
+name = "tendencia"
+signal = "sma_crossover"
+  [ideas.grid]
+  fast = [20, 50]
+  slow = [150, 200]
+
+[[econometric]]
+name = "macro"
+asset = "ACT_A"
+regressors = ["d_TASA"]
+derived = { d_TASA = { from = "TASA_10A", op = "diff" } }
+position = "long_cash"
+min_train = 60

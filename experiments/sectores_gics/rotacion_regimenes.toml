@@ -1,0 +1,86 @@
+# Rotación sectorial y regímenes del ciclo con el flujo registrado (spec 005).
+# Las pruebas del análisis exploratorio previo (fuera de la bitácora) se DECLARAN para que
+# cuenten en el ajuste por pruebas múltiples y en la detección de periodo visto.
+
+[experiment]
+id = "sectores-gics-rotacion-regimenes"
+title = "Rotación sectorial por momentum relativo y regímenes del ciclo (flujo registrado)"
+author = "agente (Claude) a pedido del usuario"
+hypothesis = """
+H1 (rotación): invertir cada mes en los k sectores SPDR con mayor momentum de 6 o 12 meses
+supera a los 9 sectores igual ponderados (mismos costos, rebalanceo mensual) después de
+ajustar por todas las pruebas, incluidas las 4 del análisis exploratorio previo.
+H2 (ciclo): el exceso de retorno del mes siguiente de los sectores difiere según la curva
+invertida, el nivel del VIX o la tendencia del S&P 500.
+Expectativa previa: sin evidencia; el periodo 2015-2026 ya se miró, así que es exploratorio.
+"""
+registry = "../registry.jsonl"
+
+[data]
+bundle = "data"
+assets = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
+start = "1999-01-01"
+end = "2026-10-31"
+
+[execution]
+lag = 1
+cost_bps = 3.0
+slippage_bps = 2.0
+
+[validation]
+alpha = 0.05
+reps = 500
+seed = 17
+train_end = "2014-12-31"
+
+[[portfolios]]
+name = "rotacion_momentum"
+universe = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
+signal = "cross_sectional_momentum"
+  [portfolios.grid]
+  lookback_m = [6, 12]
+  top_k = [3, 4]
+
+[[regimes]]
+name = "curva_invertida"
+type = "spread"
+variables = ["^TNX", "^IRX"]
+op = "<"
+value = 0.0
+assets = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
+justification = "Umbral natural 0: la inversión de la curva anticipa recesiones (Estrella y Mishkin 1998)"
+
+[[regimes]]
+name = "vix_alto"
+type = "threshold"
+variable = "^VIX"
+op = ">"
+value = [20.0, 25.0, 30.0]
+assets = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
+justification = "Niveles convencionales de estrés del VIX; se declara la malla completa (el 25 se usó antes en el análisis exploratorio)"
+
+[[regimes]]
+name = "mercado_bajista"
+type = "trend"
+asset = "SPY"
+months = [10]
+assets = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
+justification = "Media móvil de 10 meses (Faber 2007)"
+
+[[declared_prior_tests]]
+kind = "portfolio"
+n_tests = 4
+universe = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
+period_start = "1999-01-01"
+period_end = "2026-10-31"
+script_sha256 = "656377e476c9b8a41adc9172d1ca2943cec1edc0d100d2adbc68ad3e6e030053"
+description = "Rotación por momentum (L 6/12, k 3/4) en analisis_exploratorio.py, 2026-11-17"
+
+[[declared_prior_tests]]
+kind = "regime"
+n_tests = 33
+assets = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY", "XLC", "XLRE"]
+period_start = "1999-01-01"
+period_end = "2026-10-31"
+script_sha256 = "656377e476c9b8a41adc9172d1ca2943cec1edc0d100d2adbc68ad3e6e030053"
+description = "3 regímenes (curva, VIX>25, SPY<SMA10) × 11 sectores en analisis_exploratorio.py"

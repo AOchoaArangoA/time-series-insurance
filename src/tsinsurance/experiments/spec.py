@@ -62,6 +62,85 @@ class EconometricSpec:
 
 
 @dataclass(frozen=True, slots=True)
+class PortfolioSpec:
+    """Idea de cartera: pesos entre los activos de un universo (spec 005)."""
+
+    name: str
+    universe: list[str]
+    signal: str
+    grid: dict[str, list[Any]]
+    min_history_m: int
+    description: str = ""
+
+    @property
+    def universe_id(self) -> str:
+        """Identidad del universo: ids ordenados (el orden declarado no la cambia)."""
+        return "U:" + "+".join(sorted(self.universe))
+
+
+RegimeType = Literal["threshold", "spread", "trend"]
+
+
+@dataclass(frozen=True, slots=True)
+class RegimeSpec:
+    """Estado del ciclo observable al cierre de mes; cada valor de la malla es una variante."""
+
+    name: str
+    type: RegimeType
+    variables: list[str]
+    op: Literal[">", "<"]
+    values: list[float]
+    asset: str | None
+    months: list[int]
+    assets: list[str]
+    min_months: int
+    justification: str
+
+    @property
+    def memory_key(self) -> str:
+        """Clave de memoria entre experimentos: tipo y variables (o activo de referencia).
+
+        En ``spread`` las variables se ordenan: ``a − b < v`` y ``b − a > −v`` son la misma
+        hipótesis y comparten memoria (revisión M7).
+        """
+        if self.type == "trend":
+            ref = str(self.asset)
+        elif self.type == "spread":
+            ref = "-".join(sorted(self.variables))
+        else:
+            ref = "-".join(self.variables)
+        return f"{self.type}:{ref}"
+
+    def canonical_variant(self, variant: dict[str, Any]) -> dict[str, Any]:
+        """Variante en la orientación canónica de la clave de memoria."""
+        if self.type != "spread" or self.variables == sorted(self.variables):
+            return dict(variant)
+        flipped = "<" if variant["op"] == ">" else ">"
+        return {"op": flipped, "value": -float(variant["value"])}
+
+    def variants(self) -> list[dict[str, Any]]:
+        """Cada umbral (o número de meses) declarado es una hipótesis distinta."""
+        if self.type == "trend":
+            return [{"months": m} for m in self.months]
+        return [{"op": self.op, "value": v} for v in self.values]
+
+
+@dataclass(frozen=True, slots=True)
+class DeclaredPriorSpec:
+    """Pruebas hechas fuera de la bitácora que deben contarse (spec 005, B2)."""
+
+    kind: Literal["portfolio", "regime", "signal"]
+    n_tests: int
+    period_start: str
+    period_end: str
+    universe: list[str]
+    assets: list[str]
+    script_sha256: str
+    description: str
+    regime_key: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class ExperimentSpec:
     """Experimento completo."""
 
@@ -84,6 +163,9 @@ class ExperimentSpec:
     econometric: list[EconometricSpec]
     registry: Path
     raw: dict[str, Any]
+    portfolios: list[PortfolioSpec] = field(default_factory=list)
+    regimes: list[RegimeSpec] = field(default_factory=list)
+    declared_prior_tests: list[DeclaredPriorSpec] = field(default_factory=list)
 
 
 def _require(table: dict[str, Any], key: str, where: str) -> Any:
@@ -137,8 +219,13 @@ def load_experiment(
         if block.get("scheme", "expanding") not in ("expanding", "rolling"):
             raise TSInsuranceError(f"econometric[{i}].scheme inválido: {block.get('scheme')}")
         econ.append(EconometricSpec(**block))
-    if not ideas and not econ:
-        raise TSInsuranceError("El experimento no define [[ideas]] ni [[econometric]].")
+    portfolios = _portfolios(raw)
+    regimes = _regimes(raw, [str(a) for a in data.get("assets", [])])
+    declared = _declared(raw)
+    if not ideas and not econ and not portfolios and not regimes:
+        raise TSInsuranceError(
+            "El experimento no define [[ideas]], [[econometric]], [[portfolios]] ni [[regimes]]."
+        )
     reg = (
         Path(registry)
         if registry is not None
@@ -164,4 +251,125 @@ def load_experiment(
         econometric=econ,
         registry=reg.resolve(),
         raw=raw,
+        portfolios=portfolios,
+        regimes=regimes,
+        declared_prior_tests=declared,
     )
+
+
+def _grid(block: dict[str, Any]) -> dict[str, list[Any]]:
+    return {k: list(v) if isinstance(v, list) else [v] for k, v in block.get("grid", {}).items()}
+
+
+def _portfolios(raw: dict[str, Any]) -> list[PortfolioSpec]:
+    from tsinsurance.experiments.portfolio_signals import get_portfolio_signal
+
+    out = []
+    for i, block in enumerate(raw.get("portfolios", [])):
+        where = f"portfolios[{i}]"
+        universe = [str(a) for a in _require(block, "universe", where)]
+        if len(set(universe)) < 2:
+            raise TSInsuranceError(
+                f"{where}: el universo necesita al menos 2 activos (para un activo use [[ideas]])."
+            )
+        signal = str(_require(block, "signal", where))
+        get_portfolio_signal(signal)
+        grid = _grid(block)
+        default_hist = max(
+            [
+                int(lb) + int(sk)
+                for lb in grid.get("lookback_m", [12])
+                for sk in grid.get("skip_m", [1])
+            ]
+        )
+        out.append(
+            PortfolioSpec(
+                name=str(_require(block, "name", where)),
+                universe=universe,
+                signal=signal,
+                grid=grid,
+                min_history_m=int(block.get("min_history_m", default_hist)),
+                description=str(block.get("description", "")),
+            )
+        )
+    if len({p.name for p in out}) != len(out):
+        raise TSInsuranceError("Los nombres de [[portfolios]] deben ser únicos.")
+    return out
+
+
+def _as_list(v: Any) -> list[Any]:
+    return list(v) if isinstance(v, list) else [v]
+
+
+def _regimes(raw: dict[str, Any], default_assets: list[str]) -> list[RegimeSpec]:
+    out = []
+    for i, block in enumerate(raw.get("regimes", [])):
+        where = f"regimes[{i}]"
+        kind = str(_require(block, "type", where))
+        if kind not in ("threshold", "spread", "trend"):
+            raise TSInsuranceError(f"{where}.type debe ser threshold, spread o trend.")
+        op = str(block.get("op", ">"))
+        if op not in (">", "<"):
+            raise TSInsuranceError(f"{where}.op debe ser '>' o '<'.")
+        if kind == "threshold":
+            variables = [str(_require(block, "variable", where))]
+        elif kind == "spread":
+            variables = [str(v) for v in _require(block, "variables", where)]
+            if len(variables) != 2:
+                raise TSInsuranceError(f"{where}.variables debe tener 2 series (a − b).")
+        else:
+            variables = []
+        values = [float(v) for v in _as_list(block.get("value", []))]
+        months = [int(m) for m in _as_list(block.get("months", []))]
+        if kind != "trend" and not values:
+            raise TSInsuranceError(f"{where}: falta 'value' (umbral o lista de umbrales).")
+        if kind == "trend" and (not months or min(months) < 2):
+            raise TSInsuranceError(f"{where}: 'months' (≥ 2) es obligatorio en type='trend'.")
+        min_months = int(block.get("min_months", 24))
+        if min_months < 6:
+            raise TSInsuranceError(f"{where}.min_months debe ser ≥ 6.")
+        out.append(
+            RegimeSpec(
+                name=str(_require(block, "name", where)),
+                type=kind,  # type: ignore[arg-type]
+                variables=variables,
+                op=op,  # type: ignore[arg-type]
+                values=values,
+                asset=str(_require(block, "asset", where)) if kind == "trend" else None,
+                months=months,
+                assets=[str(a) for a in block.get("assets", default_assets)],
+                min_months=min_months,
+                justification=str(block.get("justification", "")).strip(),
+            )
+        )
+    if len({r.name for r in out}) != len(out):
+        raise TSInsuranceError("Los nombres de [[regimes]] deben ser únicos.")
+    return out
+
+
+def _declared(raw: dict[str, Any]) -> list[DeclaredPriorSpec]:
+    out = []
+    for i, block in enumerate(raw.get("declared_prior_tests", [])):
+        where = f"declared_prior_tests[{i}]"
+        kind = str(_require(block, "kind", where))
+        if kind not in ("portfolio", "regime", "signal"):
+            raise TSInsuranceError(f"{where}.kind debe ser portfolio, regime o signal.")
+        if not block.get("assets") and not block.get("universe"):
+            raise TSInsuranceError(f"{where}: declare 'assets' o 'universe' (a qué se probó).")
+        n = int(_require(block, "n_tests", where))
+        if n < 1:
+            raise TSInsuranceError(f"{where}.n_tests debe ser ≥ 1.")
+        out.append(
+            DeclaredPriorSpec(
+                kind=kind,  # type: ignore[arg-type]
+                n_tests=n,
+                period_start=str(_require(block, "period_start", where)),
+                period_end=str(_require(block, "period_end", where)),
+                universe=[str(a) for a in block.get("universe", [])],
+                assets=[str(a) for a in block.get("assets", [])],
+                script_sha256=str(_require(block, "script_sha256", where)),
+                description=str(block.get("description", "")),
+                regime_key=str(block.get("regime_key", "")),
+            )
+        )
+    return out

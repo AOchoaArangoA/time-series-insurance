@@ -19,13 +19,22 @@ Sigue `AGENTS.md` (raíz del repositorio). Resumen operativo:
 3. **Experimento.** Escribe `experiment.toml` (ver `AGENTS.md`). Señales disponibles:
    `uv run tsinsurance experiment signals`. Para una señal nueva, regístrala con
    `tsinsurance.experiments.register_signal` en un script y llama a `run_experiment`.
-4. **Ejecuta.** `uv run tsinsurance experiment run <exp>/experiment.toml`. No uses otra
+4. **Calibra y luego valida (dos fases).** `uv run tsinsurance experiment run
+   <exp>/experiment.toml` calibra sin ver el periodo posterior a `train_end` e imprime el
+   `RUN_ID`. Confirma en git los resultados y la bitácora, y abre la validación UNA vez con
+   `uv run tsinsurance experiment validate <exp>/experiment.toml --calibration RUN_ID`.
+   Si dice "periodo ya visto", el resultado es exploratorio: dilo así. No uses otra
    bitácora distinta de `experiments/registry.jsonl` salvo para pruebas del paquete.
 5. **Interpreta** `results/<run_id>/result.json`:
    - idea rechazada por anticipación ⇒ corrige la señal;
    - `significant` exige DSR > 1 − α y SPA p < α (deflactado con todo lo probado);
    - modelos econométricos: reporta cuadrante + marcas (exploratorio, no concluyente,
      diagnósticos no superados), R² fuera de muestra y la prueba económica.
+5b. **Carteras y regímenes.** Para rotaciones o pesos entre activos usa
+   `[[portfolios]]`; para estados del ciclo, `[[regimes]]` (con `justification`). Si antes
+   probaste algo fuera de la bitácora (un script o un notebook), decláralo con
+   `[[declared_prior_tests]]`: si no lo haces, el ajuste por pruebas múltiples queda
+   subestimado.
 6. **Reporta** al usuario: hipótesis, datos (fuente, licencia, ventana), supuestos,
    número de pruebas acumuladas, resultado con incertidumbre y limitaciones. Nunca
    presentes un Sharpe alto como evidencia si `significant` es falso.

@@ -107,13 +107,25 @@ mi_paquete/
   importantes en cuatro revisiones; todos corregidos o registrados como tareas).
 - **Bitácora**: única fuente de verdad de lo probado; respaldarla junto con el código.
 - **Publicación**: ver `docs/politica-datos-y-publicacion.md`.
+- **Cambios de regla estadística**: toda regla que haga el ajuste por pruebas múltiples
+  menos conservador (por ejemplo, la corrección de la varianza de las pruebas previas del
+  Sharpe deflactado, spec 004) se adopta sólo con un Monte Carlo de tamaño que la
+  respalde; la regla vigente, la evidencia y la fecha del cambio se documentan en
+  `docs/methodology/backtesting.md`, y los resultados registran la versión del paquete con
+  la que se calcularon.
 
 ## 5. Próximos pasos propuestos
 
-1. Confirmar TFT → TBT y la publicación del repositorio (licencia, datos, rama principal).
-2. Fusionar la rama de trabajo en `main` mediante un PR revisado.
-3. Spec 001 US2-US5 (ARIMA/GARCH, pronóstico, VaR/ES, reportes de comité).
-4. Adaptador para la fuente de datos oficial de la aseguradora (precios de retorno total
-   versionados) y vintages ALFRED.
-5. Ejecutor programado: experimentos re-ejecutados periódicamente con datos nuevos y
+1. ~~Confirmar TFT y la publicación del repositorio~~: hecho (TFT = TLT; repositorio
+   público y `main` integrada).
+2. ~~Fusionar la rama de trabajo en `main`~~: hecho (PR #1).
+3. **Spec 004 — integridad y tiempo real** (Prioridad 1): bitácora a prueba de recortes,
+   validación única en dos fases (también para modelos econométricos), identidad del
+   código de las señales, variables macro en tiempo real (ALFRED: primera publicación y
+   todas las versiones), IVX,
+   preblanqueo y corrección de varianza del DSR validada por Monte Carlo.
+4. Spec 001 US2-US5 (ARIMA/GARCH, pronóstico, VaR/ES, reportes de comité).
+5. Adaptador para la fuente de datos oficial de la aseguradora (precios de retorno total
+   versionados).
+6. Ejecutor programado: experimentos re-ejecutados periódicamente con datos nuevos y
    seguimiento de su desempeño fuera de muestra real (*paper trading*).

@@ -22,5 +22,8 @@ def test_inverse_treasury_reproducible(tmp_path: Path) -> None:
     b = run_experiment(
         EXP / "experiment.toml", registry=tmp_path / "r2.jsonl", output_root=tmp_path
     )
-    for key in ("ideas", "calibration", "econometric"):
+    for key in ("ideas", "econometric"):
         assert a.result[key] == b.result[key]
+    # La calibración fija lo mismo; sólo cambia el run_id del comando de validación.
+    assert a.result["calibration"]["frozen"] == b.result["calibration"]["frozen"]
+    assert a.result["calibration"]["frozen_sha256"] == b.result["calibration"]["frozen_sha256"]

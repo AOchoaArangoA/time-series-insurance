@@ -1,0 +1,2614 @@
+{
+  "assumptions": {
+    "alpha": 0.05,
+    "asset_start": {
+      "XLB": "1999-01-04",
+      "XLE": "1999-01-04",
+      "XLF": "1999-01-04",
+      "XLI": "1999-01-04",
+      "XLK": "1999-01-04",
+      "XLP": "1999-01-04",
+      "XLU": "1999-01-04",
+      "XLV": "1999-01-04",
+      "XLY": "1999-01-04"
+    },
+    "execution": "retraso=1 barra(s), costo=3.0 pb, deslizamiento=2.0 pb, rebalanceo=every_bar, bruto máx.=1.0, cortos=no, financiación=rf+0.0 pb",
+    "risk_free": [
+      "^IRX"
+    ],
+    "selection_window_end": "2014-12-31",
+    "train_end": "2014-12-31",
+    "window": [
+      "1999-01-04",
+      "2026-10-30"
+    ]
+  },
+  "calibration": {
+    "momentum": {
+      "assets": [
+        {
+          "asset": "XLB",
+          "buy_hold_sharpe_oos": 0.4173962423,
+          "ci95": [
+            -0.3761310659,
+            0.6548673538
+          ],
+          "exposure_oos": 0.6783193277,
+          "p_vs_cash": 0.3825285485,
+          "params": {
+            "lookback": 126,
+            "skip": 21
+          },
+          "sharpe_oos": 0.0870924709,
+          "timing_p": 0.962,
+          "timing_sharpe_diff": -0.3303037714
+        },
+        {
+          "asset": "XLE",
+          "buy_hold_sharpe_oos": 0.3726592794,
+          "ci95": [
+            -0.1655727954,
+            1.0395347847
+          ],
+          "exposure_oos": 0.571092437,
+          "p_vs_cash": 0.0695273557,
+          "params": {
+            "lookback": 252,
+            "skip": 21
+          },
+          "sharpe_oos": 0.4322598242,
+          "timing_p": 0.4,
+          "timing_sharpe_diff": 0.0596005448
+        },
+        {
+          "asset": "XLF",
+          "buy_hold_sharpe_oos": 0.5023659854,
+          "ci95": [
+            -0.1217990114,
+            0.9749629754
+          ],
+          "exposure_oos": 0.7048739496,
+          "p_vs_cash": 0.078692795,
+          "params": {
+            "lookback": 126,
+            "skip": 21
+          },
+          "sharpe_oos": 0.4142824615,
+          "timing_p": 0.722,
+          "timing_sharpe_diff": -0.0880835239
+        },
+        {
+          "asset": "XLI",
+          "buy_hold_sharpe_oos": 0.5505564324,
+          "ci95": [
+            -0.2347911323,
+            0.7649894458
+          ],
+          "exposure_oos": 0.7519327731,
+          "p_vs_cash": 0.2317949459,
+          "params": {
+            "lookback": 126,
+            "skip": 21
+          },
+          "sharpe_oos": 0.2138801318,
+          "timing_p": 0.974,
+          "timing_sharpe_diff": -0.3366763006
+        },
+        {
+          "asset": "XLK",
+          "buy_hold_sharpe_oos": 0.8407593437,
+          "ci95": [
+            0.1403400144,
+            1.0061342683
+          ],
+          "exposure_oos": 0.8231932773,
+          "p_vs_cash": 0.0301691424,
+          "params": {
+            "lookback": 126,
+            "skip": 21
+          },
+          "sharpe_oos": 0.5512855683,
+          "timing_p": 0.982,
+          "timing_sharpe_diff": -0.2894737754
+        },
+        {
+          "asset": "XLP",
+          "buy_hold_sharpe_oos": 0.4624893076,
+          "ci95": [
+            -0.1404841211,
+            0.7408219683
+          ],
+          "exposure_oos": 0.8756302521,
+          "p_vs_cash": 0.153287948,
+          "params": {
+            "lookback": 252,
+            "skip": 21
+          },
+          "sharpe_oos": 0.2984031375,
+          "timing_p": 0.98,
+          "timing_sharpe_diff": -0.1640861701
+        },
+        {
+          "asset": "XLU",
+          "buy_hold_sharpe_oos": 0.4251218733,
+          "ci95": [
+            -0.1367047263,
+            0.6749325225
+          ],
+          "exposure_oos": 0.7798319328,
+          "p_vs_cash": 0.2043902275,
+          "params": {
+            "lookback": 252,
+            "skip": 21
+          },
+          "sharpe_oos": 0.2405206207,
+          "timing_p": 0.92,
+          "timing_sharpe_diff": -0.1846012526
+        },
+        {
+          "asset": "XLV",
+          "buy_hold_sharpe_oos": 0.5565054423,
+          "ci95": [
+            -0.242296597,
+            0.7374080529
+          ],
+          "exposure_oos": 0.8198319328,
+          "p_vs_cash": 0.2074536304,
+          "params": {
+            "lookback": 252,
+            "skip": 21
+          },
+          "sharpe_oos": 0.2377626988,
+          "timing_p": 0.996,
+          "timing_sharpe_diff": -0.3187427434
+        },
+        {
+          "asset": "XLY",
+          "buy_hold_sharpe_oos": 0.5198073384,
+          "ci95": [
+            -0.2185444003,
+            0.8653340595
+          ],
+          "exposure_oos": 0.8571428571,
+          "p_vs_cash": 0.1384472698,
+          "params": {
+            "lookback": 252,
+            "skip": 21
+          },
+          "sharpe_oos": 0.3183742233,
+          "timing_p": 0.928,
+          "timing_sharpe_diff": -0.2014331151
+        }
+      ],
+      "key": "47e8cf0545fc071bce9af2ae408454f0",
+      "times_opened_before": 0,
+      "train_end": "2014-12-31"
+    },
+    "momentum_vol": {
+      "assets": [
+        {
+          "asset": "XLB",
+          "buy_hold_sharpe_oos": 0.4173962423,
+          "ci95": [
+            -0.3080375758,
+            0.8117364516
+          ],
+          "exposure_oos": 0.6240016865,
+          "p_vs_cash": 0.2111532221,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.15
+          },
+          "sharpe_oos": 0.2341822834,
+          "timing_p": 0.802,
+          "timing_sharpe_diff": -0.1832139589
+        },
+        {
+          "asset": "XLE",
+          "buy_hold_sharpe_oos": 0.3726592794,
+          "ci95": [
+            -0.3188856229,
+            0.8725608551
+          ],
+          "exposure_oos": 0.399454138,
+          "p_vs_cash": 0.1895708574,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.15
+          },
+          "sharpe_oos": 0.2568145274,
+          "timing_p": 0.67,
+          "timing_sharpe_diff": -0.115844752
+        },
+        {
+          "asset": "XLF",
+          "buy_hold_sharpe_oos": 0.5023659854,
+          "ci95": [
+            -0.3474286379,
+            0.7198898037
+          ],
+          "exposure_oos": 0.6396383282,
+          "p_vs_cash": 0.2485291766,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.15
+          },
+          "sharpe_oos": 0.1984435859,
+          "timing_p": 0.96,
+          "timing_sharpe_diff": -0.3039223996
+        },
+        {
+          "asset": "XLI",
+          "buy_hold_sharpe_oos": 0.5505564324,
+          "ci95": [
+            -0.2114101202,
+            0.8860608653
+          ],
+          "exposure_oos": 0.7372726111,
+          "p_vs_cash": 0.1318630643,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.15
+          },
+          "sharpe_oos": 0.3271609795,
+          "timing_p": 0.864,
+          "timing_sharpe_diff": -0.2233954529
+        },
+        {
+          "asset": "XLK",
+          "buy_hold_sharpe_oos": 0.8407593437,
+          "ci95": [
+            0.2324587201,
+            1.4005135344
+          ],
+          "exposure_oos": 0.6946527995,
+          "p_vs_cash": 0.0041066617,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.15
+          },
+          "sharpe_oos": 0.781012433,
+          "timing_p": 0.642,
+          "timing_sharpe_diff": -0.0597469107
+        },
+        {
+          "asset": "XLP",
+          "buy_hold_sharpe_oos": 0.4624893076,
+          "ci95": [
+            -0.2653301358,
+            0.8822175764
+          ],
+          "exposure_oos": 0.8392884699,
+          "p_vs_cash": 0.1739122639,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.15
+          },
+          "sharpe_oos": 0.274407385,
+          "timing_p": 0.94,
+          "timing_sharpe_diff": -0.1880819226
+        },
+        {
+          "asset": "XLU",
+          "buy_hold_sharpe_oos": 0.4251218733,
+          "ci95": [
+            -0.2901594104,
+            0.7674380022
+          ],
+          "exposure_oos": 0.5384530578,
+          "p_vs_cash": 0.2395625842,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.1
+          },
+          "sharpe_oos": 0.2068408244,
+          "timing_p": 0.932,
+          "timing_sharpe_diff": -0.2182810489
+        },
+        {
+          "asset": "XLV",
+          "buy_hold_sharpe_oos": 0.5565054423,
+          "ci95": [
+            -0.3352905637,
+            0.7668196173
+          ],
+          "exposure_oos": 0.7497262694,
+          "p_vs_cash": 0.2372076158,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.15
+          },
+          "sharpe_oos": 0.2087519586,
+          "timing_p": 0.988,
+          "timing_sharpe_diff": -0.3477534836
+        },
+        {
+          "asset": "XLY",
+          "buy_hold_sharpe_oos": 0.5198073384,
+          "ci95": [
+            -0.172621703,
+            0.9187226939
+          ],
+          "exposure_oos": 0.725655781,
+          "p_vs_cash": 0.131399224,
+          "params": {
+            "lookback": 252,
+            "skip": 21,
+            "target": 0.15
+          },
+          "sharpe_oos": 0.3277922294,
+          "timing_p": 0.878,
+          "timing_sharpe_diff": -0.192015109
+        }
+      ],
+      "key": "b6e3fb768394611107dfd8fb03825194",
+      "times_opened_before": 0,
+      "train_end": "2014-12-31"
+    },
+    "tendencia": {
+      "assets": [
+        {
+          "asset": "XLB",
+          "buy_hold_sharpe_oos": 0.4173962423,
+          "ci95": [
+            -0.4266159539,
+            0.6519345389
+          ],
+          "exposure_oos": 0.7324369748,
+          "p_vs_cash": 0.3383899511,
+          "params": {
+            "fast": 50,
+            "slow": 200
+          },
+          "sharpe_oos": 0.1218467812,
+          "timing_p": 0.954,
+          "timing_sharpe_diff": -0.2955494611
+        },
+        {
+          "asset": "XLE",
+          "buy_hold_sharpe_oos": 0.3726592794,
+          "ci95": [
+            -0.0329964419,
+            1.1112118973
+          ],
+          "exposure_oos": 0.5922689076,
+          "p_vs_cash": 0.0381017824,
+          "params": {
+            "fast": 50,
+            "slow": 200
+          },
+          "sharpe_oos": 0.5196123823,
+          "timing_p": 0.284,
+          "timing_sharpe_diff": 0.1469531029
+        },
+        {
+          "asset": "XLF",
+          "buy_hold_sharpe_oos": 0.5023659854,
+          "ci95": [
+            -0.1358665964,
+            0.9147729895
+          ],
+          "exposure_oos": 0.7284033613,
+          "p_vs_cash": 0.107998854,
+          "params": {
+            "fast": 100,
+            "slow": 150
+          },
+          "sharpe_oos": 0.3621997197,
+          "timing_p": 0.83,
+          "timing_sharpe_diff": -0.1401662657
+        },
+        {
+          "asset": "XLI",
+          "buy_hold_sharpe_oos": 0.5505564324,
+          "ci95": [
+            -0.4788159999,
+            0.809619029
+          ],
+          "exposure_oos": 0.7583193277,
+          "p_vs_cash": 0.3243626449,
+          "params": {
+            "fast": 50,
+            "slow": 150
+          },
+          "sharpe_oos": 0.1335223303,
+          "timing_p": 0.984,
+          "timing_sharpe_diff": -0.4170341021
+        },
+        {
+          "asset": "XLK",
+          "buy_hold_sharpe_oos": 0.8407593437,
+          "ci95": [
+            0.2968854494,
+            1.3065049268
+          ],
+          "exposure_oos": 0.8494117647,
+          "p_vs_cash": 0.0034235418,
+          "params": {
+            "fast": 100,
+            "slow": 200
+          },
+          "sharpe_oos": 0.7919694436,
+          "timing_p": 0.66,
+          "timing_sharpe_diff": -0.0487899
+        },
+        {
+          "asset": "XLP",
+          "buy_hold_sharpe_oos": 0.4624893076,
+          "ci95": [
+            -0.4989179769,
+            0.4198447847
+          ],
+          "exposure_oos": 0.7401680672,
+          "p_vs_cash": 0.5370748572,
+          "params": {
+            "fast": 100,
+            "slow": 150
+          },
+          "sharpe_oos": -0.0270872711,
+          "timing_p": 1.0,
+          "timing_sharpe_diff": -0.4895765787
+        },
+        {
+          "asset": "XLU",
+          "buy_hold_sharpe_oos": 0.4251218733,
+          "ci95": [
+            -0.0913723934,
+            0.7954639967
+          ],
+          "exposure_oos": 0.7314285714,
+          "p_vs_cash": 0.1493804953,
+          "params": {
+            "fast": 100,
+            "slow": 200
+          },
+          "sharpe_oos": 0.30264489,
+          "timing_p": 0.822,
+          "timing_sharpe_diff": -0.1224769833
+        },
+        {
+          "asset": "XLV",
+          "buy_hold_sharpe_oos": 0.5565054423,
+          "ci95": [
+            0.0548181688,
+            0.8533026745
+          ],
+          "exposure_oos": 0.7684033613,
+          "p_vs_cash": 0.0651920835,
+          "params": {
+            "fast": 100,
+            "slow": 200
+          },
+          "sharpe_oos": 0.4420108799,
+          "timing_p": 0.796,
+          "timing_sharpe_diff": -0.1144945624
+        },
+        {
+          "asset": "XLY",
+          "buy_hold_sharpe_oos": 0.5198073384,
+          "ci95": [
+            -0.1440147266,
+            0.919048652
+          ],
+          "exposure_oos": 0.774789916,
+          "p_vs_cash": 0.1042106711,
+          "params": {
+            "fast": 100,
+            "slow": 200
+          },
+          "sharpe_oos": 0.3688653641,
+          "timing_p": 0.814,
+          "timing_sharpe_diff": -0.1509419743
+        }
+      ],
+      "key": "e0a143361037d2f2d468f2c312cb7c34",
+      "times_opened_before": 0,
+      "train_end": "2014-12-31"
+    }
+  },
+  "econometric": {
+    "ciclo_financieras": {
+      "asset": "XLF",
+      "benchmark_rule_is_cash": false,
+      "clark_west_p": 0.5013856576,
+      "diagnostics_passed": false,
+      "economic_p": 0.558,
+      "hit_rate": 0.5441176471,
+      "lookahead": "Sin anticipación detectada en 17 cortes evaluados (0 omitidos por datos insuficientes).",
+      "lookahead_ok": true,
+      "n_forecasts": 272,
+      "n_specifications_counted": 1,
+      "notes": [
+        "La decisión de fin de mes se ejecuta al cierre siguiente (retraso 1): el periodo mantenido está desplazado un día respecto del retorno pronosticado."
+      ],
+      "oos_r2": -0.0455078501,
+      "pesaran_timmermann_p": 0.5298229464,
+      "position": "long_cash",
+      "regressors": [
+        "^TNX",
+        "d_TNX",
+        "^VIX"
+      ],
+      "sharpe_benchmark_rule": 0.320228394,
+      "sharpe_model": 0.3078042526,
+      "timing_ir": -0.0375421854,
+      "verdict": {
+        "alpha": 0.05,
+        "diagnostics_passed": false,
+        "economic": false,
+        "explanation": "Ni evidencia estadística ni valor económico frente al benchmark.",
+        "exploratory": false,
+        "inconclusive": false,
+        "n_specifications": 1,
+        "quadrant": "sin_evidencia",
+        "rule": "estadística = Pesaran-Timmermann rechaza H0 al nivel α; económica = prueba unilateral de diferencia de Sharpe (bootstrap estacionario) neto de costos y en exceso de rf frente a la misma regla aplicada a la media histórica rechaza al nivel α; no concluyente si hay menos de 60 pronósticos fuera de muestra; exploratorio si se probó más de una especificación o hay variables no punto-en-el-tiempo.",
+        "statistical": false,
+        "statistical_test": "Pesaran-Timmermann"
+      },
+      "warnings": [
+        "'^TNX' es I(1): regresión desbalanceada (retorno I(0) sobre regresor no estacionario); inferencia HAC no válida.",
+        "'^TNX' es muy persistente (ρ=0.981, δ=0.18): sesgo de Stambaugh ≈ -0.0005 en su coeficiente y t-estadísticos HAC sobredimensionados (IVX pendiente).",
+        "Diagnósticos rechazados: ARCH-LM."
+      ]
+    },
+    "ciclo_tecnologia": {
+      "asset": "XLK",
+      "benchmark_rule_is_cash": false,
+      "clark_west_p": 0.2381037331,
+      "diagnostics_passed": false,
+      "economic_p": 0.836,
+      "hit_rate": 0.5955882353,
+      "lookahead": "Sin anticipación detectada en 17 cortes evaluados (0 omitidos por datos insuficientes).",
+      "lookahead_ok": true,
+      "n_forecasts": 272,
+      "n_specifications_counted": 1,
+      "notes": [
+        "Pesaran-Timmermann detecta capacidad direccional, pero Clark-West no rechaza y el R² fuera de muestra es -7.0%: el pronóstico no mejora a la media histórica en error cuadrático.",
+        "La decisión de fin de mes se ejecuta al cierre siguiente (retraso 1): el periodo mantenido está desplazado un día respecto del retorno pronosticado."
+      ],
+      "oos_r2": -0.0699230769,
+      "pesaran_timmermann_p": 0.0290844042,
+      "position": "long_cash",
+      "regressors": [
+        "^TNX",
+        "d_TNX",
+        "^VIX"
+      ],
+      "sharpe_benchmark_rule": 0.7066923881,
+      "sharpe_model": 0.5815192607,
+      "timing_ir": 0.1019193417,
+      "verdict": {
+        "alpha": 0.05,
+        "diagnostics_passed": false,
+        "economic": false,
+        "explanation": "La prueba estadística indica capacidad predictiva, pero no se traduce en valor económico neto de costos (ajuste sin valor económico). (Pesaran-Timmermann: acierta la dirección más que el azar; no compara contra la media histórica.)",
+        "exploratory": false,
+        "inconclusive": false,
+        "n_specifications": 1,
+        "quadrant": "solo_estadistica",
+        "rule": "estadística = Pesaran-Timmermann rechaza H0 al nivel α; económica = prueba unilateral de diferencia de Sharpe (bootstrap estacionario) neto de costos y en exceso de rf frente a la misma regla aplicada a la media histórica rechaza al nivel α; no concluyente si hay menos de 60 pronósticos fuera de muestra; exploratorio si se probó más de una especificación o hay variables no punto-en-el-tiempo.",
+        "statistical": true,
+        "statistical_test": "Pesaran-Timmermann"
+      },
+      "warnings": [
+        "'^TNX' es I(1): regresión desbalanceada (retorno I(0) sobre regresor no estacionario); inferencia HAC no válida.",
+        "'^TNX' es muy persistente (ρ=0.981, δ=0.14): sesgo de Stambaugh ≈ -0.0004 en su coeficiente y t-estadísticos HAC sobredimensionados (IVX pendiente).",
+        "Diagnósticos rechazados: ARCH-LM."
+      ]
+    },
+    "ciclo_utilities": {
+      "asset": "XLU",
+      "benchmark_rule_is_cash": false,
+      "clark_west_p": 0.1917702079,
+      "diagnostics_passed": false,
+      "economic_p": 0.116,
+      "hit_rate": 0.6176470588,
+      "lookahead": "Sin anticipación detectada en 17 cortes evaluados (0 omitidos por datos insuficientes).",
+      "lookahead_ok": true,
+      "n_forecasts": 272,
+      "n_specifications_counted": 1,
+      "notes": [
+        "La decisión de fin de mes se ejecuta al cierre siguiente (retraso 1): el periodo mantenido está desplazado un día respecto del retorno pronosticado."
+      ],
+      "oos_r2": -0.0595443779,
+      "pesaran_timmermann_p": 0.6819390306,
+      "position": "long_cash",
+      "regressors": [
+        "^TNX",
+        "d_TNX",
+        "^VIX"
+      ],
+      "sharpe_benchmark_rule": 0.4648940594,
+      "sharpe_model": 0.5629964426,
+      "timing_ir": 0.0059820621,
+      "verdict": {
+        "alpha": 0.05,
+        "diagnostics_passed": false,
+        "economic": false,
+        "explanation": "Ni evidencia estadística ni valor económico frente al benchmark.",
+        "exploratory": false,
+        "inconclusive": false,
+        "n_specifications": 1,
+        "quadrant": "sin_evidencia",
+        "rule": "estadística = Pesaran-Timmermann rechaza H0 al nivel α; económica = prueba unilateral de diferencia de Sharpe (bootstrap estacionario) neto de costos y en exceso de rf frente a la misma regla aplicada a la media histórica rechaza al nivel α; no concluyente si hay menos de 60 pronósticos fuera de muestra; exploratorio si se probó más de una especificación o hay variables no punto-en-el-tiempo.",
+        "statistical": false,
+        "statistical_test": "Pesaran-Timmermann"
+      },
+      "warnings": [
+        "'^TNX' es I(1): regresión desbalanceada (retorno I(0) sobre regresor no estacionario); inferencia HAC no válida.",
+        "'^TNX' es muy persistente (ρ=0.981, δ=-0.16): sesgo de Stambaugh ≈ +0.0003 en su coeficiente y t-estadísticos HAC sobredimensionados (IVX pendiente)."
+      ]
+    }
+  },
+  "experiment": {
+    "author": "agente (Claude) a pedido del usuario",
+    "file": "/home/user/time-series-insurance/experiments/sectores_gics/experiment.toml",
+    "hypothesis": "H1 (timing): en los ETFs sectoriales SPDR, las reglas de tendencia y momentum de serie de\ntiempo mejoran el timing frente a la MISMA exposición constante (no sólo frente a comprar y\nmantener), después de ajustar por todas las pruebas.\nH2 (ciclo): el nivel y el cambio de la tasa a 10 años y el nivel del VIX, conocidos al cierre\nde mes, predicen el exceso de retorno del mes siguiente de Financials (XLF), Utilities (XLU) y\nTecnología (XLK) mejor que la media histórica, con valor económico neto de costos.\nExpectativa previa: evidencia débil o nula; el ejercicio es exploratorio.\n",
+    "id": "sectores-gics-ciclo",
+    "sha256": "fc940be1e2e75f3dcfe4f4eab69eb00a9d52faa380ec67269a2d980bd27febfe",
+    "title": "Timing sectorial (tendencia y momentum) y modelos de ciclo con tasas y VIX"
+  },
+  "ideas": {
+    "momentum": {
+      "configurations": {
+        "annual_return": {
+          "0": 0.0379190677,
+          "1": 0.040272222,
+          "10": 0.0504176425,
+          "11": 0.0561520295,
+          "12": 0.0571375572,
+          "13": 0.0724878754,
+          "14": -0.0053896778,
+          "15": 0.0474451081,
+          "16": 0.010540024,
+          "17": 0.0326986681,
+          "2": 0.0556064899,
+          "3": 0.0923964976,
+          "4": 0.0452393415,
+          "5": 0.0335303377,
+          "6": 0.0715865639,
+          "7": 0.0635876641,
+          "8": 0.0371248305,
+          "9": 0.0289546818
+        },
+        "annual_volatility": {
+          "0": 0.1740111165,
+          "1": 0.1890552056,
+          "10": 0.1097581802,
+          "11": 0.1154679257,
+          "12": 0.1256136445,
+          "13": 0.128139301,
+          "14": 0.1388816645,
+          "15": 0.1343151696,
+          "16": 0.1585755372,
+          "17": 0.155547424,
+          "2": 0.2012266442,
+          "3": 0.2111882742,
+          "4": 0.1524008744,
+          "5": 0.1568685854,
+          "6": 0.1439138612,
+          "7": 0.1519046875,
+          "8": 0.1559860719,
+          "9": 0.1612138309
+        },
+        "asset": {
+          "0": "XLB",
+          "1": "XLB",
+          "10": "XLP",
+          "11": "XLP",
+          "12": "XLU",
+          "13": "XLU",
+          "14": "XLV",
+          "15": "XLV",
+          "16": "XLY",
+          "17": "XLY",
+          "2": "XLE",
+          "3": "XLE",
+          "4": "XLF",
+          "5": "XLF",
+          "6": "XLI",
+          "7": "XLI",
+          "8": "XLK",
+          "9": "XLK"
+        },
+        "avg_turnover": {
+          "0": 0.0487934235,
+          "1": 0.0175019889,
+          "10": 0.0490586051,
+          "11": 0.0161760806,
+          "12": 0.0342084328,
+          "13": 0.009811721,
+          "14": 0.0437549722,
+          "15": 0.0323521612,
+          "16": 0.0442853355,
+          "17": 0.0265181649,
+          "2": 0.0413683373,
+          "3": 0.015115354,
+          "4": 0.0421638823,
+          "5": 0.0265181649,
+          "6": 0.0469371519,
+          "7": 0.0275788915,
+          "8": 0.0413683373,
+          "9": 0.0169716256
+        },
+        "calmar": {
+          "0": 0.140912904,
+          "1": 0.099976513,
+          "10": 0.2319035593,
+          "11": 0.2393925214,
+          "12": 0.2010232785,
+          "13": 0.2799886654,
+          "14": -0.0085207022,
+          "15": 0.1328581433,
+          "16": 0.0188797908,
+          "17": 0.0680125168,
+          "2": 0.1464798283,
+          "3": 0.2525135325,
+          "4": 0.1200279941,
+          "5": 0.0926212952,
+          "6": 0.252322049,
+          "7": 0.2233022036,
+          "8": 0.0869289855,
+          "9": 0.0725448079
+        },
+        "exposure": {
+          "0": 0.6555290374,
+          "1": 0.7345531689,
+          "10": 0.7292495359,
+          "11": 0.7785733227,
+          "12": 0.6852293821,
+          "13": 0.7467515248,
+          "14": 0.6523468576,
+          "15": 0.7260673561,
+          "16": 0.6536727658,
+          "17": 0.7075046407,
+          "2": 0.7167859984,
+          "3": 0.7496685229,
+          "4": 0.6295412357,
+          "5": 0.6523468576,
+          "6": 0.6518164943,
+          "7": 0.7242110846,
+          "8": 0.6231768762,
+          "9": 0.6587112172
+        },
+        "hit_rate": {
+          "0": 0.5120904836,
+          "1": 0.5187299322,
+          "10": 0.5121350686,
+          "11": 0.5227502528,
+          "12": 0.5179312948,
+          "13": 0.5340388007,
+          "14": 0.4939048368,
+          "15": 0.5083958557,
+          "16": 0.5056885053,
+          "17": 0.5154525386,
+          "2": 0.5131247753,
+          "3": 0.5222416813,
+          "4": 0.5065199674,
+          "5": 0.5155378486,
+          "6": 0.5276796231,
+          "7": 0.5242544017,
+          "8": 0.518121911,
+          "9": 0.5317965024
+        },
+        "idea": {
+          "0": "momentum",
+          "1": "momentum",
+          "10": "momentum",
+          "11": "momentum",
+          "12": "momentum",
+          "13": "momentum",
+          "14": "momentum",
+          "15": "momentum",
+          "16": "momentum",
+          "17": "momentum",
+          "2": "momentum",
+          "3": "momentum",
+          "4": "momentum",
+          "5": "momentum",
+          "6": "momentum",
+          "7": "momentum",
+          "8": "momentum",
+          "9": "momentum"
+        },
+        "lookback": {
+          "0": 126,
+          "1": 252,
+          "10": 126,
+          "11": 252,
+          "12": 126,
+          "13": 252,
+          "14": 126,
+          "15": 252,
+          "16": 126,
+          "17": 252,
+          "2": 126,
+          "3": 252,
+          "4": 126,
+          "5": 252,
+          "6": 126,
+          "7": 252,
+          "8": 126,
+          "9": 252
+        },
+        "max_drawdown": {
+          "0": -0.2690957789,
+          "1": -0.4028168293,
+          "10": -0.2174077994,
+          "11": -0.2345605001,
+          "12": -0.2842335356,
+          "13": -0.2588957495,
+          "14": -0.632539167,
+          "15": -0.3571110278,
+          "16": -0.5582701705,
+          "17": -0.4807742694,
+          "2": -0.3796187543,
+          "3": -0.3659071129,
+          "4": -0.3769065859,
+          "5": -0.3620154265,
+          "6": -0.2837110915,
+          "7": -0.2847605757,
+          "8": -0.4270707904,
+          "9": -0.3991282441
+        },
+        "n_periods": {
+          "0": 3771,
+          "1": 3771,
+          "10": 3771,
+          "11": 3771,
+          "12": 3771,
+          "13": 3771,
+          "14": 3771,
+          "15": 3771,
+          "16": 3771,
+          "17": 3771,
+          "2": 3771,
+          "3": 3771,
+          "4": 3771,
+          "5": 3771,
+          "6": 3771,
+          "7": 3771,
+          "8": 3771,
+          "9": 3771
+        },
+        "periods_per_year": {
+          "0": 252,
+          "1": 252,
+          "10": 252,
+          "11": 252,
+          "12": 252,
+          "13": 252,
+          "14": 252,
+          "15": 252,
+          "16": 252,
+          "17": 252,
+          "2": 252,
+          "3": 252,
+          "4": 252,
+          "5": 252,
+          "6": 252,
+          "7": 252,
+          "8": 252,
+          "9": 252
+        },
+        "sharpe": {
+          "0": 0.3010545358,
+          "1": 0.3035064144,
+          "10": 0.5031133251,
+          "11": 0.5309813898,
+          "12": 0.5052993527,
+          "13": 0.6103487734,
+          "14": 0.0306941948,
+          "15": 0.4122240619,
+          "16": 0.1457917627,
+          "17": 0.2848420526,
+          "2": 0.3700453195,
+          "3": 0.5244819608,
+          "4": 0.366538708,
+          "5": 0.288861732,
+          "6": 0.5525197784,
+          "7": 0.4818878436,
+          "8": 0.3117580068,
+          "9": 0.2576439955
+        },
+        "skip": {
+          "0": 21,
+          "1": 21,
+          "10": 21,
+          "11": 21,
+          "12": 21,
+          "13": 21,
+          "14": 21,
+          "15": 21,
+          "16": 21,
+          "17": 21,
+          "2": 21,
+          "3": 21,
+          "4": 21,
+          "5": 21,
+          "6": 21,
+          "7": 21,
+          "8": 21,
+          "9": 21
+        },
+        "sortino": {
+          "0": 0.4207684661,
+          "1": 0.4266903975,
+          "10": 0.7133741007,
+          "11": 0.7509946822,
+          "12": 0.7075538753,
+          "13": 0.8602903322,
+          "14": 0.0421520565,
+          "15": 0.5915074559,
+          "16": 0.1995688055,
+          "17": 0.3953893449,
+          "2": 0.5101604596,
+          "3": 0.7377634342,
+          "4": 0.5256840396,
+          "5": 0.40486291,
+          "6": 0.7847063923,
+          "7": 0.684719308,
+          "8": 0.4416371214,
+          "9": 0.3637794439
+        }
+      },
+      "grid": {
+        "lookback": [
+          126,
+          252
+        ],
+        "skip": [
+          21
+        ]
+      },
+      "lookahead": {
+        "XLB": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLE": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLF": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLI": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLK": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLP": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLU": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLV": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLY": {
+          "combinations": 2,
+          "failed": []
+        }
+      },
+      "selection": {
+        "asset": {
+          "0": "XLB",
+          "1": "XLE",
+          "2": "XLF",
+          "3": "XLI",
+          "4": "XLK",
+          "5": "XLP",
+          "6": "XLU",
+          "7": "XLV",
+          "8": "XLY"
+        },
+        "best": {
+          "0": "idea=momentum, lookback=126, skip=21",
+          "1": "idea=momentum, lookback=252, skip=21",
+          "2": "idea=momentum, lookback=126, skip=21",
+          "3": "idea=momentum, lookback=126, skip=21",
+          "4": "idea=momentum, lookback=126, skip=21",
+          "5": "idea=momentum, lookback=252, skip=21",
+          "6": "idea=momentum, lookback=252, skip=21",
+          "7": "idea=momentum, lookback=252, skip=21",
+          "8": "idea=momentum, lookback=252, skip=21"
+        },
+        "dsr": {
+          "0": 0.3684401478,
+          "1": 0.4577380818,
+          "2": 0.4404383589,
+          "3": 0.7735063987,
+          "4": 0.7255886534,
+          "5": 0.595975915,
+          "6": 0.5313190671,
+          "7": 0.1886253643,
+          "8": 0.1573234191
+        },
+        "eval_end": {
+          "0": "2014-12-31T00:00:00",
+          "1": "2014-12-31T00:00:00",
+          "2": "2014-12-31T00:00:00",
+          "3": "2014-12-31T00:00:00",
+          "4": "2014-12-31T00:00:00",
+          "5": "2014-12-31T00:00:00",
+          "6": "2014-12-31T00:00:00",
+          "7": "2014-12-31T00:00:00",
+          "8": "2014-12-31T00:00:00"
+        },
+        "eval_start": {
+          "0": "2000-01-05T00:00:00",
+          "1": "2000-01-05T00:00:00",
+          "2": "2000-01-05T00:00:00",
+          "3": "2000-01-05T00:00:00",
+          "4": "2000-01-05T00:00:00",
+          "5": "2000-01-05T00:00:00",
+          "6": "2000-01-05T00:00:00",
+          "7": "2000-01-05T00:00:00",
+          "8": "2000-01-05T00:00:00"
+        },
+        "exposure": {
+          "0": 0.6555290374,
+          "1": 0.7496685229,
+          "2": 0.6295412357,
+          "3": 0.6518164943,
+          "4": 0.6231768762,
+          "5": 0.7785733227,
+          "6": 0.7467515248,
+          "7": 0.7260673561,
+          "8": 0.7075046407
+        },
+        "ir_vs_bh": {
+          "0": -0.1521227157,
+          "1": -0.0127361484,
+          "2": -0.0243481735,
+          "3": 0.0479412014,
+          "4": 0.1578503507,
+          "5": -0.0640709593,
+          "6": 0.0178717337,
+          "7": -0.1038228232,
+          "8": -0.210494405
+        },
+        "n_effective": {
+          "0": 1.6750215122,
+          "1": 1.5181230964,
+          "2": 1.2423006988,
+          "3": 1.4941994936,
+          "4": 1.9449005821,
+          "5": 1.4965365891,
+          "6": 1.3583557243,
+          "7": 2.3331427303,
+          "8": 1.5762459521
+        },
+        "n_trials": {
+          "0": 8,
+          "1": 8,
+          "2": 9,
+          "3": 8,
+          "4": 9,
+          "5": 8,
+          "6": 9,
+          "7": 8,
+          "8": 8
+        },
+        "psr": {
+          "0": 0.877261802,
+          "1": 0.9779976021,
+          "2": 0.921781969,
+          "3": 0.9833003748,
+          "4": 0.8857024002,
+          "5": 0.979429267,
+          "6": 0.9905121494,
+          "7": 0.9448599286,
+          "8": 0.863773338
+        },
+        "sharpe": {
+          "0": 0.3010545358,
+          "1": 0.5244819608,
+          "2": 0.366538708,
+          "3": 0.5525197784,
+          "4": 0.3117580068,
+          "5": 0.5309813898,
+          "6": 0.6103487734,
+          "7": 0.4122240619,
+          "8": 0.2848420526
+        },
+        "significant": {
+          "0": false,
+          "1": false,
+          "2": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "6": false,
+          "7": false,
+          "8": false
+        },
+        "spa_p": {
+          "0": 0.654,
+          "1": 0.416,
+          "2": 0.304,
+          "3": 0.304,
+          "4": 0.882,
+          "5": 0.532,
+          "6": 0.194,
+          "7": 0.758,
+          "8": 0.696
+        },
+        "spa_p_holm": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 1.0,
+          "7": 1.0,
+          "8": 1.0
+        },
+        "timing_ir": {
+          "0": -0.0060872105,
+          "1": 0.1693162985,
+          "2": 0.086056334,
+          "3": 0.2700595833,
+          "4": 0.2666650538,
+          "5": 0.106633101,
+          "6": 0.190225585,
+          "7": 0.0558262947,
+          "8": -0.100764548
+        }
+      },
+      "signal": "tsmom",
+      "status": "evaluada"
+    },
+    "momentum_vol": {
+      "configurations": {
+        "annual_return": {
+          "0": 0.0240445089,
+          "1": 0.0339068319,
+          "10": 0.0494513517,
+          "11": 0.0544487702,
+          "12": 0.0560001967,
+          "13": 0.0649902473,
+          "14": 0.030725898,
+          "15": 0.0421342192,
+          "16": 0.0238965944,
+          "17": 0.0381056578,
+          "2": 0.05180944,
+          "3": 0.0739925669,
+          "4": 0.0277073231,
+          "5": 0.0394864728,
+          "6": 0.0411724152,
+          "7": 0.056153845,
+          "8": 0.0249632155,
+          "9": 0.0334471911
+        },
+        "annual_volatility": {
+          "0": 0.0905190805,
+          "1": 0.1305103695,
+          "10": 0.0862930816,
+          "11": 0.1029304033,
+          "12": 0.0881547805,
+          "13": 0.1136291087,
+          "14": 0.0881854836,
+          "15": 0.1128820828,
+          "16": 0.0879195249,
+          "17": 0.1174316089,
+          "2": 0.0906079104,
+          "3": 0.1319779693,
+          "4": 0.0846531205,
+          "5": 0.1135814986,
+          "6": 0.0882671501,
+          "7": 0.1180570467,
+          "8": 0.0848834403,
+          "9": 0.114697778
+        },
+        "asset": {
+          "0": "XLB",
+          "1": "XLB",
+          "10": "XLP",
+          "11": "XLP",
+          "12": "XLU",
+          "13": "XLU",
+          "14": "XLV",
+          "15": "XLV",
+          "16": "XLY",
+          "17": "XLY",
+          "2": "XLE",
+          "3": "XLE",
+          "4": "XLF",
+          "5": "XLF",
+          "6": "XLI",
+          "7": "XLI",
+          "8": "XLK",
+          "9": "XLK"
+        },
+        "avg_turnover": {
+          "0": 0.01986813,
+          "1": 0.0237166372,
+          "10": 0.0208043613,
+          "11": 0.0179391105,
+          "12": 0.0180812322,
+          "13": 0.0142728148,
+          "14": 0.0336318575,
+          "15": 0.0326414863,
+          "16": 0.0263162566,
+          "17": 0.0248982065,
+          "2": 0.0180772295,
+          "3": 0.0222447505,
+          "4": 0.02394331,
+          "5": 0.0250077363,
+          "6": 0.0260086884,
+          "7": 0.0261432924,
+          "8": 0.0235556581,
+          "9": 0.0221391709
+        },
+        "calmar": {
+          "0": 0.1321557369,
+          "1": 0.1278531919,
+          "10": 0.3086182184,
+          "11": 0.2432166222,
+          "12": 0.3232812289,
+          "13": 0.2781837347,
+          "14": 0.1091338333,
+          "15": 0.1261285037,
+          "16": 0.0910487397,
+          "17": 0.117634375,
+          "2": 0.3349167505,
+          "3": 0.3771685283,
+          "4": 0.1482910245,
+          "5": 0.1668863361,
+          "6": 0.2756591675,
+          "7": 0.2607581622,
+          "8": 0.1635576497,
+          "9": 0.1587698909
+        },
+        "exposure": {
+          "0": 0.4096867485,
+          "1": 0.5816631291,
+          "10": 0.6710190334,
+          "11": 0.7474896275,
+          "12": 0.5647157261,
+          "13": 0.6952085713,
+          "14": 0.5489672239,
+          "15": 0.6686695131,
+          "16": 0.4780317185,
+          "17": 0.6192061189,
+          "2": 0.3731955452,
+          "3": 0.5352363695,
+          "4": 0.437535236,
+          "5": 0.563809923,
+          "6": 0.4946819702,
+          "7": 0.6368755026,
+          "8": 0.4328352644,
+          "9": 0.5652725732
+        },
+        "hit_rate": {
+          "0": 0.5187299322,
+          "1": 0.5187299322,
+          "10": 0.5227502528,
+          "11": 0.5227502528,
+          "12": 0.5340388007,
+          "13": 0.5340388007,
+          "14": 0.5083958557,
+          "15": 0.5083958557,
+          "16": 0.5154525386,
+          "17": 0.5154525386,
+          "2": 0.5218914186,
+          "3": 0.5218914186,
+          "4": 0.5155378486,
+          "5": 0.5155378486,
+          "6": 0.5242544017,
+          "7": 0.5242544017,
+          "8": 0.5317965024,
+          "9": 0.5317965024
+        },
+        "idea": {
+          "0": "momentum_vol",
+          "1": "momentum_vol",
+          "10": "momentum_vol",
+          "11": "momentum_vol",
+          "12": "momentum_vol",
+          "13": "momentum_vol",
+          "14": "momentum_vol",
+          "15": "momentum_vol",
+          "16": "momentum_vol",
+          "17": "momentum_vol",
+          "2": "momentum_vol",
+          "3": "momentum_vol",
+          "4": "momentum_vol",
+          "5": "momentum_vol",
+          "6": "momentum_vol",
+          "7": "momentum_vol",
+          "8": "momentum_vol",
+          "9": "momentum_vol"
+        },
+        "lookback": {
+          "0": 252,
+          "1": 252,
+          "10": 252,
+          "11": 252,
+          "12": 252,
+          "13": 252,
+          "14": 252,
+          "15": 252,
+          "16": 252,
+          "17": 252,
+          "2": 252,
+          "3": 252,
+          "4": 252,
+          "5": 252,
+          "6": 252,
+          "7": 252,
+          "8": 252,
+          "9": 252
+        },
+        "max_drawdown": {
+          "0": -0.1819407124,
+          "1": -0.2652012934,
+          "10": -0.1602347133,
+          "11": -0.2238694449,
+          "12": -0.1732243994,
+          "13": -0.2336234624,
+          "14": -0.2815432855,
+          "15": -0.3340578691,
+          "16": -0.2624593651,
+          "17": -0.3239330151,
+          "2": -0.154693487,
+          "3": -0.1961790589,
+          "4": -0.1868442356,
+          "5": -0.2366069848,
+          "6": -0.1493598618,
+          "7": -0.2153483692,
+          "8": -0.1526264013,
+          "9": -0.2106645718
+        },
+        "n_periods": {
+          "0": 3771,
+          "1": 3771,
+          "10": 3771,
+          "11": 3771,
+          "12": 3771,
+          "13": 3771,
+          "14": 3771,
+          "15": 3771,
+          "16": 3771,
+          "17": 3771,
+          "2": 3771,
+          "3": 3771,
+          "4": 3771,
+          "5": 3771,
+          "6": 3771,
+          "7": 3771,
+          "8": 3771,
+          "9": 3771
+        },
+        "periods_per_year": {
+          "0": 252,
+          "1": 252,
+          "10": 252,
+          "11": 252,
+          "12": 252,
+          "13": 252,
+          "14": 252,
+          "15": 252,
+          "16": 252,
+          "17": 252,
+          "2": 252,
+          "3": 252,
+          "4": 252,
+          "5": 252,
+          "6": 252,
+          "7": 252,
+          "8": 252,
+          "9": 252
+        },
+        "sharpe": {
+          "0": 0.307813928,
+          "1": 0.3208761721,
+          "10": 0.6025549671,
+          "11": 0.5666468901,
+          "12": 0.6622875998,
+          "13": 0.6111012675,
+          "14": 0.3872796643,
+          "15": 0.4220217931,
+          "16": 0.3126325723,
+          "17": 0.3772818895,
+          "2": 0.6028696137,
+          "3": 0.6070082376,
+          "4": 0.3652421727,
+          "5": 0.3978393643,
+          "6": 0.5013126802,
+          "7": 0.5219036496,
+          "8": 0.332969618,
+          "9": 0.3442552467
+        },
+        "skip": {
+          "0": 21,
+          "1": 21,
+          "10": 21,
+          "11": 21,
+          "12": 21,
+          "13": 21,
+          "14": 21,
+          "15": 21,
+          "16": 21,
+          "17": 21,
+          "2": 21,
+          "3": 21,
+          "4": 21,
+          "5": 21,
+          "6": 21,
+          "7": 21,
+          "8": 21,
+          "9": 21
+        },
+        "sortino": {
+          "0": 0.4251882678,
+          "1": 0.4448011443,
+          "10": 0.8603259652,
+          "11": 0.8038700237,
+          "12": 0.9298286462,
+          "13": 0.8544096743,
+          "14": 0.5496328915,
+          "15": 0.6037722329,
+          "16": 0.4317869216,
+          "17": 0.5262356717,
+          "2": 0.8521054166,
+          "3": 0.8591727612,
+          "4": 0.5107928467,
+          "5": 0.5602876379,
+          "6": 0.7027639556,
+          "7": 0.7363186935,
+          "8": 0.462974934,
+          "9": 0.4813631412
+        },
+        "target": {
+          "0": 0.1,
+          "1": 0.15,
+          "10": 0.1,
+          "11": 0.15,
+          "12": 0.1,
+          "13": 0.15,
+          "14": 0.1,
+          "15": 0.15,
+          "16": 0.1,
+          "17": 0.15,
+          "2": 0.1,
+          "3": 0.15,
+          "4": 0.1,
+          "5": 0.15,
+          "6": 0.1,
+          "7": 0.15,
+          "8": 0.1,
+          "9": 0.15
+        }
+      },
+      "grid": {
+        "lookback": [
+          252
+        ],
+        "skip": [
+          21
+        ],
+        "target": [
+          0.1,
+          0.15
+        ]
+      },
+      "lookahead": {
+        "XLB": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLE": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLF": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLI": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLK": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLP": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLU": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLV": {
+          "combinations": 2,
+          "failed": []
+        },
+        "XLY": {
+          "combinations": 2,
+          "failed": []
+        }
+      },
+      "selection": {
+        "asset": {
+          "0": "XLB",
+          "1": "XLE",
+          "2": "XLF",
+          "3": "XLI",
+          "4": "XLK",
+          "5": "XLP",
+          "6": "XLU",
+          "7": "XLV",
+          "8": "XLY"
+        },
+        "best": {
+          "0": "idea=momentum_vol, lookback=252, skip=21, target=0.15",
+          "1": "idea=momentum_vol, lookback=252, skip=21, target=0.15",
+          "2": "idea=momentum_vol, lookback=252, skip=21, target=0.15",
+          "3": "idea=momentum_vol, lookback=252, skip=21, target=0.15",
+          "4": "idea=momentum_vol, lookback=252, skip=21, target=0.15",
+          "5": "idea=momentum_vol, lookback=252, skip=21, target=0.15",
+          "6": "idea=momentum_vol, lookback=252, skip=21, target=0.1",
+          "7": "idea=momentum_vol, lookback=252, skip=21, target=0.15",
+          "8": "idea=momentum_vol, lookback=252, skip=21, target=0.15"
+        },
+        "dsr": {
+          "0": 0.3081856428,
+          "1": 0.4682048789,
+          "2": 0.399291489,
+          "3": 0.6072624062,
+          "4": 0.693465309,
+          "5": 0.585502771,
+          "6": 0.5151711696,
+          "7": 0.1528308066,
+          "8": 0.2053036572
+        },
+        "eval_end": {
+          "0": "2014-12-31T00:00:00",
+          "1": "2014-12-31T00:00:00",
+          "2": "2014-12-31T00:00:00",
+          "3": "2014-12-31T00:00:00",
+          "4": "2014-12-31T00:00:00",
+          "5": "2014-12-31T00:00:00",
+          "6": "2014-12-31T00:00:00",
+          "7": "2014-12-31T00:00:00",
+          "8": "2014-12-31T00:00:00"
+        },
+        "eval_start": {
+          "0": "2000-01-05T00:00:00",
+          "1": "2000-01-05T00:00:00",
+          "2": "2000-01-05T00:00:00",
+          "3": "2000-01-05T00:00:00",
+          "4": "2000-01-05T00:00:00",
+          "5": "2000-01-05T00:00:00",
+          "6": "2000-01-05T00:00:00",
+          "7": "2000-01-05T00:00:00",
+          "8": "2000-01-05T00:00:00"
+        },
+        "exposure": {
+          "0": 0.5816631291,
+          "1": 0.5352363695,
+          "2": 0.563809923,
+          "3": 0.6368755026,
+          "4": 0.5652725732,
+          "5": 0.7474896275,
+          "6": 0.5647157261,
+          "7": 0.6686695131,
+          "8": 0.6192061189
+        },
+        "ir_vs_bh": {
+          "0": -0.2067096373,
+          "1": -0.1549696566,
+          "2": -0.0606320998,
+          "3": -0.0564375443,
+          "4": 0.1135795533,
+          "5": -0.0914937371,
+          "6": -0.1108547914,
+          "7": -0.1579949268,
+          "8": -0.2006556679
+        },
+        "n_effective": {
+          "0": 1.6750215122,
+          "1": 1.5181230964,
+          "2": 1.2423006988,
+          "3": 1.4941994936,
+          "4": 1.9449005821,
+          "5": 1.4965365891,
+          "6": 1.3583557243,
+          "7": 2.3331427303,
+          "8": 1.5762459521
+        },
+        "n_trials": {
+          "0": 8,
+          "1": 8,
+          "2": 9,
+          "3": 8,
+          "4": 9,
+          "5": 8,
+          "6": 9,
+          "7": 8,
+          "8": 8
+        },
+        "psr": {
+          "0": 0.8918442645,
+          "1": 0.9902026585,
+          "2": 0.9373089899,
+          "3": 0.9777493542,
+          "4": 0.9078896002,
+          "5": 0.9853499699,
+          "6": 0.99443766,
+          "7": 0.9489474755,
+          "8": 0.9268873296
+        },
+        "sharpe": {
+          "0": 0.3208761721,
+          "1": 0.6070082376,
+          "2": 0.3978393643,
+          "3": 0.5219036496,
+          "4": 0.3442552467,
+          "5": 0.5666468901,
+          "6": 0.6622875998,
+          "7": 0.4220217931,
+          "8": 0.3772818895
+        },
+        "significant": {
+          "0": false,
+          "1": false,
+          "2": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "6": false,
+          "7": false,
+          "8": false
+        },
+        "spa_p": {
+          "0": 0.654,
+          "1": 0.416,
+          "2": 0.304,
+          "3": 0.304,
+          "4": 0.882,
+          "5": 0.532,
+          "6": 0.194,
+          "7": 0.758,
+          "8": 0.696
+        },
+        "spa_p_holm": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 1.0,
+          "7": 1.0,
+          "8": 1.0
+        },
+        "timing_ir": {
+          "0": -0.0486818349,
+          "1": 0.1761394855,
+          "2": 0.0588057719,
+          "3": 0.1462262488,
+          "4": 0.2421931087,
+          "5": 0.0996532678,
+          "6": 0.1796701963,
+          "7": 0.0192943268,
+          "8": -0.0535942361
+        }
+      },
+      "signal": "tsmom_vol_target",
+      "status": "evaluada"
+    },
+    "tendencia": {
+      "configurations": {
+        "annual_return": {
+          "0": 0.0255544131,
+          "1": 0.0533079364,
+          "10": 0.0711060082,
+          "11": 0.0239955926,
+          "12": 0.0625424154,
+          "13": 0.0567257193,
+          "14": 0.0538757799,
+          "15": 0.0568197246,
+          "16": 0.0550301608,
+          "17": 0.0584703407,
+          "18": 0.0502502806,
+          "19": 0.0662111888,
+          "2": 0.0289819182,
+          "20": 0.0458131596,
+          "21": 0.047126477,
+          "22": 0.0499473096,
+          "23": 0.0424917639,
+          "24": 0.0654734279,
+          "25": 0.0857066102,
+          "26": 0.0708168796,
+          "27": 0.0892630675,
+          "28": -0.0006973178,
+          "29": 0.0275642783,
+          "3": 0.0380911079,
+          "30": 0.0110291339,
+          "31": 0.0286004715,
+          "32": 0.0120502491,
+          "33": 0.0096205467,
+          "34": 0.0360117317,
+          "35": 0.047726431,
+          "4": 0.0569800947,
+          "5": 0.0732235305,
+          "6": 0.0452856337,
+          "7": 0.0336746622,
+          "8": 0.0291908874,
+          "9": 0.0556619572
+        },
+        "annual_volatility": {
+          "0": 0.1702688548,
+          "1": 0.1732685984,
+          "10": 0.1556496629,
+          "11": 0.1528374635,
+          "12": 0.1376327058,
+          "13": 0.1417340212,
+          "14": 0.1435544406,
+          "15": 0.1446329505,
+          "16": 0.1525515138,
+          "17": 0.1502986297,
+          "18": 0.1569925155,
+          "19": 0.1534942838,
+          "2": 0.1748339551,
+          "20": 0.1074703872,
+          "21": 0.1091990056,
+          "22": 0.1065796374,
+          "23": 0.1085598015,
+          "24": 0.1250400133,
+          "25": 0.1298826232,
+          "26": 0.1279799635,
+          "27": 0.1279434653,
+          "28": 0.1367786937,
+          "29": 0.1282499068,
+          "3": 0.1794063097,
+          "30": 0.1346091555,
+          "31": 0.1315069381,
+          "32": 0.1440708101,
+          "33": 0.1459703949,
+          "34": 0.1492139952,
+          "35": 0.1486846111,
+          "4": 0.1934217031,
+          "5": 0.1975202022,
+          "6": 0.205418845,
+          "7": 0.215502399,
+          "8": 0.155800429,
+          "9": 0.1508118486
+        },
+        "asset": {
+          "0": "XLB",
+          "1": "XLB",
+          "10": "XLF",
+          "11": "XLF",
+          "12": "XLI",
+          "13": "XLI",
+          "14": "XLI",
+          "15": "XLI",
+          "16": "XLK",
+          "17": "XLK",
+          "18": "XLK",
+          "19": "XLK",
+          "2": "XLB",
+          "20": "XLP",
+          "21": "XLP",
+          "22": "XLP",
+          "23": "XLP",
+          "24": "XLU",
+          "25": "XLU",
+          "26": "XLU",
+          "27": "XLU",
+          "28": "XLV",
+          "29": "XLV",
+          "3": "XLB",
+          "30": "XLV",
+          "31": "XLV",
+          "32": "XLY",
+          "33": "XLY",
+          "34": "XLY",
+          "35": "XLY",
+          "4": "XLE",
+          "5": "XLE",
+          "6": "XLE",
+          "7": "XLE",
+          "8": "XLF",
+          "9": "XLF"
+        },
+        "avg_turnover": {
+          "0": 0.0073221757,
+          "1": 0.0062761506,
+          "10": 0.0070606695,
+          "11": 0.0044456067,
+          "12": 0.0073221757,
+          "13": 0.0062761506,
+          "14": 0.0067991632,
+          "15": 0.004707113,
+          "16": 0.0062761506,
+          "17": 0.0052301255,
+          "18": 0.0062761506,
+          "19": 0.0041841004,
+          "2": 0.0070606695,
+          "20": 0.0054916318,
+          "21": 0.0049686192,
+          "22": 0.0049686192,
+          "23": 0.0039225941,
+          "24": 0.0067991632,
+          "25": 0.0041841004,
+          "26": 0.0062761506,
+          "27": 0.0026150628,
+          "28": 0.0081066946,
+          "29": 0.0054916318,
+          "3": 0.0052301255,
+          "30": 0.0086297071,
+          "31": 0.0054916318,
+          "32": 0.0070606695,
+          "33": 0.0060146444,
+          "34": 0.0070606695,
+          "35": 0.0049686192,
+          "4": 0.0070606695,
+          "5": 0.0044456067,
+          "6": 0.0060146444,
+          "7": 0.0039225941,
+          "8": 0.0065376569,
+          "9": 0.0044456067
+        },
+        "calmar": {
+          "0": 0.0599582727,
+          "1": 0.1515604151,
+          "10": 0.1612136021,
+          "11": 0.053021683,
+          "12": 0.2194398681,
+          "13": 0.1966083456,
+          "14": 0.13480897,
+          "15": 0.1677950345,
+          "16": 0.1455057964,
+          "17": 0.1813500593,
+          "18": 0.1155237869,
+          "19": 0.1838997024,
+          "2": 0.080389772,
+          "20": 0.1662804181,
+          "21": 0.1719765362,
+          "22": 0.2514477732,
+          "23": 0.1717028927,
+          "24": 0.2535813486,
+          "25": 0.3945151251,
+          "26": 0.2781655925,
+          "27": 0.5822516998,
+          "28": -0.0010432126,
+          "29": 0.0563470855,
+          "3": 0.1024773155,
+          "30": 0.0197357911,
+          "31": 0.0652412739,
+          "32": 0.0201185458,
+          "33": 0.0149932778,
+          "34": 0.0826862369,
+          "35": 0.1183386716,
+          "4": 0.1538464487,
+          "5": 0.2272897408,
+          "6": 0.1068260447,
+          "7": 0.0609047791,
+          "8": 0.072254461,
+          "9": 0.1793800872
+        },
+        "exposure": {
+          "0": 0.6623953975,
+          "1": 0.6851464435,
+          "10": 0.6265690377,
+          "11": 0.625,
+          "12": 0.6720711297,
+          "13": 0.6880230126,
+          "14": 0.6467050209,
+          "15": 0.6673640167,
+          "16": 0.6236924686,
+          "17": 0.6344142259,
+          "18": 0.6270920502,
+          "19": 0.6307531381,
+          "2": 0.6555962343,
+          "20": 0.7382322176,
+          "21": 0.7531380753,
+          "22": 0.7230648536,
+          "23": 0.7468619247,
+          "24": 0.6969142259,
+          "25": 0.7445083682,
+          "26": 0.695083682,
+          "27": 0.7353556485,
+          "28": 0.6613493724,
+          "29": 0.6657949791,
+          "3": 0.6880230126,
+          "30": 0.6362447699,
+          "31": 0.6705020921,
+          "32": 0.6430439331,
+          "33": 0.6702405858,
+          "34": 0.6257845188,
+          "35": 0.6422594142,
+          "4": 0.7358786611,
+          "5": 0.7361401674,
+          "6": 0.7277719665,
+          "7": 0.75,
+          "8": 0.6425209205,
+          "9": 0.6383368201
+        },
+        "fast": {
+          "0": 50,
+          "1": 50,
+          "10": 100,
+          "11": 100,
+          "12": 50,
+          "13": 50,
+          "14": 100,
+          "15": 100,
+          "16": 50,
+          "17": 50,
+          "18": 100,
+          "19": 100,
+          "2": 100,
+          "20": 50,
+          "21": 50,
+          "22": 100,
+          "23": 100,
+          "24": 50,
+          "25": 50,
+          "26": 100,
+          "27": 100,
+          "28": 50,
+          "29": 50,
+          "3": 100,
+          "30": 100,
+          "31": 100,
+          "32": 50,
+          "33": 50,
+          "34": 100,
+          "35": 100,
+          "4": 50,
+          "5": 50,
+          "6": 100,
+          "7": 100,
+          "8": 50,
+          "9": 50
+        },
+        "hit_rate": {
+          "0": 0.5265017668,
+          "1": 0.5300151976,
+          "10": 0.5248962656,
+          "11": 0.5193830763,
+          "12": 0.5410216718,
+          "13": 0.5349981082,
+          "14": 0.5382139984,
+          "15": 0.5357282312,
+          "16": 0.5369211514,
+          "17": 0.5406403941,
+          "18": 0.5369294606,
+          "19": 0.5400826446,
+          "2": 0.526984127,
+          "20": 0.5285815102,
+          "21": 0.5311418685,
+          "22": 0.5297297297,
+          "23": 0.5275837989,
+          "24": 0.5336071695,
+          "25": 0.5345008757,
+          "26": 0.5299625468,
+          "27": 0.5331913383,
+          "28": 0.5060903733,
+          "29": 0.5131012906,
+          "3": 0.5251798561,
+          "30": 0.5102040816,
+          "31": 0.5157281553,
+          "32": 0.5200161747,
+          "33": 0.5196116505,
+          "34": 0.5251350229,
+          "35": 0.5283860503,
+          "4": 0.5238769013,
+          "5": 0.5263903649,
+          "6": 0.5214745884,
+          "7": 0.5213913043,
+          "8": 0.5206477733,
+          "9": 0.5236734694
+        },
+        "idea": {
+          "0": "tendencia",
+          "1": "tendencia",
+          "10": "tendencia",
+          "11": "tendencia",
+          "12": "tendencia",
+          "13": "tendencia",
+          "14": "tendencia",
+          "15": "tendencia",
+          "16": "tendencia",
+          "17": "tendencia",
+          "18": "tendencia",
+          "19": "tendencia",
+          "2": "tendencia",
+          "20": "tendencia",
+          "21": "tendencia",
+          "22": "tendencia",
+          "23": "tendencia",
+          "24": "tendencia",
+          "25": "tendencia",
+          "26": "tendencia",
+          "27": "tendencia",
+          "28": "tendencia",
+          "29": "tendencia",
+          "3": "tendencia",
+          "30": "tendencia",
+          "31": "tendencia",
+          "32": "tendencia",
+          "33": "tendencia",
+          "34": "tendencia",
+          "35": "tendencia",
+          "4": "tendencia",
+          "5": "tendencia",
+          "6": "tendencia",
+          "7": "tendencia",
+          "8": "tendencia",
+          "9": "tendencia"
+        },
+        "max_drawdown": {
+          "0": -0.4262032904,
+          "1": -0.3517273052,
+          "10": -0.4410670522,
+          "11": -0.4525618808,
+          "12": -0.2850093557,
+          "13": -0.2885214211,
+          "14": -0.399645364,
+          "15": -0.3386257813,
+          "16": -0.3781990968,
+          "17": -0.3224169926,
+          "18": -0.4349777822,
+          "19": -0.3600396736,
+          "2": -0.3605174824,
+          "20": -0.2755174668,
+          "21": -0.2740285277,
+          "22": -0.198638902,
+          "23": -0.2474726155,
+          "24": -0.2581949668,
+          "25": -0.2172454355,
+          "26": -0.2545853317,
+          "27": -0.1533066671,
+          "28": -0.6684330988,
+          "29": -0.4891872934,
+          "3": -0.3717028276,
+          "30": -0.558839208,
+          "31": -0.438380029,
+          "32": -0.5989622318,
+          "33": -0.6416573358,
+          "34": -0.4355226831,
+          "35": -0.4033037583,
+          "4": -0.3703699058,
+          "5": -0.3221594177,
+          "6": -0.4239194085,
+          "7": -0.5529067292,
+          "8": -0.4040011778,
+          "9": -0.3103017625
+        },
+        "n_periods": {
+          "0": 3824,
+          "1": 3824,
+          "10": 3824,
+          "11": 3824,
+          "12": 3824,
+          "13": 3824,
+          "14": 3824,
+          "15": 3824,
+          "16": 3824,
+          "17": 3824,
+          "18": 3824,
+          "19": 3824,
+          "2": 3824,
+          "20": 3824,
+          "21": 3824,
+          "22": 3824,
+          "23": 3824,
+          "24": 3824,
+          "25": 3824,
+          "26": 3824,
+          "27": 3824,
+          "28": 3824,
+          "29": 3824,
+          "3": 3824,
+          "30": 3824,
+          "31": 3824,
+          "32": 3824,
+          "33": 3824,
+          "34": 3824,
+          "35": 3824,
+          "4": 3824,
+          "5": 3824,
+          "6": 3824,
+          "7": 3824,
+          "8": 3824,
+          "9": 3824
+        },
+        "periods_per_year": {
+          "0": 252,
+          "1": 252,
+          "10": 252,
+          "11": 252,
+          "12": 252,
+          "13": 252,
+          "14": 252,
+          "15": 252,
+          "16": 252,
+          "17": 252,
+          "18": 252,
+          "19": 252,
+          "2": 252,
+          "20": 252,
+          "21": 252,
+          "22": 252,
+          "23": 252,
+          "24": 252,
+          "25": 252,
+          "26": 252,
+          "27": 252,
+          "28": 252,
+          "29": 252,
+          "3": 252,
+          "30": 252,
+          "31": 252,
+          "32": 252,
+          "33": 252,
+          "34": 252,
+          "35": 252,
+          "4": 252,
+          "5": 252,
+          "6": 252,
+          "7": 252,
+          "8": 252,
+          "9": 252
+        },
+        "sharpe": {
+          "0": 0.2334792437,
+          "1": 0.3865715687,
+          "10": 0.5190974847,
+          "11": 0.23160625,
+          "12": 0.5097228068,
+          "13": 0.4603265529,
+          "14": 0.4375811402,
+          "15": 0.4545786164,
+          "16": 0.4274787191,
+          "17": 0.4533636913,
+          "18": 0.3909437161,
+          "19": 0.4945105838,
+          "2": 0.2510583148,
+          "20": 0.4706950556,
+          "21": 0.4764589483,
+          "22": 0.5107642913,
+          "23": 0.4377537702,
+          "24": 0.5698499548,
+          "25": 0.6981984275,
+          "26": 0.5987593171,
+          "27": 0.7323907245,
+          "28": 0.0632563227,
+          "29": 0.2761611249,
+          "3": 0.2982880764,
+          "30": 0.1487983797,
+          "31": 0.280366415,
+          "32": 0.1553813373,
+          "33": 0.1388192671,
+          "34": 0.3118817749,
+          "35": 0.3880920762,
+          "4": 0.3835134738,
+          "5": 0.4568548331,
+          "6": 0.3188559538,
+          "7": 0.2623127793,
+          "8": 0.2626728508,
+          "9": 0.4346027126
+        },
+        "slow": {
+          "0": 150,
+          "1": 200,
+          "10": 150,
+          "11": 200,
+          "12": 150,
+          "13": 200,
+          "14": 150,
+          "15": 200,
+          "16": 150,
+          "17": 200,
+          "18": 150,
+          "19": 200,
+          "2": 150,
+          "20": 150,
+          "21": 200,
+          "22": 150,
+          "23": 200,
+          "24": 150,
+          "25": 200,
+          "26": 150,
+          "27": 200,
+          "28": 150,
+          "29": 200,
+          "3": 200,
+          "30": 150,
+          "31": 200,
+          "32": 150,
+          "33": 200,
+          "34": 150,
+          "35": 200,
+          "4": 150,
+          "5": 200,
+          "6": 150,
+          "7": 200,
+          "8": 150,
+          "9": 200
+        },
+        "sortino": {
+          "0": 0.3246822764,
+          "1": 0.5410885626,
+          "10": 0.7575881805,
+          "11": 0.3272650875,
+          "12": 0.7170752677,
+          "13": 0.6451560124,
+          "14": 0.6086319618,
+          "15": 0.6380966784,
+          "16": 0.6086065154,
+          "17": 0.6380142148,
+          "18": 0.5502840214,
+          "19": 0.7050449582,
+          "2": 0.347688796,
+          "20": 0.6561285773,
+          "21": 0.6628268537,
+          "22": 0.7124979323,
+          "23": 0.6083602917,
+          "24": 0.8009482475,
+          "25": 0.9976100179,
+          "26": 0.8485831578,
+          "27": 1.0510368586,
+          "28": 0.0881962425,
+          "29": 0.3898597697,
+          "3": 0.4162364763,
+          "30": 0.2080432621,
+          "31": 0.3895875291,
+          "32": 0.2132626935,
+          "33": 0.1896433605,
+          "34": 0.4359408536,
+          "35": 0.5444455136,
+          "4": 0.5328470528,
+          "5": 0.6371584335,
+          "6": 0.4379565158,
+          "7": 0.3558423799,
+          "8": 0.3692758632,
+          "9": 0.6253070167
+        }
+      },
+      "grid": {
+        "fast": [
+          50,
+          100
+        ],
+        "slow": [
+          150,
+          200
+        ]
+      },
+      "lookahead": {
+        "XLB": {
+          "combinations": 4,
+          "failed": []
+        },
+        "XLE": {
+          "combinations": 4,
+          "failed": []
+        },
+        "XLF": {
+          "combinations": 4,
+          "failed": []
+        },
+        "XLI": {
+          "combinations": 4,
+          "failed": []
+        },
+        "XLK": {
+          "combinations": 4,
+          "failed": []
+        },
+        "XLP": {
+          "combinations": 4,
+          "failed": []
+        },
+        "XLU": {
+          "combinations": 4,
+          "failed": []
+        },
+        "XLV": {
+          "combinations": 4,
+          "failed": []
+        },
+        "XLY": {
+          "combinations": 4,
+          "failed": []
+        }
+      },
+      "selection": {
+        "asset": {
+          "0": "XLB",
+          "1": "XLE",
+          "2": "XLF",
+          "3": "XLI",
+          "4": "XLK",
+          "5": "XLP",
+          "6": "XLU",
+          "7": "XLV",
+          "8": "XLY"
+        },
+        "best": {
+          "0": "idea=tendencia, fast=50, slow=200",
+          "1": "idea=tendencia, fast=50, slow=200",
+          "2": "idea=tendencia, fast=100, slow=150",
+          "3": "idea=tendencia, fast=50, slow=150",
+          "4": "idea=tendencia, fast=100, slow=200",
+          "5": "idea=tendencia, fast=100, slow=150",
+          "6": "idea=tendencia, fast=100, slow=200",
+          "7": "idea=tendencia, fast=100, slow=200",
+          "8": "idea=tendencia, fast=100, slow=200"
+        },
+        "dsr": {
+          "0": 0.4660878538,
+          "1": 0.2912655385,
+          "2": 0.6487195921,
+          "3": 0.6369423312,
+          "4": 0.8326493371,
+          "5": 0.625271134,
+          "6": 0.7799728773,
+          "7": 0.0447248601,
+          "8": 0.2925202347
+        },
+        "eval_end": {
+          "0": "2014-12-31T00:00:00",
+          "1": "2014-12-31T00:00:00",
+          "2": "2014-12-31T00:00:00",
+          "3": "2014-12-31T00:00:00",
+          "4": "2014-12-31T00:00:00",
+          "5": "2014-12-31T00:00:00",
+          "6": "2014-12-31T00:00:00",
+          "7": "2014-12-31T00:00:00",
+          "8": "2014-12-31T00:00:00"
+        },
+        "eval_start": {
+          "0": "1999-10-20T00:00:00",
+          "1": "1999-10-20T00:00:00",
+          "2": "1999-10-20T00:00:00",
+          "3": "1999-10-20T00:00:00",
+          "4": "1999-10-20T00:00:00",
+          "5": "1999-10-20T00:00:00",
+          "6": "1999-10-20T00:00:00",
+          "7": "1999-10-20T00:00:00",
+          "8": "1999-10-20T00:00:00"
+        },
+        "exposure": {
+          "0": 0.6851464435,
+          "1": 0.7361401674,
+          "2": 0.6265690377,
+          "3": 0.6720711297,
+          "4": 0.6307531381,
+          "5": 0.7230648536,
+          "6": 0.7353556485,
+          "7": 0.6705020921,
+          "8": 0.6422594142
+        },
+        "ir_vs_bh": {
+          "0": -0.0984592889,
+          "1": -0.0990456733,
+          "2": 0.0661685742,
+          "3": -0.0168009346,
+          "4": 0.1909402355,
+          "5": -0.0560639325,
+          "6": 0.1589536132,
+          "7": -0.3070883157,
+          "8": -0.1546717512
+        },
+        "n_effective": {
+          "0": 1.6750215122,
+          "1": 1.5181230964,
+          "2": 1.2423006988,
+          "3": 1.4941994936,
+          "4": 1.9449005821,
+          "5": 1.4965365891,
+          "6": 1.3583557243,
+          "7": 2.3331427303,
+          "8": 1.5762459521
+        },
+        "n_trials": {
+          "0": 8,
+          "1": 8,
+          "2": 9,
+          "3": 8,
+          "4": 9,
+          "5": 8,
+          "6": 9,
+          "7": 8,
+          "8": 8
+        },
+        "psr": {
+          "0": 0.9331793055,
+          "1": 0.9615874477,
+          "2": 0.9786141442,
+          "3": 0.9759033863,
+          "4": 0.9726719495,
+          "5": 0.9755509871,
+          "6": 0.9977255934,
+          "7": 0.8614919251,
+          "8": 0.9337550203
+        },
+        "sharpe": {
+          "0": 0.3865715687,
+          "1": 0.4568548331,
+          "2": 0.5190974847,
+          "3": 0.5097228068,
+          "4": 0.4945105838,
+          "5": 0.5107642913,
+          "6": 0.7323907245,
+          "7": 0.280366415,
+          "8": 0.3880920762
+        },
+        "significant": {
+          "0": false,
+          "1": false,
+          "2": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "6": false,
+          "7": false,
+          "8": false
+        },
+        "spa_p": {
+          "0": 0.654,
+          "1": 0.416,
+          "2": 0.304,
+          "3": 0.304,
+          "4": 0.882,
+          "5": 0.532,
+          "6": 0.194,
+          "7": 0.758,
+          "8": 0.696
+        },
+        "spa_p_holm": {
+          "0": 1.0,
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 1.0,
+          "7": 1.0,
+          "8": 1.0
+        },
+        "timing_ir": {
+          "0": 0.0589084002,
+          "1": 0.0556464636,
+          "2": 0.223350137,
+          "3": 0.165816475,
+          "4": 0.3606822302,
+          "5": 0.1258864671,
+          "6": 0.3704773223,
+          "7": -0.1506991637,
+          "8": 0.0188789294
+        }
+      },
+      "signal": "sma_crossover",
+      "status": "evaluada"
+    }
+  },
+  "phase": "calibration_and_validation",
+  "provenance": {
+    "bundle": {
+      "name": "sectores_gics",
+      "path": "/home/user/time-series-insurance/experiments/sectores_gics/data",
+      "quality_warnings": [
+        "XLE 2008-09-29: retorno -11.89% y +6.12% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLE 2008-11-20: retorno -12.37% y +11.16% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLE 2020-03-12: retorno -12.47% y +9.23% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLB 2020-03-12: retorno -9.63% y +7.02% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLB 2020-03-16: retorno -11.01% y +6.19% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLI 2008-12-01: retorno -8.22% y +4.62% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLI 2020-03-09: retorno -9.22% y +5.18% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLI 2020-03-12: retorno -10.35% y +7.81% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLI 2020-03-13: retorno +7.81% y -11.34% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLY 2008-10-15: retorno -11.62% y +6.60% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLY 2008-12-01: retorno -8.74% y +4.65% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLY 2020-03-12: retorno -10.11% y +6.19% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLP 2020-03-12: retorno -9.40% y +8.51% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLP 2020-03-13: retorno +8.51% y -6.78% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLP 2020-03-16: retorno -6.78% y +8.43% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLV 2008-10-15: retorno -9.78% y +5.22% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLV 2020-03-12: retorno -7.47% y +6.94% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLV 2020-03-13: retorno +6.94% y -9.86% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLV 2020-03-16: retorno -9.86% y +6.28% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2008-09-15: retorno -9.74% y +7.49% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2008-09-17: retorno -9.60% y +7.87% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2008-09-19: retorno +12.92% y -8.18% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2008-09-29: retorno -13.18% y +7.11% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2008-10-09: retorno -10.41% y +10.30% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2009-01-20: retorno -16.53% y +14.73% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2009-01-28: retorno +12.80% y -7.86% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2009-03-18: retorno +10.06% y -7.97% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2009-03-30: retorno -8.64% y +5.51% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2009-04-20: retorno -11.16% y +7.40% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2011-08-08: retorno -9.46% y +7.73% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2020-03-09: retorno -10.72% y +5.87% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2020-03-12: retorno -10.81% y +13.16% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLF 2020-03-13: retorno +13.16% y -13.71% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLK 2020-03-12: retorno -9.76% y +11.73% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLK 2020-03-13: retorno +11.73% y -13.81% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLC 2020-03-12: retorno -9.39% y +8.99% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLC 2020-03-13: retorno +8.99% y -11.28% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLU 2002-07-23: retorno -7.78% y +8.91% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLU 2002-10-09: retorno -8.53% y +6.76% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLU 2020-03-12: retorno -10.09% y +5.45% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLU 2020-03-16: retorno -11.36% y +12.79% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLRE 2020-03-12: retorno -8.59% y +8.78% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "XLRE 2020-03-13: retorno +8.78% y -16.00% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "SPY 2008-09-29: retorno -7.84% y +4.14% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "SPY 2008-11-20: retorno -7.42% y +5.39% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "SPY 2011-08-08: retorno -6.51% y +4.65% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "SPY 2020-03-09: retorno -7.81% y +5.17% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "SPY 2020-03-12: retorno -9.57% y +8.55% al día siguiente (> 8 desviaciones robustas): posible dato erróneo",
+        "SPY 2020-03-13: retorno +8.55% y -10.94% al día siguiente (> 8 desviaciones robustas): posible dato erróneo"
+      ],
+      "sha256": "e60a270bf66bc25b6618a9dc08e1db1acf188981aa219883d64c81cb1e4016bc"
+    },
+    "git": {
+      "commit": "fd0fec0897427c1087b6a8b64e4d0218eeaa4248",
+      "dirty": false
+    },
+    "package_version": "0.2.0",
+    "prior_trials_by_asset": {
+      "TBF": 15,
+      "TBT": 14,
+      "TBX": 15
+    },
+    "python": "3.13.18",
+    "registry": "/home/user/time-series-insurance/experiments/registry.jsonl",
+    "registry_relpath": "../../../registry.jsonl",
+    "run_id": "20261117T192634Z-fc940b",
+    "seed": 17,
+    "started_at": "2026-11-17T19:26:34+00:00"
+  },
+  "registry_head": {
+    "last_hash": "9697b5c99265f853add0525c9ea9811dd812c60348974cc46bdf5e558d3a875e",
+    "n_lines": 127
+  },
+  "registry_head_before": {
+    "last_hash": "b90273cbfbc1a72b2a0a1bb6166c1856e47a950f91f87e442acad03d61340316",
+    "n_lines": 48
+  },
+  "result_version": "1.2",
+  "status": {
+    "econometric_quadrants": {
+      "ciclo_financieras": "sin_evidencia",
+      "ciclo_tecnologia": "solo_estadistica",
+      "ciclo_utilities": "sin_evidencia"
+    },
+    "exploratory_reasons": [],
+    "lines_registered": 79,
+    "out_of_sample": "abierta",
+    "significant_by_idea": {
+      "momentum": [],
+      "momentum_vol": [],
+      "tendencia": []
+    }
+  }
+}

@@ -40,6 +40,11 @@ class YahooSource:
     ----------
     currency : str
         Moneda ISO 4217 de los precios.
+    kind, unit : str
+        Tipo y unidad del contrato ``market`` para las series descargadas. Por defecto
+        ``"price"``/``"level"``; para índices de tasas (``^IRX``, ``^TNX``) use
+        ``kind="rate"``, ``unit="percent"`` (pueden ser cero o negativos); para índices como
+        ``^VIX``, ``kind="index"``.
     download : callable, optional
         Función ``(ticker, start, end) -> DataFrame`` con columna ``Close``
         (inyectable para pruebas sin red).
@@ -51,9 +56,13 @@ class YahooSource:
         self,
         *,
         currency: str = "USD",
+        kind: str = "price",
+        unit: str = "level",
         download: Callable[[str, str | None, str | None], pd.DataFrame] | None = None,
     ) -> None:
         self.currency = currency
+        self.kind = kind
+        self.unit = unit
         self._download = download or _default_download
 
     def fetch(
@@ -74,14 +83,18 @@ class YahooSource:
             close = raw["Close"]
             if isinstance(close, pd.DataFrame):
                 close = close.iloc[:, 0]
+            # Un día sin cotización (NaN) es una observación ausente, no un precio inválido.
+            close = close.dropna()
+            if close.empty:
+                raise TSInsuranceError(f"Yahoo no devolvió precios para '{ticker}'.")
             frames.append(
                 pd.DataFrame(
                     {
                         "date": pd.DatetimeIndex(close.index).tz_localize(None).normalize(),
                         "series_id": ticker,
                         "value": close.to_numpy(dtype=float),
-                        "kind": "price",
-                        "unit": "level",
+                        "kind": self.kind,
+                        "unit": self.unit,
                         "currency": self.currency,
                         "frequency": "B",
                         "source": f"yahoo:{ticker}",
