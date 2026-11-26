@@ -293,8 +293,13 @@ def fit_panel(
         pvalues = {k: dk_pvalue(tstats[k], n_periods, bandwidth=bw) for k in keep}
         dist = f"fixed-b(T={n_periods}, L={bw})"
     elif cov == "driscoll_kraay":
-        pvalues = {k: dk_pvalue(t, n_periods, bandwidth=bw) for k, t in tstats.items()}
-        dist = f"fixed-b(T={n_periods}, L={bw})"
+        # pooled/re/fd: DK de linearmodels sin corrección por grados de libertad ni
+        # fixed-b (la corrección está calibrada sólo para FE y TWFE): normal, declarado.
+        dist = "normal (DK de linearmodels sin corrección de muestra finita)"
+        warnings.append(
+            "Driscoll-Kraay fuera de FE/TWFE: valores p normales sin corrección de muestra "
+            "finita; pueden sobre-rechazar con T moderado."
+        )
     re_comp: dict[str, float] = {}
     if estimator == "re":
         vd = res.variance_decomposition

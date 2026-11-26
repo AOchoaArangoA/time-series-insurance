@@ -55,6 +55,8 @@ __all__ = [
     "WildBootstrapResult",
     "dk_dof_correction",
     "dk_pvalue",
+    "dk_wild_bootstrap",
+    "score_stability",
     "fixed_b_reference",
     "hausman_test",
     "mundlak_test",
@@ -134,6 +136,7 @@ def fixed_b_reference(
             omega += 2 * (1 - j / (bandwidth + 1)) * (u[:, j:] * u[:, :-j]).sum(axis=1)
         out[start : start + m] = v.sum(axis=1) / np.sqrt(omega)
     out.sort()
+    out.setflags(write=False)  # compartido por la caché: sólo lectura
     return out
 
 
@@ -186,6 +189,220 @@ def _demean(frame: pd.DataFrame, cols: Sequence[str], time_effects: bool) -> pd.
             if float((out - prev).abs().to_numpy().max()) < 1e-12:
                 break
     return out
+
+
+def _demean_columns(
+    v: np.ndarray, units: np.ndarray, periods: np.ndarray, time_effects: bool
+) -> np.ndarray:
+    """Centrado por unidad (y periodo) de cada columna de ``v`` (proyecciones alternadas)."""
+    nu, nt = int(np.max(units)) + 1, int(np.max(periods)) + 1
+    cu = np.bincount(units, minlength=nu)[:, None].astype(float)
+    ct = np.bincount(periods, minlength=nt)[:, None].astype(float)
+
+    def by(codes: np.ndarray, size: int, counts: np.ndarray, x: np.ndarray) -> np.ndarray:
+        acc = np.zeros((size, x.shape[1]))
+        np.add.at(acc, codes, x)
+        return np.asarray(x - (acc / counts)[codes], dtype=float)
+
+    out = by(units, nu, cu, v)
+    if time_effects:
+        for _ in range(200):
+            prev = out
+            out = by(units, nu, cu, by(periods, nt, ct, out))
+            if float(np.abs(out - prev).max()) < 1e-12:
+                break
+    return out
+
+
+def _bartlett(h: np.ndarray, maxlag: int) -> np.ndarray:
+    """Varianza de largo plazo de Bartlett por columna (h: T × B), sin centrar."""
+    omega = (h * h).sum(axis=0)
+    for j in range(1, maxlag + 1):
+        omega += 2 * (1 - j / (maxlag + 1)) * (h[j:] * h[:-j]).sum(axis=0)
+    return np.asarray(omega, dtype=float)
+
+
+@dataclass(frozen=True, slots=True)
+class DKBootstrapResult(ResultMixin):
+    """t de Driscoll-Kraay con valores p por wild bootstrap por periodo."""
+
+    coefficient: str
+    estimate: float
+    se: float
+    tstat: float
+    pvalue_two_sided: float
+    pvalue_greater: float
+    pvalue_less: float
+    draws: int
+    weights: str
+    note: str = (
+        "Wild bootstrap restringido por periodo (mismo signo para todas las unidades de un "
+        "periodo): conserva la dependencia transversal y la heterocedasticidad condicional a "
+        "los X observados; no conserva la autocorrelación de los scores (el HAC del "
+        "bootstrap reproduce su sesgo de muestra finita)."
+    )
+
+    def summary(self) -> str:
+        """Resumen legible."""
+        return (
+            f"DK + wild bootstrap por periodo ({self.coefficient}): t = {self.tstat:+.3f}, "
+            f"p bilateral {self.pvalue_two_sided:.4f}, p(>) {self.pvalue_greater:.4f}, "
+            f"p(<) {self.pvalue_less:.4f} ({self.draws} extracciones, {self.weights})"
+        )
+
+
+def dk_wild_bootstrap(
+    frame: pd.DataFrame,
+    y: str,
+    x: Sequence[str],
+    coefficient: str,
+    *,
+    time_effects: bool,
+    maxlag: int,
+    draws: int = 1999,
+    seed: int = 0,
+    block: int | None = None,
+) -> DKBootstrapResult:
+    """Valores p del t de Driscoll-Kraay por wild bootstrap restringido por periodo.
+
+    ``block`` (por defecto L + 1) usa el mismo signo en bloques de periodos consecutivos
+    (*dependent wild bootstrap*, Shao 2010), que conserva la autocorrelación de corto plazo
+    de los scores.
+
+    Bajo H0 (coeficiente = 0) se re-estima sin el regresor, se generan
+    y* = ajuste restringido + w_t·ũ_it con w_t Rademacher (Webb si T < 50) **por periodo**
+    y se recalcula el mismo t (DK con la corrección por grados de libertad). Es el
+    análogo para paneles con dependencia transversal del wild bootstrap de Kline y
+    Santos (2012), condicionado a los regresores observados. A diferencia de la referencia
+    fixed-b de localización, refleja que la varianza de los scores x_t·ẽ_it cambia con un
+    regresor persistente (revisión de la implementación, Importante 1).
+
+    References
+    ----------
+    Kline, P. y Santos, A. (2012). A score based approach to wild bootstrap inference.
+    *Journal of Econometric Methods*, 1(1), 23-41.
+    Gonçalves, S. (2011). The moving blocks bootstrap for panel linear regression models
+    with individual fixed effects. *Econometric Theory*, 27(5), 1048-1082.
+    """
+    if coefficient not in x:
+        raise DataValidationError(f"'{coefficient}' no está entre los regresores.")
+    df = frame[[y, *x]].dropna()
+    units = pd.factorize(df.index.get_level_values(0))[0]
+    periods_raw = df.index.get_level_values(1)
+    periods = pd.factorize(periods_raw, sort=True)[0]
+    n_entities, n_periods = int(np.max(units)) + 1, int(np.max(periods)) + 1
+    dm = _demean(df, [y, *x], time_effects)
+    xv = dm[list(x)].to_numpy()
+    yv = dm[y].to_numpy()
+    xtx_inv = np.linalg.pinv(xv.T @ xv)
+    j = list(x).index(coefficient)
+    g = xv @ xtx_inv[:, j]  # β̂_j = Σ g·y (Frisch-Waugh-Lovell)
+    c = dk_dof_correction(len(df), n_entities, n_periods, len(x), time_effects)
+
+    def tstats(ymat: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        beta = xtx_inv @ (xv.T @ ymat)
+        resid = ymat - xv @ beta
+        h = np.zeros((n_periods, ymat.shape[1]))
+        np.add.at(h, periods, g[:, None] * resid)
+        se = np.sqrt(c * _bartlett(h, maxlag))
+        return beta[j] / se, se
+
+    t_obs_arr, se_obs = tstats(yv[:, None])
+    t_obs = float(t_obs_arr[0])
+    keep = [k for k in range(len(x)) if k != j]
+    xr = xv[:, keep]
+    fit_r = xr @ (np.linalg.pinv(xr.T @ xr) @ xr.T @ yv) if keep else np.zeros_like(yv)
+    u = yv - fit_r
+    rng = np.random.default_rng(seed)
+    kind = "rademacher" if n_periods >= 50 else "webb"
+    blen = max(1, maxlag + 1 if block is None else int(block))
+    block_of = np.arange(n_periods) // blen
+    n_blocks = int(np.max(block_of)) + 1
+    exceed_hi = exceed_lo = exceed_two = 0
+    done = 0
+    batch = max(1, min(draws, 4_000_000 // max(len(df), 1)))
+    while done < draws:
+        m = min(batch, draws - done)
+        if kind == "rademacher":
+            wb = rng.choice([-1.0, 1.0], size=(n_blocks, m))
+        else:
+            wb = rng.choice(_WEBB, size=(n_blocks, m))
+        w = wb[block_of]
+        ystar = fit_r[:, None] + _demean_columns(
+            u[:, None] * w[periods], units, periods, time_effects
+        )
+        tb, _ = tstats(ystar)
+        exceed_hi += int(np.sum(tb >= t_obs))
+        exceed_lo += int(np.sum(tb <= t_obs))
+        exceed_two += int(np.sum(np.abs(tb) >= abs(t_obs)))
+        done += m
+    return DKBootstrapResult(
+        coefficient=coefficient,
+        estimate=float(xtx_inv[j] @ xv.T @ yv),
+        se=float(se_obs[0]),
+        tstat=t_obs,
+        pvalue_two_sided=(1 + exceed_two) / (1 + draws),
+        pvalue_greater=(1 + exceed_hi) / (1 + draws),
+        pvalue_less=(1 + exceed_lo) / (1 + draws),
+        draws=draws,
+        weights=f"{kind}, bloques de {blen} periodos",
+    )
+
+
+@lru_cache(maxsize=4)
+def _bridge_cvm(draws: int = 20_000, grid: int = 1000, seed: int = 1992) -> np.ndarray:
+    """Distribución de ∫₀¹ B̄(r)² dr (puente browniano), ordenada (Hansen 1992, p = 1)."""
+    rng = np.random.default_rng(seed)
+    out = np.empty(draws)
+    for start in range(0, draws, 2000):
+        m = min(2000, draws - start)
+        w = np.cumsum(rng.standard_normal((m, grid)), axis=1) / np.sqrt(grid)
+        r = np.arange(1, grid + 1) / grid
+        bridge = w - r[None, :] * w[:, -1:]
+        out[start : start + m] = (bridge**2).mean(axis=1)
+    out.sort()
+    out.setflags(write=False)
+    return out
+
+
+def score_stability(
+    frame: pd.DataFrame,
+    y: str,
+    x: Sequence[str],
+    coefficient: str,
+    *,
+    time_effects: bool,
+    maxlag: int,
+) -> dict[str, float]:
+    """Estabilidad de un coeficiente: prueba de Nyblom-Hansen sobre los scores DK.
+
+    L = T⁻¹ Σ_t (Σ_{s≤t} h_s)² / Ω̂, con h_t = Σ_i g_it·ê_it el score del coeficiente
+    agregado por periodo (el mismo de Driscoll-Kraay) y Ω̂ su varianza de largo plazo de
+    Bartlett. Bajo H0 (coeficiente constante) L → ∫B̄². Vale con efectos de tiempo, donde
+    el CUSUM de la media de los residuos no es informativo.
+
+    References
+    ----------
+    Nyblom, J. (1989). Testing for the constancy of parameters over time. *JASA*, 84(405),
+    223-230. Hansen, B. (1992). Testing for parameter instability in linear models.
+    *Journal of Policy Modeling*, 14(4), 517-533.
+    """
+    df = frame[[y, *x]].dropna()
+    periods = pd.factorize(df.index.get_level_values(1), sort=True)[0]
+    dm = _demean(df, [y, *x], time_effects)
+    xv = dm[list(x)].to_numpy()
+    yv = dm[y].to_numpy()
+    xtx_inv = np.linalg.pinv(xv.T @ xv)
+    e = yv - xv @ (xtx_inv @ xv.T @ yv)
+    g = xv @ xtx_inv[:, list(x).index(coefficient)]
+    h = np.zeros(int(np.max(periods)) + 1)
+    np.add.at(h, periods, g * e)
+    t = h.size
+    omega = float(_bartlett(h[:, None], maxlag)[0]) / t
+    stat = float((np.cumsum(h) ** 2).mean() / (t * omega)) if omega > 0 else float("nan")
+    ref = _bridge_cvm()
+    p = float((1 + ref.size - np.searchsorted(ref, stat)) / (1 + ref.size))
+    return {"statistic": stat, "pvalue": p}
 
 
 def _ols_cr1(
@@ -328,12 +545,18 @@ def mundlak_test(
     *,
     time_effects: bool = False,
     alpha: float = 0.05,
+    test: Sequence[str] | None = None,
 ) -> FETest:
-    """Prueba Mundlak/CRE robusta (agrupada por unidad) de FE frente a RE."""
+    """Prueba Mundlak/CRE robusta (agrupada por unidad) de FE frente a RE.
+
+    ``test`` restringe la prueba a las medias por unidad de esos regresores; todos los
+    ``x`` siguen en la regresión auxiliar (quitar un x_t común sesgaría la prueba).
+    """
     import statsmodels.api as sm
 
     df = frame[[y, *x]].dropna().astype(float)
-    means = df[list(x)].groupby(level=0).transform("mean").add_suffix("__mean_i")
+    tested = list(x) if test is None else [c for c in x if c in set(test)]
+    means = df[tested].groupby(level=0).transform("mean").add_suffix("__mean_i")
     parts = [df[list(x)], means]
     if time_effects:
         tdum = pd.get_dummies(df.index.get_level_values(1), prefix="t", drop_first=True).astype(
@@ -346,7 +569,8 @@ def mundlak_test(
         if bool((sizes != sizes.iloc[0]).any()):
             parts.append(tdum.groupby(level=0).transform("mean").add_suffix("__mean_i"))
     design = sm.add_constant(pd.concat(parts, axis=1))
-    design = design.loc[:, design.std() > 0].assign(const=1.0)
+    scale = design.abs().max().replace(0, 1.0)
+    design = design.loc[:, design.std() > 1e-10 * scale].assign(const=1.0)
     groups = pd.factorize(df.index.get_level_values(0))[0]
     fit = sm.OLS(df[y], design).fit(cov_type="cluster", cov_kwds={"groups": groups})
     test_cols = [c for c in means.columns if c in design.columns]

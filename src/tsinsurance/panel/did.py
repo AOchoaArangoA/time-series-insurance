@@ -64,6 +64,14 @@ class DiDResult(ResultMixin):
         return "\n".join(lines)
 
 
+def _pre_sd(df: pd.DataFrame, y: str, pos: Mapping[Any, int], ev_pos: int) -> dict[Any, float]:
+    """Desviación estándar de los residuos de dos vías de cada unidad antes del evento."""
+    pre = df[[y]][[pos[t] < ev_pos for t in df.index.get_level_values(1)]]
+    dm = pre[y] - pre[y].groupby(level=0).transform("mean")
+    dm = dm - dm.groupby(level=1).transform("mean")
+    return {u: float(v) for u, v in dm.groupby(level=0).std(ddof=1).items()}
+
+
 def _twfe(df: pd.DataFrame, y: str, cols: list[str], cluster: bool) -> Any:
     from linearmodels.panel import PanelOLS
 
@@ -138,23 +146,40 @@ def diff_in_diff(
                 "subestimar la incertidumbre."
             )
     else:
-        # Permutación: cada control recibe un tratamiento placebo con la misma fecha.
+        # Permutación: cada control recibe un tratamiento placebo con la misma fecha. Los
+        # efectos se ESTUDENTIZAN por la desviación estándar previa al evento de los
+        # residuos de cada unidad (Ferman y Pinto 2019: con varianzas heterogéneas los
+        # placebos crudos no son intercambiables).
         ev = next(iter(treated.values()))
         ev_pos = int(times.searchsorted(pd.Timestamp(ev) if not isinstance(ev, int) else ev))
+        tr_unit = next(iter(treated))
+        pre_sd = _pre_sd(df, y, pos, ev_pos)
+        stat_obs = atet / pre_sd[tr_unit] if pre_sd[tr_unit] > 0 else float("nan")
         placebos = []
         for u in sorted(set(units) - set(treated)):
             alt = df.drop(columns="did").copy()
             alt["did"] = [float(uu == u and pos[t] >= ev_pos) for uu, t in alt.index]
-            alt = alt[alt.index.get_level_values(0) != next(iter(treated))]
-            placebos.append(float(_twfe(alt, y, ["did"], cluster=False).params["did"]))
+            alt = alt[alt.index.get_level_values(0) != tr_unit]
+            est = float(_twfe(alt, y, ["did"], cluster=False).params["did"])
+            placebos.append(est / pre_sd[u] if pre_sd[u] > 0 else float("nan"))
         arr = np.abs(np.asarray(placebos))
-        pvalue = float((1 + np.sum(arr >= abs(atet))) / (1 + len(arr)))
+        arr = arr[np.isfinite(arr)]
+        pvalue = float((1 + np.sum(arr >= abs(stat_obs))) / (1 + len(arr)))
+        p_min = 1.0 / (1 + len(arr))
         se = None
-        inference = f"permutación ({len(placebos)} placebos; una sola unidad tratada)"
+        inference = (
+            f"permutación estudentizada ({len(arr)} placebos; una sola unidad tratada; "
+            f"p mínimo alcanzable {p_min:.3f})"
+        )
         warnings.append(
             "Una sola unidad tratada: los errores agrupados no son válidos (Conley y Taber "
-            "2011); se usa inferencia por permutación."
+            "2011); se usa inferencia por permutación estudentizada."
         )
+        if p_min > alpha:
+            warnings.append(
+                f"Con {len(arr)} controles el p mínimo alcanzable es {p_min:.3f} > α = {alpha}: "
+                "la prueba NO puede rechazar; resultado no concluyente."
+            )
     # Estudio de evento: dummies de periodo relativo (−1 de referencia), extremos agrupados.
     es_cols = []
     for k in range(-leads, lags + 1):
@@ -181,12 +206,31 @@ def diff_in_diff(
             }
         lead_cols = [c for k, c in es_cols if k < -1]
         if lead_cols:
-            restriction = np.zeros((len(lead_cols), len(es_cols)))
             names = [c for _, c in es_cols]
-            for i, c in enumerate(lead_cols):
-                restriction[i, names.index(c)] = 1.0
-            wt = res_es.wald_test(restriction, np.zeros(len(lead_cols)))
-            pre_stat, pre_p = float(wt.stat), float(wt.pval)
+            pre_stat, pre_p = _pretrend(
+                df, y, res_es, names, lead_cols, cluster, n_treated + n_control
+            )
+            if not cluster:
+                # Una tratada: Wald sin agrupar comparado con los placebos (permutación).
+                tr_unit = next(iter(treated))
+                ref = []
+                for u in sorted(set(units) - set(treated)):
+                    alt = df[df.index.get_level_values(0) != tr_unit].copy()
+                    alt[[c for _, c in es_cols]] = 0.0
+                    mask = alt.index.get_level_values(0) == u
+                    for _k, c in es_cols:
+                        src = df.loc[df.index.get_level_values(0) == tr_unit, c].to_numpy()
+                        if mask.sum() == src.size:
+                            alt.loc[mask, c] = src
+                    cols_alt = [c for _, c in es_cols if alt[c].abs().sum() > 0]
+                    leads_alt = [c for c in lead_cols if c in cols_alt]
+                    if not leads_alt:
+                        continue
+                    r_alt = _twfe(alt, y, cols_alt, cluster=False)
+                    ref.append(_pretrend(alt, y, r_alt, cols_alt, leads_alt, False, 0)[0])
+                ref_arr = np.asarray([v for v in ref if np.isfinite(v)])
+                if ref_arr.size:
+                    pre_p = float((1 + np.sum(ref_arr >= pre_stat)) / (1 + ref_arr.size))
             if pre_p < alpha:
                 warnings.append(
                     "Los coeficientes previos al evento no son cero: el supuesto de tendencias "
@@ -212,3 +256,26 @@ def diff_in_diff(
         warnings=warnings,
         assumptions=assumptions,
     )
+
+
+def _pretrend(
+    df: pd.DataFrame,
+    y: str,
+    res: Any,
+    names: list[str],
+    lead_cols: list[str],
+    cluster: bool,
+    n_groups: int,
+) -> tuple[float, float]:
+    """Wald conjunto de los *leads* = 0; con errores agrupados y G < 30, F(q, G−1)."""
+    from scipy import stats
+
+    restriction = np.zeros((len(lead_cols), len(names)))
+    for i, c in enumerate(lead_cols):
+        restriction[i, names.index(c)] = 1.0
+    wt = res.wald_test(restriction, np.zeros(len(lead_cols)))
+    stat = float(wt.stat)
+    q = len(lead_cols)
+    if cluster and n_groups < 30:
+        return stat, float(stats.f.sf(stat / q, q, max(n_groups - 1, 1)))
+    return stat, float(wt.pval)

@@ -218,3 +218,86 @@ Con L = 0 el tamaño era 4-7 %, lo que ubica la causa en dos sesgos:
 
 SC-004 se verifica con esta inferencia (`tests/simulation/test_panel_size.py`), con una
 banda de 3 % a 7 % ± 1,96 errores de Monte Carlo.
+
+## R10. Revisión econométrica de la implementación (2026-11-26)
+
+**Bloqueante B1, resuelto.** SC-004 se había relajado sin enmendar la spec: se aceptaba
+7 % más un margen de Monte Carlo, y el fixed-b dejaba un sobre-rechazo residual (7,4 %).
+Se enmendaron FR-002, SC-003, SC-004 y SC-005 (ver la spec). El criterio de SC-004 es
+ahora la proporción observada en 3-7 %, sin margen.
+
+### Importantes
+
+**I1 — referencia de localización inadecuada con regresor persistente.**
+El límite fixed-b supone T⁻¹Σ x̃x̃' → rQ de forma uniforme, lo que no vale con φ = 0,95.
+La nueva inferencia principal es `dk_wild_bootstrap`:
+- y* = ajuste restringido + w·ũ, con signos por **bloques de L + 1 periodos**
+  (*dependent wild bootstrap*, Shao 2010), Rademacher (Webb si T < 50);
+- se recalcula el mismo t (DK con la corrección c), condicionado a los X observados.
+
+Monte Carlo previo (400 réplicas, tamaño unilateral al 5 %):
+
+| Celda | fixed-b | wild por periodo | wild por bloques |
+|---|---|---|---|
+| T = 36, G₁ = 5, base | 5,8 % | 5,3 % | 6,3 % |
+| T = 36, G₁ = 3, reserva* | 9,5 % | 7,3 % | 5,5 % |
+| T = 120, G₁ = 3, reserva* | 7,5 % | 7,3 % | 5,8 % |
+
+\* Errores AR(1) ρ = 0,3, t₅, innovación del regresor correlacionada con el factor,
+desbalanceo, regresor rezagado.
+
+Además:
+- DK fuera de FE/TWFE pasa a valores p normales, con una advertencia;
+- fixed-b queda como valor p analítico de `fit_panel` y se verifica contra el límite
+  browniano de Kiefer y Vogelsang (2005) para Bartlett, simulado de forma independiente.
+
+  El polinomio citado en la revisión (1,6449 + 2,1859b + …) no reproduce ese límite:
+  1,866 frente a 1,817 con b = 0,1. No se usa.
+
+**I2 — MDE.**
+MDE = (z_{1−α_p/m} + z_{0,8})·ee_cal·√(T_cal/T_val), con:
+- α_p, el α congelado de la familia;
+- m, el número de hipótesis de la familia.
+
+Si el MDE no es finito, `low_power = None`.
+
+**I3 — memoria.**
+- Cada línea `panel` guarda la ventana (`start`, `end`, `train_end`).
+- Sólo se excluye la re-ejecución idéntica (misma variante, universo y ventana). La misma
+  variante sobre otro universo parecido u otra ventana cuenta.
+- Las pruebas previas entran también en la m del Holm de la **validación**.
+
+**I4 — estabilidad.**
+- Nyblom-Hansen sobre los scores DK de cada coeficiente (`score_stability`), con la
+  distribución de ∫B̄² simulada. Vale con efectos de tiempo.
+- Los diagnósticos corren también en la validación.
+
+**I5 — diagnósticos con los residuos del modelo.**
+- Con efectos de tiempo, ARCH y persistencia usan los residuos de dos vías.
+- La persistencia de una interacción se correlaciona con el choque diferencial
+  (media de las tratadas − media de los controles).
+- La estacionariedad guarda la conclusión y la regla, y prueba y por unidad.
+
+**I6 — Mundlak.** La regresión auxiliar incluye todos los regresores; la prueba se
+restringe a las medias de los que varían entre unidades (tolerancia relativa).
+
+**I7 — DiD.**
+- Con una sola tratada:
+  - placebos estudentizados por la desviación estándar previa de cada unidad (Ferman y
+    Pinto 2019);
+  - se reporta el p mínimo alcanzable y se advierte si supera α;
+  - la prueba de tendencias previas se hace por permutación de los Wald de los placebos.
+- Con errores agrupados y G < 30, la prueba previa usa F(q, G−1). SC-005 afirma su tamaño.
+
+### Menores
+
+- Holdout: sólo las decisiones cuyo mes objetivo empieza después del corte.
+- El ancho de banda congelado es la **regla**: se re-aplica con el T de la validación.
+- `fixed_b_reference` devuelve un arreglo de sólo lectura.
+- ARCH sin valor p se reporta en vez de tomarse como 1.
+- WCR con G₁ ≤ 2: advertencia de poca confiabilidad.
+
+**Queda abierto:**
+- reservar α sólo a las familias con hipótesis validables (hoy, por declaración);
+- la enumeración Rademacher con G ≤ 12 frente a Webb (M3): se mantiene la enumeración,
+  que es determinista, y se documenta.

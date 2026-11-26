@@ -85,6 +85,21 @@ def test_panel_is_point_in_time(pdir: Path) -> None:
     assert (full.xs("U4", level=0)["SPREAD:sensible"] == 0).all()
 
 
+def test_validation_window_targets_start_after_cut(pdir: Path) -> None:
+    bundle = Bundle.load(pdir / "data")
+    spec = load_experiment(pdir / "experiment.toml").panels[0]
+    for cut in ("2015-12-31", "2015-12-15"):
+        val = build_panel(bundle, spec, after=cut)
+        first_target = val.index.get_level_values(1).min() + pd.offsets.MonthEnd(1)
+        month_start = first_target - pd.offsets.MonthBegin(1)
+        assert month_start > pd.Timestamp(cut)
+    # En la calibración, el último mes objetivo termina en o antes del corte.
+    cal = build_panel(bundle.as_of("2015-12-31"), spec)
+    assert cal.index.get_level_values(1).max() + pd.offsets.MonthEnd(1) <= pd.Timestamp(
+        "2015-12-31"
+    )
+
+
 def test_recovers_differential_effect(pdir: Path) -> None:
     bundle = Bundle.load(pdir / "data")
     spec = load_experiment(pdir / "experiment.toml").panels[0]
@@ -92,7 +107,9 @@ def test_recovers_differential_effect(pdir: Path) -> None:
     row = run.rows[0]
     assert not row.inconclusive and row.treated_clusters == 3
     assert row.estimate < 0 and row.p_one_sided < 0.05
-    assert row.p_distribution.startswith("fixed-b(") and row.wcr_p_one_sided is not None
+    assert row.p_distribution.startswith("wild bootstrap DK")
+    assert row.wcr_p_one_sided is not None and row.fixed_b_p_one_sided is not None
+    assert row.stability_pvalue is not None and row.stability_pvalue > 0.01
     # Con TWFE, el efecto común de SPREAD queda absorbido por los efectos de tiempo.
     assert "SPREAD" not in run.params
 
@@ -105,8 +122,15 @@ def test_single_treated_unit_is_inconclusive(pdir: Path) -> None:
     assert run.rows[0].inconclusive and "G₁" in run.rows[0].reason
 
 
-def test_mde_rescales_with_validation_length() -> None:
-    assert mde(0.01, 96, 24) == pytest.approx(2.8 * 0.01 * 2)
+def test_mde_uses_one_sided_family_level() -> None:
+    from scipy import stats
+
+    z = stats.norm.ppf
+    assert mde(0.01, 96, 24) == pytest.approx((z(0.95) + z(0.80)) * 0.01 * 2)
+    # α de la familia de paneles 0,0075 repartido entre 2 hipótesis (primera etapa de Holm).
+    assert mde(0.01, 96, 24, alpha=0.0075, m=2) == pytest.approx(
+        (z(1 - 0.00375) + z(0.80)) * 0.01 * 2
+    )
     assert np.isnan(mde(0.01, 96, 0))
 
 

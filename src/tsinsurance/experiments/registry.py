@@ -593,17 +593,29 @@ def prior_panel_tests(
     *,
     dependent: str,
     exclude_variant: Mapping[str, Any] | None = None,
+    exclude_universe: Iterable[str] | None = None,
+    exclude_window: Mapping[str, Any] | None = None,
 ) -> int:
     """Pruebas previas de paneles con la misma variable dependiente y universo parecido.
 
     Clave de memoria (revisión I3): (variable dependiente, universo con Jaccard ≥ 0,5).
-    Cada (variante, coeficiente con signo) distinto ya registrado es una prueba previa;
-    la variante que se prueba ahora no cuenta. Se suman las pruebas declaradas fuera de la
+    Cuenta cada (variante, universo, ventana, coeficiente con signo) distinto ya
+    registrado. Sólo se excluye la re-ejecución idéntica de lo que se prueba ahora (misma
+    variante, mismo universo y misma ventana): la misma variante sobre otro universo
+    parecido u otra ventana sí cuenta. Se suman las pruebas declaradas fuera de la
     bitácora con ``kind = "panel"``.
     """
     uni = list(units)
-    current = _canonical(exclude_variant) if exclude_variant is not None else None
-    seen: set[tuple[str, str, str]] = set()
+    current = (
+        (
+            _canonical(exclude_variant),
+            _canonical(sorted(exclude_universe) if exclude_universe is not None else sorted(uni)),
+            _canonical(exclude_window) if exclude_window is not None else None,
+        )
+        if exclude_variant is not None
+        else None
+    )
+    seen: set[tuple[str, str, str, str, str]] = set()
     declared = 0
     for r in rows:
         kind = r.get("kind")
@@ -615,8 +627,17 @@ def prior_panel_tests(
             continue
         if jaccard(r.get("universe", []), uni) < JACCARD_MIN:
             continue
-        v = _canonical(r.get("variant"))
-        if v == current:
+        ident = (
+            _canonical(r.get("variant")),
+            _canonical(sorted(r.get("universe", []))),
+            _canonical(r.get("window")) if r.get("window") is not None else None,
+        )
+        if (
+            current is not None
+            and ident[0] == current[0]
+            and ident[1] == current[1]
+            and (ident[2] is None or current[2] is None or ident[2] == current[2])
+        ):
             continue
-        seen.add((v, str(r.get("coef")), str(r.get("sign"))))
+        seen.add((ident[0], ident[1], str(ident[2]), str(r.get("coef")), str(r.get("sign"))))
     return len(seen) + declared

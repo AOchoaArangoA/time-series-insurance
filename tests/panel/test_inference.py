@@ -108,3 +108,60 @@ def test_mundlak_does_not_reject_without_correlation_and_few_groups_uses_f() -> 
 def test_wcr_rejects_unknown_coefficient() -> None:
     with pytest.raises(Exception, match="no está"):
         wild_cluster_bootstrap(_sector_panel(), "y", ["x_int"], "otro")
+
+
+def test_fixed_b_matches_kiefer_vogelsang_bartlett_limit() -> None:
+    """Límite fixed-b de Bartlett (KV 2005): t = W(1)/√Q(b), con
+    Q(b) = (2/b)[∫B̄² − ∫₀^{1−b} B̄(r+b)B̄(r)], simulado de forma independiente."""
+    from tsinsurance.panel.inference import fixed_b_reference
+
+    rng = np.random.default_rng(7)
+    n, b = 2000, 0.1
+    k = int(b * n)
+    draws = []
+    for _ in range(20):
+        w = np.cumsum(rng.standard_normal((1000, n)), axis=1) / np.sqrt(n)
+        bridge = w - (np.arange(1, n + 1) / n) * w[:, -1:]
+        q = (2 / b) * ((bridge**2).mean(axis=1) - (bridge[:, k:] * bridge[:, :-k]).sum(axis=1) / n)
+        draws.append(w[:, -1] / np.sqrt(q))
+    limit = np.concatenate(draws)
+    ref = fixed_b_reference(1000, 99)  # b = (L + 1)/T = 0,1
+    assert np.quantile(ref, 0.95) == pytest.approx(np.quantile(limit, 0.95), abs=0.03)
+    assert not ref.flags.writeable
+
+
+def test_dk_wild_bootstrap_matches_dk_t_and_detects_effect() -> None:
+    from tsinsurance.panel.inference import dk_wild_bootstrap
+
+    df = _sector_panel(beta=0.0)
+    res = fit_panel(df, "y", ["x_int"], estimator="twfe", cov="driscoll_kraay")
+    bw = res.diagnostics["bandwidth_driscoll_kraay"]
+    wb = dk_wild_bootstrap(df, "y", ["x_int"], "x_int", time_effects=True, maxlag=bw, draws=499)
+    assert wb.tstat == pytest.approx(res.tstats["x_int"], rel=1e-8)
+    assert wb.se == pytest.approx(res.std_errors["x_int"], rel=1e-8)
+    assert 0.0 < wb.pvalue_greater <= 1.0 and "bloques" in wb.weights
+    strong = _sector_panel(beta=3.0)
+    wb2 = dk_wild_bootstrap(
+        strong, "y", ["x_int"], "x_int", time_effects=True, maxlag=bw, draws=499
+    )
+    assert wb2.pvalue_two_sided < 0.01
+
+
+def test_score_stability_detects_coefficient_break() -> None:
+    from tsinsurance.panel.inference import score_stability
+
+    df = _sector_panel(beta=0.3)
+    stable = score_stability(df, "y", ["x_int"], "x_int", time_effects=True, maxlag=4)
+    t_idx = df.index.get_level_values(1)
+    late = t_idx >= sorted(set(t_idx))[len(set(t_idx)) // 2]
+    broken = df.assign(y=df["y"] + np.where(late, 1.5, 0.0) * df["x_int"])
+    moved = score_stability(broken, "y", ["x_int"], "x_int", time_effects=True, maxlag=4)
+    assert stable["pvalue"] > 0.05 and moved["pvalue"] < 0.01
+
+
+def test_mundlak_test_subset_keeps_all_regressors() -> None:
+    from tsinsurance.panel.inference import mundlak_test
+
+    df = _sector_panel()
+    full = mundlak_test(df, "y", ["x_int", "macro"], test=["x_int"])
+    assert full.mundlak_df == 1

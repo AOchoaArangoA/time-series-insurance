@@ -28,9 +28,11 @@ semántico.
 - Spec 006 (datos de panel; extra opcional `[panel]` con `linearmodels`):
   - `tsinsurance.panel.fit_panel`: MCO agrupado, efectos fijos, dos vías, primeras
     diferencias y efectos aleatorios; regresores absorbidos, G₁ y supuestos causales;
-  - Driscoll-Kraay propio (igual a `plm::vcovSCC`) con corrección por grados de libertad y
-    valores p fixed-b, calibrados por Monte Carlo (el t(T−1) previsto sobre-rechazaba con
-    T = 36); wild cluster bootstrap restringido como sensibilidad;
+  - Driscoll-Kraay propio (igual a `plm::vcovSCC`) con corrección por grados de libertad;
+    valores p por wild bootstrap restringido por bloques de periodos en los experimentos y
+    fixed-b analítico en `fit_panel`, calibrados por Monte Carlo (el t(T−1) previsto
+    sobre-rechazaba con T = 36); estabilidad Nyblom-Hansen; wild cluster bootstrap
+    restringido como sensibilidad;
   - Mundlak/CRE y Hausman; diagnósticos de Wooldridge, CD de Pesaran, estacionariedad,
     ARCH, CUSUM y persistencia tipo Stambaugh;
   - diferencias en diferencias con estudio de evento, prueba de tendencias previas,

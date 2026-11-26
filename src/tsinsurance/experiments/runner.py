@@ -224,7 +224,12 @@ def _frozen(
     )
     regime_family = [h["label"] for v in regimes.values() for h in v["selected"]]
     panels = {
-        n: {"spec": v["spec"], "hypotheses": v["validated"], "calibration": v["calibration"]}
+        n: {
+            "spec": v["spec"],
+            "hypotheses": v["validated"],
+            "calibration": v["calibration"],
+            "prior_tests_in_holm": v["prior_tests_in_holm"],
+        }
         for n, v in result.get("panels", {}).items()
     }
     panel_family = [h["label"] for v in panels.values() for h in v["hypotheses"]]
@@ -1084,7 +1089,15 @@ def _panels(
         run = analyze_panel(bundle, ps, start=spec.start, end=spec.end, seed=spec.seed)
         if not run.diagnostics_passed:
             reasons.append(f"diagnósticos del panel '{ps.name}' no superados")
-        prior = prior_panel_tests(history, ps.units, dependent=Y, exclude_variant=ps.variant)
+        window = {"start": spec.start, "end": spec.end, "train_end": spec.train_end}
+        prior = prior_panel_tests(
+            history,
+            ps.units,
+            dependent=Y,
+            exclude_variant=ps.variant,
+            exclude_universe=sorted(ps.units),
+            exclude_window=window,
+        )
         valid = [r for r in run.rows if not r.inconclusive]
         adjusted = holm_extended([r.p_one_sided for r in valid], prior) if valid else []
         holm_by = {r.label: p for r, p in zip(valid, adjusted, strict=True)}
@@ -1141,6 +1154,7 @@ def _panels(
                     "panel": ps.name,
                     "dependent": Y,
                     "variant": ps.variant,
+                    "window": window,
                     "coef": r.coef,
                     "sign": r.sign,
                     "estimate": None if r.inconclusive else r.estimate,

@@ -157,8 +157,8 @@ def _seen_after(rows: list[dict[str, Any]], asset: str, cut: str, exclude_run: s
 
 
 def _validate_panels(
-    full: Any, spec: Any, frozen_panels: dict[str, Any], cut: str
-) -> tuple[dict[str, list[dict[str, Any]]], list[dict[str, Any]]]:
+    full: Any, spec: Any, frozen_panels: dict[str, Any], cut: str, alpha_p: float
+) -> tuple[dict[str, list[dict[str, Any]]], list[dict[str, Any]], dict[str, Any]]:
     """Re-estima cada panel sólo con los meses posteriores al corte (revisión I4).
 
     Se conservan el estimador, el tipo de error, el ancho de banda declarado (o su regla),
@@ -170,6 +170,8 @@ def _validate_panels(
 
     out: dict[str, list[dict[str, Any]]] = {}
     fam: list[dict[str, Any]] = []
+    extra: dict[str, Any] = {"prior_tests": 0, "diagnostics": {}}
+    m_family = sum(len(v["hypotheses"]) for v in frozen_panels.values())
     for name, v in frozen_panels.items():
         if not v["hypotheses"]:
             continue
@@ -185,23 +187,35 @@ def _validate_panels(
             end=spec.end,
             after=cut,
             seed=int(v["calibration"]["seed"]),
-            with_diagnostics=False,
+            with_diagnostics=True,
         )
+        extra["prior_tests"] += int(v.get("prior_tests_in_holm", 0))
+        extra["diagnostics"][name] = {
+            "passed": run.diagnostics_passed,
+            "warnings": run.warnings,
+            **run.diagnostics,
+        }
         rows = []
         for r in run.rows:
             h = wanted[(r.coef, r.sign)]
-            m = mde(float(h["se_calibration"]), int(h["n_periods_calibration"]), r.n_periods)
+            m = mde(
+                float(h["se_calibration"]),
+                int(h["n_periods_calibration"]),
+                r.n_periods,
+                alpha=alpha_p,
+                m=max(m_family, 1),
+            )
             row = {
                 **dataclasses.asdict(r),
                 "label": r.label,
                 "estimate_calibration": h["estimate_calibration"],
                 "mde": m,
-                "low_power": bool(np.isfinite(m) and abs(h["estimate_calibration"]) < m),
+                "low_power": bool(abs(h["estimate_calibration"]) < m) if np.isfinite(m) else None,
             }
             rows.append(row)
             fam.append({"id": r.label, "p": None if r.inconclusive else r.p_one_sided, "row": row})
         out[name] = rows
-    return out, fam
+    return out, fam, extra
 
 
 def _active_ir_test(
@@ -523,8 +537,6 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             reg_hyp.append({"id": h["label"], "p": p1, "row": row})
         regs_out[name] = out_rows
 
-    panels_out, panel_hyp = _validate_panels(full, spec, frozen.get("panels", {}), cut)
-
     # Holm por familia con el α CONGELADO en la calibración (revisión B1 de la spec 006).
     # Las calibraciones anteriores sin paneles guardaron estrategias 0,8α y regímenes 0,2α.
     split = frozen.get("alpha_split") or {
@@ -534,10 +546,27 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
     alpha_s = float(split.get("strategies", 0.0))
     alpha_r = float(split.get("regimes", 0.0))
     alpha_p = float(split.get("panels", 0.0))
+    if frozen.get("panels") and alpha_p <= 0:
+        reasons.append("la calibración no reservó α para la familia de paneles")
+    panels_out, panel_hyp, panel_extra = _validate_panels(
+        full, spec, frozen.get("panels", {}), cut, alpha_p or spec.alpha
+    )
+    for pname, d in panel_extra["diagnostics"].items():
+        if not d["passed"]:
+            reasons.append(f"diagnósticos del panel '{pname}' no superados en la validación")
+    from tsinsurance.experiments.regimes import holm_extended
+
     significant = []
-    for fam, a in ((hyp, alpha_s), (reg_hyp, alpha_r), (panel_hyp, alpha_p)):
+    for fam, a, extra_m in (
+        (hyp, alpha_s, 0),
+        (reg_hyp, alpha_r, 0),
+        # Las especificaciones de panel previas (misma memoria) cuentan en la m del Holm
+        # también en la validación (revisión de la implementación, I3).
+        (panel_hyp, alpha_p, int(panel_extra["prior_tests"])),
+    ):
         ps = [h["p"] if h["p"] is not None and np.isfinite(h["p"]) else 1.0 for h in fam]
-        for h, ph in zip(fam, holm(ps) if ps else [], strict=True):
+        adj = holm_extended(ps, extra_m) if extra_m else holm(ps) if ps else []
+        for h, ph in zip(fam, adj, strict=True):
             h["row"]["p_holm"] = ph
             h["row"]["alpha_family"] = a
         significant += [h["id"] for h in fam if h["row"]["p_holm"] < a]
@@ -661,6 +690,8 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             "portfolios": ports_out,
             "regimes": regs_out,
             "panels": panels_out,
+            "panel_diagnostics": panel_extra["diagnostics"],
+            "panel_prior_tests_in_holm": panel_extra["prior_tests"],
         },
         "status": {
             "exploratory_reasons": reasons,
@@ -729,7 +760,9 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
                 f"{pr['estimate_calibration']:+.4f}) · p unilateral {pr['p_one_sided']:.3f} "
                 f"({pr['p_distribution']}) · Holm {pr['p_holm']:.3f} · WCR "
                 f"{'n/d' if wcr is None else f'{wcr:.3f}'} · efecto mínimo detectable "
-                f"{pr['mde']:.4f}" + (" (POCA POTENCIA)" if pr["low_power"] else "")
+                f"{pr['mde']:.4f}"
+                + (" (POCA POTENCIA)" if pr["low_power"] else "")
+                + (" (potencia no evaluable)" if pr["low_power"] is None else "")
             )
         report.append("")
     for name, r in econ_out.items():

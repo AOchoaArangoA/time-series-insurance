@@ -53,6 +53,9 @@ def test_single_treated_unit_uses_permutation() -> None:
     res = diff_in_diff(df, "y", treated, leads=2, lags=2)
     assert "permutación" in res.inference and res.se is None
     assert res.pvalue <= 1 / 15 + 1e-12  # el efecto real supera a todos los placebos
+    # 14 controles ⇒ p mínimo 1/15 > 0,05: se advierte que no puede rechazar al 5 %.
+    assert any("p mínimo alcanzable" in w for w in res.warnings)
+    assert res.pretrend_pvalue is not None and 0 < res.pretrend_pvalue <= 1
 
 
 def test_staggered_adoption_warning() -> None:

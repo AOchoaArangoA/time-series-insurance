@@ -228,9 +228,17 @@ limitaciones.
   - wild cluster bootstrap **restringido (WCR)**: Rademacher; con menos de 12 grupos,
     Webb; B ≥ 9 999 o enumeración completa; semilla explícita.
 
-  **Inferencia principal en paneles financieros:** Driscoll-Kraay con valores críticos
-  t(T−1). El WCR por unidad es sólo una sensibilidad, porque no es válido con un factor
-  común (revisión B2).
+  **Inferencia principal en paneles financieros** (enmendada tras la implementación,
+  research R9 y R10):
+  - el t de Driscoll-Kraay con FE o TWFE, con el error corregido por los grados de
+    libertad que absorben los efectos fijos;
+  - en los experimentos, el valor p sale de un **wild bootstrap restringido por bloques de
+    periodos**, condicionado a los X observados;
+  - fuera de los experimentos, `fit_panel` reporta el valor p analítico con la referencia
+    fixed-b (Kiefer y Vogelsang 2005), que sobre-rechaza con regresores persistentes y
+    errores autocorrelacionados (R10);
+  - el WCR por unidad es sólo una sensibilidad, porque no es válido con un factor común;
+  - DK fuera de FE/TWFE se reporta con valores p normales, con una advertencia.
 - **FR-003**: Con menos de 30 grupos, el resultado MUST advertir que los errores
   agrupados no son confiables y reportar también Driscoll-Kraay y el wild cluster
   bootstrap.
@@ -295,17 +303,25 @@ limitaciones.
   el sesgo medio de los efectos fijos es ≤ 0,02·|β| y el del MCO agrupado ≥ 0,2·|β|.
 - **SC-002**: Los coeficientes y errores coinciden con `linearmodels` con diferencia
   relativa ≤ 1e-6 (efectos fijos, de dos vías, aleatorios y errores agrupados).
-- **SC-003**: La prueba Mundlak/CRE tiene un tamaño de 3 % a 7 % al 5 % sin correlación, y
-  una potencia ≥ 80 % con corr(α_i, x̄_i) = 0,3 (N = 50, T = 20; ≥ 2 000 réplicas). Con
-  N = 11 se reporta el tamaño con F(q, G−1).
-- **SC-004**: Con 11 unidades, un factor común con cargas heterogéneas y un regresor
-  persistente (φ = 0,95), el tamaño **unilateral** al 5 % de Driscoll-Kraay con t(T−1)
-  está entre 3 % y 7 % para T ∈ {36, 300}, en interacciones con G₁ ∈ {2, 5}. Con G₁ = 1,
-  el resultado se declara no concluyente en el 100 % de los casos. El tamaño de los
-  errores agrupados y del WCR se reporta.
+- **SC-003** (enmendado, R10): La prueba Mundlak/CRE tiene un tamaño de 3 % a 7 % al 5 %
+  sin correlación, y una potencia ≥ 80 % con corr(α_i, x̄_i) = 0,4 (N = 50, T = 20;
+  ≥ 2 000 réplicas). Con 0,3 se reporta la potencia: el criterio original era infactible,
+  porque incluso el t oráculo tiene no centralidad ≈ 2,2 (potencia ≈ 60 %). Con N = 11 se
+  reporta el tamaño con F(q, G−1).
+- **SC-004** (enmendado, R10): Con 11 unidades, un factor común con cargas heterogéneas y
+  un regresor persistente rezagado (φ = 0,95), el tamaño **unilateral** al 5 % de la
+  inferencia principal (t de DK con wild bootstrap por bloques) está entre 3 % y 7 %
+  (proporción observada, 1 000 réplicas con semillas fijas) en estas celdas:
+  - T ∈ {36, 300} con G₁ ∈ {2, 5};
+  - una celda de reserva con errores AR(1), innovaciones t₅, innovación del regresor
+    correlacionada con el factor, desbalanceo y G₁ = 3.
+
+  Con G₁ = 1, el resultado se declara no concluyente en el 100 % de los casos. Se reporta
+  el tamaño de fixed-b y de los errores agrupados.
 - **SC-005**: Diferencias en diferencias recupera el efecto con sesgo ≤ 5 % bajo
-  tendencias paralelas. Se reportan el tamaño de la prueba de tendencias previas y su
-  potencia contra una violación que sesga el ATET en 1 ee.
+  tendencias paralelas. La prueba de tendencias previas (errores agrupados con F(q, G−1))
+  tiene un tamaño de 3 % a 7 % (± error de Monte Carlo). Se reporta su potencia contra una
+  violación que sesga el ATET en ~1 ee.
 
 ## Assumptions
 

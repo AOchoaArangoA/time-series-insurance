@@ -100,7 +100,7 @@ class PanelDiagnostics(ResultMixin):
     cross_section: dict[str, float]
     stationarity: dict[str, Any]
     arch: dict[str, float]
-    persistence: dict[str, dict[str, float]]
+    persistence: dict[str, dict[str, Any]]
     stability: dict[str, float] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     passed: bool = True
@@ -151,11 +151,16 @@ def panel_diagnostics(
         )
     station: dict[str, Any] = {}
     for col in x:
-        common = df[col].groupby(level=1).nunique().max() == 1
-        series = df[col].groupby(level=1).first() if common else df[col].groupby(level=1).mean()
+        nzc = df[col].abs().groupby(level=0).max() > 0
+        active = df[col][df.index.get_level_values(0).isin(set(nzc[nzc].index))]
+        series = active.groupby(level=1).mean()  # x_t común o la media de las tratadas
         try:
             rep = stationarity(series.dropna(), alpha=alpha, breaks=False)
-            station[col] = rep.integration_order
+            station[col] = {
+                "integration_order": rep.integration_order,
+                "conclusion": rep.conclusion,
+                "rule": rep.decision_rule,
+            }
             if rep.integration_order not in (0, None):
                 passed = False
                 warnings.append(
@@ -163,18 +168,50 @@ def panel_diagnostics(
                     "(retorno estacionario sobre un regresor no estacionario)."
                 )
         except TSInsuranceError as exc:
-            station[col] = f"no evaluado: {exc}"
+            station[col] = {"integration_order": None, "conclusion": f"no evaluado: {exc}"}
+    y_orders: dict[str, int | None] = {}
+    for unit, yu in df[y].groupby(level=0):
+        if len(yu) >= 30:
+            try:
+                y_orders[str(unit)] = stationarity(
+                    yu.droplevel(0).dropna(), alpha=alpha, breaks=False
+                ).integration_order
+            except TSInsuranceError:
+                y_orders[str(unit)] = None
+    station["__y_by_unit__"] = y_orders
+    bad_y = [u for u, o in y_orders.items() if o not in (0, None)]
+    if bad_y:
+        passed = False
+        warnings.append(f"La variable dependiente no es I(0) en {bad_y}.")
+    # ARCH y persistencia con los residuos del MODELO estimado: con efectos de tiempo, los
+    # de dos vías (revisión de la implementación, I5).
+    if time_effects:
+        from tsinsurance.panel.inference import _demean
+
+        dm2 = _demean(df, [y, *x], time_effects=True)
+        fit2 = sm.OLS(dm2[y], dm2[list(x)]).fit()
+        model_resid = pd.Series(fit2.resid, index=dm2.index)
+    else:
+        model_resid = resid
     arch_p: dict[str, float] = {}
-    for unit, r in resid.groupby(level=0):
+    arch_failed: list[str] = []
+    for unit, r in model_resid.groupby(level=0):
         if len(r) > 30:
-            arch_p[str(unit)] = float(arch_lm(r.to_numpy()).p_value or 1.0)
+            pv = arch_lm(r.to_numpy()).p_value
+            if pv is None:
+                arch_failed.append(str(unit))
+            else:
+                arch_p[str(unit)] = float(pv)
+    if arch_failed:
+        warnings.append(f"ARCH-LM sin valor p en {arch_failed}.")
     if arch_p and sum(p < alpha for p in arch_p.values()) > len(arch_p) / 2:
         warnings.append("ARCH en los residuos de la mayoría de las unidades.")
         passed = False
     stability: dict[str, float] = {}
     by_period = resid.groupby(level=1).mean()
     # Con efectos de tiempo la media por periodo de los residuos es el factor común que el
-    # modelo absorbe: el CUSUM detectaría ciclos de mercado, no inestabilidad del modelo.
+    # modelo absorbe: el CUSUM detectaría ciclos de mercado. La estabilidad de cada
+    # coeficiente se prueba entonces con Nyblom-Hansen (`score_stability`).
     if not time_effects and len(by_period) >= 20:
         from statsmodels.stats.diagnostic import breaks_cusumolsresid
 
@@ -186,20 +223,33 @@ def panel_diagnostics(
                 "Inestabilidad de los parámetros (CUSUM de los residuos apilados por periodo)."
             )
     persistence: dict[str, dict[str, float]] = {}
+    units_all = df.index.get_level_values(0)
     for col in x:
-        xs = df[col].groupby(level=1).mean()
+        nz = df[col].abs().groupby(level=0).max() > 0
+        treated = set(nz[nz].index)
+        is_interaction = 0 < len(treated) < nz.size
+        sub = df[col][units_all.isin(treated)] if is_interaction else df[col]
+        xs = sub.groupby(level=1).mean()
         if len(xs) < 20:
             continue
         rho = float(np.corrcoef(xs.to_numpy()[1:], xs.to_numpy()[:-1])[0, 1])
         innov = xs - rho * xs.shift(1)
-        r_t = resid.groupby(level=1).mean().reindex(innov.index)
-        both = pd.concat([innov, r_t], axis=1).dropna()
+        mr_units = model_resid.index.get_level_values(0)
+        if is_interaction:
+            # Choque diferencial tratadas − controles (Hjalmarsson 2008 para x_t·D_i).
+            r_t = (
+                model_resid[mr_units.isin(treated)].groupby(level=1).mean()
+                - model_resid[~mr_units.isin(treated)].groupby(level=1).mean()
+            )
+        else:
+            r_t = model_resid.groupby(level=1).mean()
+        both = pd.concat([innov, r_t.reindex(innov.index)], axis=1).dropna()
         corr = (
             float(np.corrcoef(both.iloc[:, 0], both.iloc[:, 1])[0, 1])
             if len(both) > 10
             else float("nan")
         )
-        persistence[col] = {"rho": rho, "innovation_corr": corr}
+        persistence[col] = {"rho": rho, "innovation_corr": corr, "interaction": is_interaction}
         if rho > PERSISTENCE_RHO and abs(corr) > PERSISTENCE_CORR:
             passed = False
             warnings.append(
