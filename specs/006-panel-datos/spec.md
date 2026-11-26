@@ -225,17 +225,34 @@ limitaciones.
   - homocedástico y robusto;
   - agrupado por unidad, por tiempo y en dos vías;
   - Driscoll-Kraay (ancho de banda declarado);
-  - wild cluster bootstrap (Rademacher; con menos de 12 grupos, Webb).
+  - wild cluster bootstrap **restringido (WCR)**: Rademacher; con menos de 12 grupos,
+    Webb; B ≥ 9 999 o enumeración completa; semilla explícita.
+
+  **Inferencia principal en paneles financieros:** Driscoll-Kraay con valores críticos
+  t(T−1). El WCR por unidad es sólo una sensibilidad, porque no es válido con un factor
+  común (revisión B2).
 - **FR-003**: Con menos de 30 grupos, el resultado MUST advertir que los errores
   agrupados no son confiables y reportar también Driscoll-Kraay y el wild cluster
   bootstrap.
+- **FR-003a**: Para cada interacción con una característica de la unidad MUST reportarse
+  G₁ (unidades tratadas). Con G₁ < 2, el coeficiente es no concluyente.
 - **FR-004**: Los regresores constantes por unidad (con efectos de unidad) o comunes a
   todas las unidades (con efectos de tiempo) MUST informarse como absorbidos y excluirse.
   Si la variación *within* es baja, MUST advertirse.
 - **FR-005**: Todo resultado MUST incluir:
   - una sección de supuestos causales (qué sesgo controla el estimador y cuál no);
   - diagnósticos: correlación serial de Wooldridge, dependencia transversal CD de
-    Pesaran, número de unidades y periodos, y balance.
+    Pesaran (sin efectos de tiempo; con ellos se advierte), número de unidades y periodos,
+    y balance;
+  - diagnósticos del Principio I:
+    - estacionariedad de los regresores y de y (ADF + KPSS);
+    - ARCH-LM por unidad;
+    - estabilidad (Chow o CUSUM);
+    - persistencia de los regresores y correlación de sus innovaciones con los residuos
+      (sesgo tipo Stambaugh en panel).
+
+  Con un regresor I(1) o persistente y con correlación, los diagnósticos no se superan y
+  el resultado es exploratorio.
 - **FR-006**: La comparación de efectos fijos y aleatorios MUST reportar el Hausman clásico
   y la prueba Mundlak/CRE robusta, y basar la recomendación en la robusta.
 - **FR-007**: Efectos aleatorios MUST reportar las varianzas de los componentes y θ.
@@ -246,8 +263,13 @@ limitaciones.
 - **FR-009**: Los paneles MUST seguir las dos fases:
   - calibración con datos truncados en el corte;
   - validación única unilateral de las hipótesis pre-registradas;
-  - registro en la bitácora con clave de memoria (unidades, variable dependiente,
-    efectos);
+  - registro en la bitácora con clave de memoria (variable dependiente, universo, con
+    Jaccard ≥ 0,5); son variantes los regresores, los efectos, el estimador, el tipo de
+    error y la hipótesis con signo;
+  - valor p unilateral con t(T−1) (DK) y efecto mínimo detectable ex ante;
+  - tipo de error, ancho de banda, B y semilla congelados en la calibración;
+  - α de la familia de paneles tomado del reparto congelado (estrategias 0,7α, regímenes
+    0,15α y paneles 0,15α; suma α);
   - detección de periodo ya visto para cada unidad.
 - **FR-010**: Diferencias en diferencias MUST estimar el ATET con efectos fijos de unidad
   y tiempo, un estudio de evento con periodos relativos y una prueba conjunta de
@@ -274,14 +296,16 @@ limitaciones.
 - **SC-002**: Los coeficientes y errores coinciden con `linearmodels` con diferencia
   relativa ≤ 1e-6 (efectos fijos, de dos vías, aleatorios y errores agrupados).
 - **SC-003**: La prueba Mundlak/CRE tiene un tamaño de 3 % a 7 % al 5 % sin correlación, y
-  una potencia ≥ 80 % con correlación moderada (N = 50, T = 20; ≥ 500 réplicas).
-- **SC-004**: Con 11 unidades, T = 300 y un factor común, el tamaño al 5 % de la prueba de
-  un coeficiente nulo es:
-  - ≤ 8 % con Driscoll-Kraay y con el wild cluster bootstrap;
-  - el de los errores agrupados por unidad se **reporta** (se espera que sea mayor).
+  una potencia ≥ 80 % con corr(α_i, x̄_i) = 0,3 (N = 50, T = 20; ≥ 2 000 réplicas). Con
+  N = 11 se reporta el tamaño con F(q, G−1).
+- **SC-004**: Con 11 unidades, un factor común con cargas heterogéneas y un regresor
+  persistente (φ = 0,95), el tamaño **unilateral** al 5 % de Driscoll-Kraay con t(T−1)
+  está entre 3 % y 7 % para T ∈ {36, 300}, en interacciones con G₁ ∈ {2, 5}. Con G₁ = 1,
+  el resultado se declara no concluyente en el 100 % de los casos. El tamaño de los
+  errores agrupados y del WCR se reporta.
 - **SC-005**: Diferencias en diferencias recupera el efecto con sesgo ≤ 5 % bajo
-  tendencias paralelas. La prueba de tendencias previas rechaza con potencia ≥ 80 % cuando
-  la pendiente diferencial es de 0,5σ por periodo.
+  tendencias paralelas. Se reportan el tamaño de la prueba de tendencias previas y su
+  potencia contra una violación que sesga el ATET en 1 ee.
 
 ## Assumptions
 
@@ -297,6 +321,13 @@ limitaciones.
 ## Clarifications
 
 ### Session 2026-11-26
+
+- Revisión econométrica del diseño:
+  - 3 bloqueantes, resueltos en FR-002, FR-003a, FR-005, FR-009 y SC-004:
+    - reparto de α;
+    - inferencia con dependencia transversal y G₁;
+    - diagnósticos del Principio I;
+  - 7 importantes y 5 menores: research R8.
 
 - Q: ¿Caso de uso principal? → A: sectores × meses (11 ETFs GICS), con datos ya
   disponibles.

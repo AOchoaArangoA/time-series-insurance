@@ -53,7 +53,16 @@ La demostración usa el Tesoro de EE. UU. (Yahoo, 4 nodos).
 | VII. Simplicidad | Diferencias finitas en lugar de diferenciación automática; reutiliza `statsmodels` y `arch` |
 | VIII. Backtesting responsable | FR-017: las asignaciones pasan por el flujo de experimentos |
 
-**Gate**: pasa.
+Agregado tras la revisión (R9):
+
+| Principio | Cumplimiento |
+|---|---|
+| I. Rigor (diagnósticos) | ADF/PP+KPSS, ZA y residuos; AIC/BIC de regímenes (FR-001b) |
+| II. Benchmark | Pronóstico frente a paseo aleatorio con Diebold-Mariano |
+| IV-bis. Contrato | `rate_nodes` con `rate_type` y `compounding` (aditivo) |
+| V. API | Resultados inmutables con `summary()` (contracts/python-api.md) |
+
+**Gate**: pasa tras las correcciones de la revisión.
 
 ## Project Structure
 

@@ -132,3 +132,162 @@ con dos fases, costos y pruebas múltiples. La documentación lo exige.
 | SC-003 | 2 regímenes con p₁₁ = 0,98 y p₂₂ = 0,95, distintas σ y θ; T = 2 000; 200 réplicas (estimación lenta) |
 | SC-004 | Cupón cero a 10 años bajo Vasicek ℚ; 10 000 trayectorias; variable de control = el mismo bono con la integral exacta de r (esquema de Euler pareado) |
 | SC-007 | Retornos t de Student con GARCH; VaR al 99 %; modelo correcto frente a σ × 0,7; T = 1 000; 500 réplicas |
+
+## R9. Correcciones tras la revisión econométrica del diseño (2026-11-26)
+
+### Bloqueantes
+
+**B1 — variable de control (SC-004).**
+- Se simula (r_T, Y = ∫₀ᵀ r dt) de forma **exacta**: en Vasicek son conjuntamente
+  gaussianos, con media y covarianza cerradas.
+- El estimador es el factor de descuento exp(−Y). La variable de control es **Y**, cuya
+  media cerrada es E[Y] = θτ + (r₀ − θ)·B(τ). Un precio cerrado es una constante y no sirve
+  como control.
+- β se estima en una muestra piloto independiente.
+- Las antitéticas sólo se ofrecen en motores gaussianos o t simétricos. En CIR se usan
+  uniformes U y 1 − U en la inversa o no se ofrecen (se declara).
+- SC-004 exige que el precio estimado esté dentro de 3 ee del cerrado (sin sesgo de
+  discretización, porque la simulación es exacta) y una reducción de varianza ≥ 5×.
+
+**B2 — SC-001 y el sesgo de κ.**
+- El estimador de MV de κ tiene un sesgo de orden ≈ 4/T_años (Tang y Chen 2009; Phillips y
+  Yu 2009).
+- Los intervalos de κ y θ se calculan con un **bootstrap paramétrico** (B = 499), y se
+  ofrece la corrección de sesgo por *jackknife* (Phillips y Yu 2009).
+- φ̂ ≥ 1 (sin reversión a la media) se maneja de forma explícita: κ no identificado,
+  advertencia y alternativa de paseo aleatorio.
+- **SC-001 rehecho:**
+  - cobertura del IC de **σ** entre 92 % y 98 %;
+  - para κ y θ se reportan el sesgo y la cobertura con un proceso generador fijado
+    (κ = 0,5, θ = 0,04, σ = 0,01, Δ = 1/252);
+  - la cobertura de 92-98 % para κ sólo se exige con κT ≥ 50.
+
+**B3 — diagnósticos y validación fuera de muestra** (FR-001b nuevo).
+- **Sobre r_t:** ADF/PP + KPSS y Zivot-Andrews, con la regla jerárquica existente.
+- **Sobre los residuos estandarizados:** Ljung-Box, ARCH-LM, Jarque-Bera y CUSUM.
+- **Validación walk-forward** del pronóstico a 1 mes frente al paseo aleatorio, con
+  Diebold-Mariano HLN.
+- **Número de regímenes** (1 o 2) por AIC y BIC.
+- Diagnósticos no superados ⇒ marca en el resultado. Vasicek con σ constante fallará
+  ARCH: se espera y se reporta.
+
+**B4 — regímenes coherentes entre estimación y simulación.**
+- Se usa `MarkovRegression` con r_{t−1} como regresor exógeno, `switching_exog=True` y
+  `switching_variance=True`: r_t = c_s + φ_s·r_{t−1} + σ_s·ε. Se interpreta como
+  θ_s = c_s/(1 − φ_s) y κ_s = −ln(φ_s)/Δ.
+- La simulación usa **exactamente** esa recursión: es la discretización exacta de Vasicek
+  en cada régimen con paso Δ.
+- **Identificación:** varias inicializaciones (`search_reps`) y los regímenes se ordenan
+  por σ_s para evitar la permutación de etiquetas entre estimaciones walk-forward.
+
+### Importantes
+
+**I1 — probabilidades filtradas sin fuga.**
+- Todo resultado de regímenes declara `params_estimation_end`. Una probabilidad filtrada
+  en t con parámetros estimados con datos posteriores a t se rotula
+  **pseudo-filtrada (descriptiva)**.
+- El estrés por régimen y el backtesting re-estiman walk-forward con frecuencia mensual
+  declarada.
+- La prueba de anticipación reutiliza `backtest/lookahead.py` sobre la función "datos →
+  probabilidad filtrada en t con re-estimación hasta t".
+
+**I2 — calibración ℚ correcta con los datos disponibles.**
+- **Convenciones de los datos:**
+  - **^IRX** (descuento a 13 semanas): precio = 1 − d·n/360 con n = 91; tasa continua
+    r = −ln(precio)·365/n;
+  - **^FVX, ^TNX, ^TYX** son rendimientos par semestrales. El modelo **valora el bono
+    par**: y_par = 2(1 − P(T))/Σ P(t_i), con t_i semestrales. Así se calibra al dato
+    observado y **no** se trata el par como cero.
+- **Identificación:** parámetros ℚ comunes en una ventana (p. ej. 12 meses de datos
+  diarios), con r_t de cada fecha fijado en la tasa corta observada (^IRX).
+- **Girsanov:**
+  - σ_ℚ = σ_ℙ por construcción, y se reporta si la calibración libre los separa
+    (diagnóstico);
+  - **Vasicek:** κ_ℚ = κ_ℙ y θ_ℚ = θ_ℙ − λσ/κ, con λ el precio de mercado del riesgo;
+  - **CIR:** κ_ℚ = κ_ℙ + λσ y θ_ℚ = κ_ℙθ_ℙ/κ_ℚ.
+
+  Se reportan λ y su error estándar por el jacobiano.
+
+**I3 — Hull-White sin θ(t).**
+- Se simula r(t) = x(t) + α(t), con dx = −a·x dt + σ dW y
+  α(t) = f^M(0, t) + σ²/(2a²)·(1 − e^{−at})². No se necesita ∂f/∂t.
+- El forward de `NodeCurve` se define continuo por la derecha.
+- SC-005 rehecho: el precio Monte Carlo de cupones cero reproduce P^M(0, T) dentro de
+  3 ee. La fórmula cerrada en t = 0 es una identidad y no se usa como criterio.
+
+**I4 — KRD y duración.**
+- **KRD analítica:** KRD_i = Σ_k c_k·t_k·w_i(t_k)·e^{−z(t_k)·t_k}/PV, con funciones
+  triangulares w_i que suman 1. En los extremos (13 semanas y 30 años) se extienden
+  planas.
+- La comparación es contra la **duración efectiva (Fisher-Weil)** ante un choque paralelo
+  de las tasas cero, no contra la duración modificada en rendimiento.
+- La tolerancia es **relativa** 1e-10 (analítico frente a analítico). Frente a diferencias
+  finitas centrales con 1 pb, la tolerancia relativa es 1e-6, con el mismo esquema en
+  ambos lados.
+
+**I5 — histórica filtrada y horizonte.**
+- La varianza inicial del EWMA y los parámetros GARCH se estiman **sólo** con datos
+  anteriores a la fecha de análisis.
+- Los cambios solapados a h días usan bootstrap **por bloques** para el IC.
+- El IC sobre escenarios de Monte Carlo mide **sólo** el error de simulación (se declara).
+- El horizonte h > 1 día se obtiene simulando la trayectoria. El escalado por √h queda
+  como opción explícita, con su supuesto de iid declarado.
+
+**I6 — backtesting.**
+- Z2 guarda la distribución predictiva completa en cada t (los escenarios) y simula su
+  valor p bajo esa distribución. Es unilateral e ignora el error de estimación; se
+  documenta.
+- **SC-007:**
+  - el modelo correcto es el **oráculo**: los mismos parámetros del proceso generador;
+  - las alternativas son σ × 0,7 y σ × 0,9 (potencia reportada);
+  - se agrega la prueba por duraciones de Christoffersen y Pelletier (2004).
+
+**I7 — contrato de nodos.**
+- Extensión aditiva y versionada de `rate_nodes`: columnas opcionales `rate_type`
+  (`zero`, `par`, `discount`) y `compounding` (`continuous`, `semiannual`, `annual`,
+  `discount_act360`).
+- Se coordina con el paquete hermano mediante el JSON Schema publicado. Las series del
+  paquete de insumos pueden declarar `tenor_years`, `rate_type` y `compounding` en el
+  manifiesto.
+
+**I8 — dos medidas en los escenarios.**
+- `Scenarios` declara `state_measure` (con qué medida se simuló el estado) y
+  `pricing_measure` (con qué fórmula se revalúa), junto con el mapeo explícito del estado
+  (r_t o factores) a los nodos.
+- **Caso típico:** estado bajo ℙ y revaluación con la fórmula ℚ con λ calibrada.
+
+**I9 — rendimiento.**
+- Re-estimación **mensual** de Markov y GARCH en el backtesting; los parámetros se
+  mantienen durante el mes.
+- SC-008 se evalúa así y la frecuencia se declara en el resultado.
+
+### Menores
+
+- **M1 — CIR con tasas casi nulas.** Prueba con valores cero (`ncx2.logpdf` se degenera):
+  se usa un piso numérico declarado o la advertencia de inaplicabilidad. La condición de
+  Feller se reporta con su IC. Las dos simulaciones de CIR (χ² no central y mezcla de
+  Poisson y gamma) son **exactas**. Las fechas irregulares usan Δ real en días hábiles y
+  se declara.
+- **M2 — datos de ^TYX.** Se verifica la serie en 2002-2006 (el bono a 30 años no se
+  emitió), la alineación de feriados y las unidades. Los huecos se tratan como faltantes y
+  se informan.
+- **M3 — PCA.** Covarianza en puntos básicos. Γ cruzado con un esquema de 4 puntos.
+  Diebold-Li con 4 nodos y 3 factores deja 1 grado de libertad: se reporta el residuo por
+  nodo.
+- **M4 — parámetros explícitos.** λ_EWMA, el umbral de régimen (0,8) y el mínimo de
+  observaciones (250).
+- **M5 — cobertura.** El objetivo de 1e-8 sólo se exige si las restricciones son
+  factibles; si no, se reporta la exposición residual mínima.
+- **M6 — prueba por duraciones** de Christoffersen y Pelletier, por la baja potencia de
+  Christoffersen con pocas excepciones.
+
+### Constitution Check corregido
+
+El plan agrega:
+- I (diagnósticos: B3);
+- II (fuga: I1, I5);
+- IV-bis (contrato de nodos: I7);
+- V (API tipada con resultados inmutables con `summary()`);
+- el benchmark de pronóstico (paseo aleatorio con DM).
+
+`contracts/python-api.md` se agrega en esta corrección.

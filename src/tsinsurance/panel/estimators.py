@@ -182,7 +182,13 @@ def fit_panel(
     y reporta en ``diagnostics`` los errores Driscoll-Kraay como alternativa. El wild
     cluster bootstrap está en :func:`tsinsurance.panel.inference.wild_cluster_bootstrap`.
     """
-    from linearmodels.panel import FirstDifferenceOLS, PanelOLS, PooledOLS, RandomEffects
+    try:
+        from linearmodels.panel import FirstDifferenceOLS, PanelOLS, PooledOLS, RandomEffects
+    except ImportError as exc:  # pragma: no cover - depende del entorno
+        raise ImportError(
+            "Los modelos de panel requieren el extra opcional: "
+            'pip install "tsinsurance[panel]" (instala linearmodels).'
+        ) from exc
 
     df = to_panel(frame)[[y, *x]].dropna()
     entity_fx = estimator in ("fe", "twfe")

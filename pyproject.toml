@@ -19,7 +19,6 @@ dependencies = [
     "arch>=7.0",
     "pandera>=0.20",
     "pyarrow>=15",
-    "linearmodels>=7.0",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +26,9 @@ yahoo = ["yfinance>=0.2.40"]
 excel = ["openpyxl>=3.1"]
 backtest = ["bt>=1.1"]
 viz = ["matplotlib>=3.8"]
+panel = [
+    "linearmodels>=7.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/AOchoaArangoA/time-series-insurance"

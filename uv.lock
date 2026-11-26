@@ -2965,7 +2965,6 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "arch" },
-    { name = "linearmodels" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pandas" },
@@ -2982,6 +2981,9 @@ backtest = [
 ]
 excel = [
     { name = "openpyxl" },
+]
+panel = [
+    { name = "linearmodels" },
 ]
 viz = [
     { name = "matplotlib" },
@@ -3005,7 +3007,7 @@ dev = [
 requires-dist = [
     { name = "arch", specifier = ">=7.0" },
     { name = "bt", marker = "extra == 'backtest'", specifier = ">=1.1" },
-    { name = "linearmodels", specifier = ">=7.0" },
+    { name = "linearmodels", marker = "extra == 'panel'", specifier = ">=7.0" },
     { name = "matplotlib", marker = "extra == 'viz'", specifier = ">=3.8" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "openpyxl", marker = "extra == 'excel'", specifier = ">=3.1" },
@@ -3016,7 +3018,7 @@ requires-dist = [
     { name = "statsmodels", specifier = ">=0.14" },
     { name = "yfinance", marker = "extra == 'yahoo'", specifier = ">=0.2.40" },
 ]
-provides-extras = ["yahoo", "excel", "backtest", "viz"]
+provides-extras = ["yahoo", "excel", "backtest", "viz", "panel"]
 
 [package.metadata.requires-dev]
 dev = [

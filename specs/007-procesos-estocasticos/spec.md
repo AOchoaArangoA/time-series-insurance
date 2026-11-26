@@ -290,10 +290,23 @@ limitaciones.
 
 - **FR-001**: El paquete MUST ofrecer Vasicek y CIR bajo ℙ con estimación por máxima
   verosimilitud exacta, errores estándar, condición de Feller y simulación exacta.
+- **FR-001b**: La tasa corta MUST tener diagnósticos, con una marca de fallo en el
+  resultado:
+  - estacionariedad (ADF/PP + KPSS) y Zivot-Andrews sobre r_t;
+  - Ljung-Box, ARCH-LM, Jarque-Bera y CUSUM sobre los residuos estandarizados;
+  - validación walk-forward del pronóstico frente al paseo aleatorio, con Diebold-Mariano;
+  - elección del número de regímenes por AIC y BIC.
+- **FR-001c**: Los intervalos de κ y θ MUST obtenerse por bootstrap paramétrico, con
+  corrección de sesgo por *jackknife* disponible. φ̂ ≥ 1 MUST manejarse de forma
+  explícita (κ no identificado).
 - **FR-002**: El paquete MUST ofrecer un modelo de 2 o más regímenes de Markov para la
   tasa corta (nivel y/o volatilidad por régimen) con:
   - matriz de transición;
   - probabilidades filtradas (punto en el tiempo) y suavizadas (descriptivas);
+  - recursión r_t = c_s + φ_s·r_{t−1} + σ_s·ε, idéntica en estimación y simulación;
+  - regímenes ordenados por σ;
+  - `params_estimation_end` declarado; una probabilidad con parámetros estimados con datos
+    posteriores se rotula pseudo-filtrada;
   - simulación con regímenes.
 - **FR-003**: Vasicek, CIR y Hull-White MUST valorar bonos cupón cero en forma cerrada
   exponencial-afín bajo ℚ.
@@ -303,7 +316,12 @@ limitaciones.
   de curva** (descuento y forward instantáneo). El paquete MUST incluir sólo una curva
   mínima de nodos (lineal en tasas cero, plana fuera de rango), documentada como no apta
   para producción.
-- **FR-005**: Todo objeto de proceso y todo resultado MUST declarar su medida (ℙ o ℚ).
+- **FR-005**: Todo objeto de proceso y todo resultado MUST declarar su medida (ℙ o ℚ). Los
+  escenarios declaran `state_measure` y `pricing_measure`, y el mapeo del estado a los
+  nodos.
+- **FR-005a**: La calibración ℚ MUST valorar el dato observado según su convención (par
+  semestral, descuento act/360, cero continuo), con parámetros comunes en una ventana,
+  σ_ℚ = σ_ℙ por Girsanov y el precio de mercado del riesgo λ con su error estándar.
 
 **Simulación (simulation/)**
 
@@ -366,25 +384,30 @@ limitaciones.
 
 ### Measurable Outcomes
 
-- **SC-001**: La estimación de Vasicek y CIR sobre 500 trayectorias simuladas (T = 2 500
-  días) tiene una cobertura de los intervalos al 95 % de entre 92 % y 98 % para κ, θ y σ.
+- **SC-001**: Con el proceso generador κ = 0,5, θ = 0,04, σ = 0,01 y T = 2 500 días
+  (500 réplicas), la cobertura del IC al 95 % de σ está entre 92 % y 98 %. Para κ y θ se
+  reportan el sesgo y la cobertura por bootstrap paramétrico. La cobertura de 92-98 %
+  para κ sólo se exige con κT ≥ 50.
 - **SC-002**: La simulación exacta reproduce media y varianza teóricas a 1 año dentro de
   3 errores de Monte Carlo.
 - **SC-003**: El modelo de regímenes recupera la matriz de transición de un proceso
   simulado de 2 regímenes con un error absoluto medio ≤ 0,05 (T = 2 000).
-- **SC-004**: Los precios cerrados de cupón cero coinciden con Monte Carlo bajo ℚ dentro
-  de 3 errores estándar. La variable de control reduce la varianza al menos 5 veces.
-- **SC-005**: Hull-White reproduce la curva inicial con un error ≤ 1e-8 en precio.
+- **SC-004**: Con la simulación exacta de (r_T, ∫r), el precio Monte Carlo de un cupón
+  cero a 10 años bajo Vasicek ℚ está dentro de 3 ee del cerrado. La variable de control
+  ∫r, con su media cerrada, reduce la varianza al menos 5 veces.
+- **SC-005**: Hull-White simulado como r = x + α(t) reproduce los precios P^M(0, T) de la
+  curva inicial dentro de 3 ee de Monte Carlo.
 - **SC-006**:
   - Duración y convexidad analíticas frente a diferencias finitas: diferencia relativa
     ≤ 1e-6.
   - Error de ΔΓ ante un choque de 10 pb: ≤ 1 % del error de Δ.
-  - Suma de las *key-rate* durations: igual a la duración con diferencia ≤ 1e-6 bajo
-    choque paralelo.
-- **SC-007**: El backtesting de VaR tiene un tamaño de 3 % a 7 % (Kupiec, al 5 %) con un
-  modelo correcto, y una potencia ≥ 80 % contra un modelo que subestima la volatilidad un
-  30 % (T = 1 000, VaR 99 %).
-- **SC-008**: La demostración con el Tesoro corre de punta a punta en menos de 5 minutos.
+  - Suma de las KRD analíticas: igual a la duración efectiva (Fisher-Weil) con diferencia
+    relativa ≤ 1e-10. Frente a diferencias finitas centrales con 1 pb: ≤ 1e-6.
+- **SC-007**: Con el modelo oráculo, el backtesting de VaR tiene un tamaño de 3 % a 7 %
+  (Kupiec, al 5 %), con potencia ≥ 80 % contra σ × 0,7. Contra σ × 0,9 se reporta
+  (T = 1 000, VaR 99 %). Se incluye la prueba por duraciones.
+- **SC-008**: La demostración con el Tesoro corre de punta a punta en menos de 5 minutos,
+  con re-estimación mensual declarada.
 
 ## Assumptions
 
@@ -400,6 +423,14 @@ limitaciones.
 ## Clarifications
 
 ### Session 2026-11-26
+
+- Revisión econométrica del diseño:
+  - 4 bloqueantes, resueltos en FR-001b, FR-001c, FR-002, SC-001 y SC-004:
+    - variable de control circular;
+    - sesgo de κ;
+    - diagnósticos;
+    - regímenes coherentes;
+  - 9 importantes y 6 menores: research R9.
 
 - Q: ¿Frontera con el paquete hermano de curvas? → A: Estricta. Aquí van las curvas
   implícitas de los modelos, la dinámica de factores, el PCA y Diebold-Li con λ fija; el

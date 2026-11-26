@@ -19,8 +19,9 @@ Después se integra al flujo de experimentos con `[[panels]]` y las dos fases de
 ## Technical Context
 
 - **Language**: Python ≥ 3.11.
-- **Dependencias**: `linearmodels>=7.0`, nueva (justificada en research R1); `statsmodels`;
-  `numpy`; `pandas`. R `plm` sólo para generar las referencias guardadas.
+- **Dependencias**: `linearmodels>=7.0` como **extra opcional `[panel]`** (revisión I7),
+  con import diferido y un mensaje claro si falta; `statsmodels`; `numpy`; `pandas`. R
+  `plm` sólo para generar las referencias guardadas.
 - **Testing**: pytest; Monte Carlo con la marca `slow`; referencias de R en
   `tests/data/reference/`.
 - **Constraints**:
@@ -70,3 +71,11 @@ docs/methodology/panel.md
 4. Experimentos `[[panels]]`: US3.
 5. Demostración sectorial: US5.
 6. Monte Carlo, documentación y revisión.
+
+## Complexity Tracking
+
+| Agregado | Por qué | Alternativa descartada |
+|---|---|---|
+| `linearmodels` (extra `[panel]`) | Estimadores de panel probados (FE, RE, FD, DK) del autor de `arch`; Facure lo usa | Reimplementar FE/RE/DK: más código propio que verificar |
+| Inferencia propia (WCR, Mundlak, Wooldridge, diagnósticos) | No está en `linearmodels` o no cubre panel desbalanceado con dos vías | — |
+| Reparto de α en tres familias | Mantener FWER ≤ α con estrategias, regímenes y paneles | Una sola familia: le quita potencia a las estrategias (revisión 005, I1) |
