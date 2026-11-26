@@ -98,8 +98,15 @@ def test_rate_nodes_rules() -> None:
     )
     assert validate(df, "rate_nodes").is_valid
     bad = df.assign(tenor_years=[0.0, 10.0], compounding=["annual", "monthly"])
-    assert {"greater_than(0.0)", "isin(['continuous', 'annual', 'semiannual', 'simple'])"} <= (
-        checks_failed(bad, "rate_nodes")
+    assert {
+        "greater_than(0.0)",
+        "isin(['continuous', 'annual', 'semiannual', 'simple', 'discount_act360'])",
+    } <= checks_failed(bad, "rate_nodes")
+    # Extensión aditiva (spec 007, I7): rate_type opcional y la convención de descuento.
+    ext = df.assign(rate_type=["discount", "par"], compounding=["discount_act360", "semiannual"])
+    assert validate(ext, "rate_nodes").is_valid
+    assert "isin(['zero', 'par', 'discount'])" in checks_failed(
+        ext.assign(rate_type=["zero", "forward"]), "rate_nodes"
     )
 
 

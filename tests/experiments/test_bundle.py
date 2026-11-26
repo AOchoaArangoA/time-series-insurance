@@ -185,3 +185,25 @@ def test_high_volatility_regime_scales_threshold(bundle_dir: Path) -> None:
     r[800], r[801] = -0.12, 0.10
     data.loc[idx, "value"] = px[0] * np.exp(np.concatenate([[0.0], np.cumsum(r)]))
     assert not replace(b, data=data).quality_warnings()
+
+
+def test_optional_rate_fields_do_not_change_existing_fingerprint(bundle_dir) -> None:  # noqa: ANN001
+    """Spec 007 I7: los campos de nodos son aditivos; sin declararlos, la huella no cambia."""
+    import dataclasses
+
+    from tsinsurance.data.bundle import Bundle, seal_hash
+
+    b = Bundle.load(bundle_dir)
+    assert "tenor_years" not in b.manifest()["series"][0]
+    assert seal_hash(b.data, b.manifest()["series"]) == b.sha256
+    tagged = dataclasses.replace(
+        b,
+        series=tuple(
+            dataclasses.replace(s, tenor_years=10.0, rate_type="par", compounding="semiannual")
+            if s.id == "SPREAD"
+            else s
+            for s in b.series
+        ),
+    )
+    spread = next(s for s in tagged.manifest()["series"] if s["id"] == "SPREAD")
+    assert spread["tenor_years"] == 10.0 and spread["rate_type"] == "par"

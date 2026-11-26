@@ -79,6 +79,25 @@ class SeriesSpec:
     retrieved_at: str = ""
     license: str = ""
     redistributable: bool = False
+    # Nodos de tasas (spec 007, I7): opcionales y aditivos. Sólo se serializan si se
+    # declaran, para no cambiar la huella de los paquetes existentes.
+    tenor_years: float | None = None
+    rate_type: str = ""  # zero | par | discount
+    compounding: str = ""  # continuous | semiannual | annual | discount_act360
+
+
+#: Campos de :class:`SeriesSpec` que se omiten del manifiesto cuando están vacíos.
+OPTIONAL_RATE_FIELDS = ("tenor_years", "rate_type", "compounding")
+RATE_TYPES = ("zero", "par", "discount")
+COMPOUNDINGS = ("continuous", "semiannual", "annual", "discount_act360")
+
+
+def _series_dict(s: SeriesSpec) -> dict[str, Any]:
+    out = {f.name: getattr(s, f.name) for f in fields(SeriesSpec)}
+    for k in OPTIONAL_RATE_FIELDS:
+        if out[k] in (None, ""):
+            del out[k]
+    return out
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,6 +142,13 @@ def _issues(manifest: Mapping[str, Any], data: pd.DataFrame | None) -> list[Bund
             to_offset(str(s.get("release_lag", "0D")))
         except ValueError:
             out.append(BundleIssue(sid, "release_lag", "no es un rezago válido (p. ej. '1B')"))
+        if s.get("rate_type", "") not in ("", *RATE_TYPES):
+            out.append(BundleIssue(sid, "rate_type", f"debe ser uno de {RATE_TYPES}"))
+        if s.get("compounding", "") not in ("", *COMPOUNDINGS):
+            out.append(BundleIssue(sid, "compounding", f"debe ser uno de {COMPOUNDINGS}"))
+        ten = s.get("tenor_years")
+        if ten is not None and (not isinstance(ten, (int, float)) or float(ten) <= 0):
+            out.append(BundleIssue(sid, "tenor_years", "debe ser un número > 0"))
         if role == "risk_free" and s.get("rf_convention") not in RF_CONVENTIONS:
             out.append(BundleIssue(sid, "rf_convention", f"debe ser uno de {RF_CONVENTIONS}"))
         if not s.get("license"):
@@ -261,9 +287,7 @@ class Bundle:
                 "created_with": f"tsinsurance {__version__}",
                 "sha256": self.sha256,
             },
-            "series": [
-                {f.name: getattr(s, f.name) for f in fields(SeriesSpec)} for s in self.series
-            ],
+            "series": [_series_dict(s) for s in self.series],
         }
 
     def save(self, directory: str | os.PathLike[str]) -> Path:

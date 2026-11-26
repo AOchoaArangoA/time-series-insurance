@@ -208,8 +208,17 @@ COLUMN_SPECS: dict[InputKind, tuple[ColumnSpec, ...]] = {
             True,
             False,
             "Capitalización.",
-            enum=("continuous", "annual", "semiannual", "simple"),
+            enum=("continuous", "annual", "semiannual", "simple", "discount_act360"),
             example="annual",
+        ),
+        ColumnSpec(
+            "rate_type",
+            "string",
+            False,
+            True,
+            "Tipo de tasa (opcional, spec 007): zero, par o discount.",
+            enum=("zero", "par", "discount"),
+            example="par",
         ),
         ColumnSpec(
             "day_count",
