@@ -79,7 +79,7 @@ contracts/python-api.md. **Tests**: primero.
   - receta Yahoo (^IRX, ^FVX, ^TNX, ^TYX), verificando ^TYX en 2002-2006 (M2);
   - script de demostración con re-estimación mensual;
   - README.
-- [ ] T017 [P] Monte Carlo en `tests/simulation/test_stochastic_calibration.py` (`slow`):
+- [X] T017 [P] Monte Carlo en `tests/simulation/test_stochastic_calibration.py` (`slow`):
   SC-001 a SC-007.
 - [ ] T018 `docs/methodology/procesos-estocasticos.md`, más AGENTS, manual y CHANGELOG;
   revisión de implementación con `econometrics-reviewer` y suite completa.

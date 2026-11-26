@@ -127,6 +127,23 @@ def _vasicek_mle(x: np.ndarray, dt: float) -> dict[str, Any]:
     return out
 
 
+def _vasicek_rows(paths: np.ndarray, dt: float) -> list[tuple[float, float, float]]:
+    """(κ, θ, σ) de MV para cada fila de ``paths`` (sólo las identificadas)."""
+    z, y = paths[:, :-1], paths[:, 1:]
+    n = y.shape[1]
+    zc = z - z.mean(axis=1, keepdims=True)
+    yc = y - y.mean(axis=1, keepdims=True)
+    phi = (zc * yc).sum(axis=1) / (zc * zc).sum(axis=1)
+    c = y.mean(axis=1) - phi * z.mean(axis=1)
+    resid = y - c[:, None] - phi[:, None] * z
+    s2 = (resid**2).sum(axis=1) / n
+    ok = (phi > 0) & (phi < 1)
+    kappa = -np.log(phi[ok]) / dt
+    theta = c[ok] / (1 - phi[ok])
+    sigma = np.sqrt(s2[ok] * 2 * kappa / (1 - phi[ok] ** 2))
+    return list(zip(kappa.tolist(), theta.tolist(), sigma.tolist(), strict=True))
+
+
 # --------------------------------------------------------------------------- CIR
 
 
@@ -304,9 +321,10 @@ class ShortRateDiagnostics(ResultMixin):
 class ShortRateFit(ResultMixin):
     """Ajuste de un modelo de tasa corta bajo ℙ.
 
-    ``ci`` contiene los IC al 95 % del bootstrap paramétrico (percentiles); ``se`` los
-    errores asintóticos (método delta o hessiana), que con T moderado subestiman la
-    incertidumbre de κ.
+    ``ci`` contiene los IC al 95 % del bootstrap paramétrico: en Vasicek, intervalos
+    **básicos** (Hall 1992) y, para θ, re-simulados con κ corregido por sesgo; en CIR,
+    percentiles. ``se`` son los errores asintóticos (método delta o hessiana), que con T
+    moderado subestiman la incertidumbre de κ.
     """
 
     model: Model
@@ -456,7 +474,13 @@ def _fit(
     if bootstrap > 0:
         rng = np.random.default_rng(seed)
         draws = []
-        for _ in range(bootstrap):
+        if model == "vasicek":
+            # Vectorizado: todas las trayectorias a la vez y MCO por fila.
+            paths = _simulate(
+                model, kappa, theta, sigma, dt, float(x[0]), x.size - 1, bootstrap, rng
+            )
+            draws = _vasicek_rows(paths, dt)
+        for _ in range(bootstrap if model == "cir" else 0):
             path = _simulate(model, kappa, theta, sigma, dt, float(x[0]), x.size - 1, 1, rng)[0]
             try:
                 b = (
@@ -473,10 +497,28 @@ def _fit(
             warnings.append(
                 f"{bootstrap - len(boot)} réplicas del bootstrap sin reversión identificada."
             )
-        for i, k in enumerate(("kappa", "theta", "sigma")):
-            if len(boot):
+        est_vec = np.array([kappa, theta, sigma])
+        if model == "vasicek" and len(boot):
+            # Intervalo BÁSICO (Hall 1992): [2θ̂ − q₀,₉₇₅; 2θ̂ − q₀,₀₂₅]. Corrige el sesgo de
+            # κ̂ que el percentil hereda (Monte Carlo de SC-001: cobertura de κ 49 % → 93 %).
+            for i, k in enumerate(("kappa", "theta", "sigma")):
                 lo, hi = np.quantile(boot[:, i], [0.025, 0.975])
-                ci[k] = (float(lo), float(hi))
+                ci[k] = (float(2 * est_vec[i] - hi), float(2 * est_vec[i] - lo))
+            # La dispersión de θ̂ depende de κ (var ∝ σ²/(κ²T)): se re-simula con κ corregido
+            # por el sesgo del bootstrap, κ̃ = 2κ̂ − media(κ*) (cobertura de θ 77 % → 90 %).
+            k_tilde = max(2 * kappa - float(boot[:, 0].mean()), 0.2 * kappa)
+            paths2 = _simulate(
+                model, k_tilde, theta, sigma, dt, float(x[0]), x.size - 1, bootstrap, rng
+            )
+            th2 = np.array([b[1] for b in _vasicek_rows(paths2, dt)])
+            if th2.size:
+                lo, hi = np.quantile(th2 - theta, [0.025, 0.975])
+                ci["theta"] = (float(theta - hi), float(theta - lo))
+        else:
+            for i, k in enumerate(("kappa", "theta", "sigma")):
+                if len(boot):
+                    lo, hi = np.quantile(boot[:, i], [0.025, 0.975])
+                    ci[k] = (float(lo), float(hi))
     if model == "cir":
         ratio = 2 * kappa * theta / sigma**2
         feller = {"ratio": float(ratio), "satisfied": bool(ratio >= 1)}
