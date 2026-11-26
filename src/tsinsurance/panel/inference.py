@@ -2,8 +2,19 @@
 
 Revisión B2:
 
-- La inferencia **principal** de un panel financiero es Driscoll-Kraay con valores
-  críticos t(T−1): robusta a dependencia transversal y temporal.
+- La inferencia **principal** de un panel financiero es Driscoll-Kraay: robusta a
+  dependencia transversal y temporal. Con T moderado el estimador HAC está sesgado hacia
+  abajo y el t(T−1) previsto en el diseño **sobre-rechaza** (Monte Carlo de SC-004: ~9 %
+  unilateral al 5 % con T = 36 y N = 11). Por eso:
+
+  - el error se corrige por los grados de libertad que absorben los efectos fijos,
+    c = n / (n − N − (T − 1)·[efectos de tiempo] − k);
+  - el valor p usa la distribución de referencia **fixed-b** (Kiefer y Vogelsang 2005;
+    Vogelsang 2012 para paneles con efectos fijos), simulada con el mismo T y el mismo
+    ancho de banda de Bartlett. Con T grande coincide con la normal.
+
+  :func:`driscoll_kraay` conserva la convención de ``plm::vcovSCC`` (HC0) y se verifica
+  contra R; la corrección se aplica en :func:`tsinsurance.panel.fit_panel`.
 - El **wild cluster bootstrap restringido** (WCR; Cameron, Gelbach y Miller 2008;
   MacKinnon y Webb 2017) es sólo una **sensibilidad**: supone clústeres independientes,
   lo que no se cumple con un factor común.
@@ -28,6 +39,7 @@ import itertools
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Literal
 
 import numpy as np
@@ -41,7 +53,9 @@ __all__ = [
     "FETest",
     "driscoll_kraay",
     "WildBootstrapResult",
+    "dk_dof_correction",
     "dk_pvalue",
+    "fixed_b_reference",
     "hausman_test",
     "mundlak_test",
     "treated_clusters",
@@ -78,10 +92,74 @@ def driscoll_kraay(
     return {c: float(math.sqrt(max(var[i, i], 0.0))) for i, c in enumerate(x)}
 
 
-def dk_pvalue(
-    tstat: float, n_periods: int, alternative: Literal["two-sided", "greater", "less"] = "two-sided"
+def dk_dof_correction(
+    nobs: int, n_entities: int, n_periods: int, k: int, time_effects: bool
 ) -> float:
-    """Valor p de un t de Driscoll-Kraay con t(T−1) (conservador con T moderado)."""
+    """Factor c de la varianza DK por los parámetros que absorben los efectos fijos."""
+    absorbed = n_entities + (n_periods - 1 if time_effects else 0)
+    dof = nobs - absorbed - k
+    return float(nobs / dof) if dof > 0 else float("nan")
+
+
+@lru_cache(maxsize=64)
+def fixed_b_reference(
+    n_periods: int, bandwidth: int, draws: int = 19_999, seed: int = 20051
+) -> np.ndarray:
+    """Distribución de referencia fixed-b del t de Driscoll-Kraay (ordenada).
+
+    Simula el modelo de localización con T = ``n_periods`` innovaciones gaussianas iid y
+    el mismo estimador de Bartlett con L = ``bandwidth`` rezagos que usa DK: el
+    numerador es la suma de las innovaciones y la varianza se estima con las innovaciones
+    centradas (los *scores* de MCO suman cero). Es la aproximación fixed-b de Kiefer y
+    Vogelsang (2005) evaluada en el T observado. Semilla fija: resultado determinista.
+
+    References
+    ----------
+    Kiefer, N. M. y Vogelsang, T. J. (2005). A new asymptotic theory for
+    heteroskedasticity-autocorrelation robust tests. *Econometric Theory*, 21(6),
+    1130-1164.
+    Vogelsang, T. J. (2012). Heteroskedasticity, autocorrelation, and spatial correlation
+    robust inference in linear panel models with fixed-effects. *Journal of
+    Econometrics*, 166(2), 303-319.
+    """
+    rng = np.random.default_rng(seed)
+    out = np.empty(draws)
+    chunk = max(1, min(draws, 2_000_000 // max(n_periods, 1)))
+    for start in range(0, draws, chunk):
+        m = min(chunk, draws - start)
+        v = rng.standard_normal((m, n_periods))
+        u = v - v.mean(axis=1, keepdims=True)
+        omega = (u * u).sum(axis=1)
+        for j in range(1, bandwidth + 1):
+            omega += 2 * (1 - j / (bandwidth + 1)) * (u[:, j:] * u[:, :-j]).sum(axis=1)
+        out[start : start + m] = v.sum(axis=1) / np.sqrt(omega)
+    out.sort()
+    return out
+
+
+def dk_pvalue(
+    tstat: float,
+    n_periods: int,
+    alternative: Literal["two-sided", "greater", "less"] = "two-sided",
+    bandwidth: int | None = None,
+) -> float:
+    """Valor p de un t de Driscoll-Kraay.
+
+    Con ``bandwidth`` usa la referencia fixed-b (:func:`fixed_b_reference`); sin él, la
+    t(T−1) (que sobre-rechaza con T moderado; sólo por compatibilidad).
+    """
+    if not np.isfinite(tstat):
+        return float("nan")
+    if bandwidth is not None:
+        ref = fixed_b_reference(int(n_periods), int(bandwidth))
+        n = len(ref)
+        upper = (1 + n - np.searchsorted(ref, tstat, side="left")) / (1 + n)
+        lower = (1 + np.searchsorted(ref, tstat, side="right")) / (1 + n)
+        if alternative == "greater":
+            return float(upper)
+        if alternative == "less":
+            return float(lower)
+        return float(min(1.0, 2 * min(upper, lower)))
     df = max(n_periods - 1, 1)
     if alternative == "greater":
         return float(stats.t.sf(tstat, df))

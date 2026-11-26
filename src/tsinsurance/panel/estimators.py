@@ -22,7 +22,12 @@ import numpy as np
 import pandas as pd
 
 from tsinsurance.errors import DataValidationError
-from tsinsurance.panel.inference import dk_pvalue, driscoll_kraay, treated_clusters
+from tsinsurance.panel.inference import (
+    dk_dof_correction,
+    dk_pvalue,
+    driscoll_kraay,
+    treated_clusters,
+)
 from tsinsurance.results import ResultMixin
 
 __all__ = [
@@ -277,15 +282,19 @@ def fit_panel(
     pvalues = {k: float(v) for k, v in res.pvalues.items()}
     dist = "normal"
     if cov == "driscoll_kraay" and estimator in ("fe", "twfe"):
-        # Driscoll-Kraay propio (convención plm::vcovSCC HC0) con t(T−1) (revisión B2, M1).
+        # Driscoll-Kraay propio (convención plm::vcovSCC HC0, verificada contra R) con
+        # corrección por grados de libertad y referencia fixed-b (Monte Carlo de SC-004).
         dk = driscoll_kraay(df, y, keep, time_effects=time_fx, maxlag=bw)
-        std_errors = dk
-        tstats = {k: params[k] / dk[k] if dk[k] > 0 else float("nan") for k in keep}
-        pvalues = {k: dk_pvalue(tstats[k], n_periods) for k in keep}
-        dist = f"t({n_periods - 1})"
+        c = dk_dof_correction(len(df), n_entities, n_periods, len(keep), time_fx)
+        diagnostics["driscoll_kraay_plm_hc0"] = dk
+        diagnostics["driscoll_kraay_dof_correction"] = c
+        std_errors = {k: v * math.sqrt(c) for k, v in dk.items()}
+        tstats = {k: params[k] / std_errors[k] if std_errors[k] > 0 else float("nan") for k in keep}
+        pvalues = {k: dk_pvalue(tstats[k], n_periods, bandwidth=bw) for k in keep}
+        dist = f"fixed-b(T={n_periods}, L={bw})"
     elif cov == "driscoll_kraay":
-        pvalues = {k: dk_pvalue(t, n_periods) for k, t in tstats.items()}
-        dist = f"t({n_periods - 1})"
+        pvalues = {k: dk_pvalue(t, n_periods, bandwidth=bw) for k, t in tstats.items()}
+        dist = f"fixed-b(T={n_periods}, L={bw})"
     re_comp: dict[str, float] = {}
     if estimator == "re":
         vd = res.variance_decomposition

@@ -247,6 +247,15 @@ min_train = 60                   # meses mínimos antes del primer pronóstico
 En `result.json` aparecen como `portfolios.<nombre>` y `regimes.<nombre>` (calibración) y
 `validation.portfolios` / `validation.regimes` (validación).
 
+**Paneles** (bloque `[[panels]]`, spec 006; requiere `pip install "tsinsurance[panel]"`):
+unidades × meses con efectos fijos, de dos vías o aleatorios; hipótesis pre-registradas
+con signo sobre los coeficientes (típicamente interacciones `regresor:característica`).
+En `result.json`: `panels.<nombre>` (calibración: filas por hipótesis con p unilateral
+fixed-b, p del wild bootstrap, G₁, diagnósticos y Mundlak) y `validation.panels`
+(re-estimación posterior al corte, efecto mínimo detectable y `low_power`). Las
+familias de Holm usan el α congelado en `calibration.frozen.alpha_split`. Metodología:
+`docs/methodology/panel.md`.
+
 Señales incluidas: `sma_crossover` (`fast`, `slow`), `tsmom` (`lookback`, `skip`),
 `ewma_vol_target` (`target`, `lam`), `tsmom_vol_target` (`lookback`, `skip`, `target`).
 

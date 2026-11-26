@@ -173,7 +173,9 @@ def panel_diagnostics(
         passed = False
     stability: dict[str, float] = {}
     by_period = resid.groupby(level=1).mean()
-    if len(by_period) >= 20:
+    # Con efectos de tiempo la media por periodo de los residuos es el factor común que el
+    # modelo absorbe: el CUSUM detectaría ciclos de mercado, no inestabilidad del modelo.
+    if not time_effects and len(by_period) >= 20:
         from statsmodels.stats.diagnostic import breaks_cusumolsresid
 
         stat, pval, _ = breaks_cusumolsresid(by_period.to_numpy(), ddof=len(x))

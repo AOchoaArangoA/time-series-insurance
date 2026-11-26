@@ -31,11 +31,29 @@ def _sector_panel(
     )
 
 
-def test_dk_uses_t_distribution_and_reports_g1() -> None:
+def test_dk_uses_fixed_b_with_dof_correction_and_reports_g1() -> None:
     df = _sector_panel()
     res = fit_panel(df, "y", ["x_int"], estimator="twfe", cov="driscoll_kraay")
-    assert res.pvalue_distribution == "t(119)"
+    bw = res.diagnostics["bandwidth_driscoll_kraay"]
+    assert res.pvalue_distribution == f"fixed-b(T=120, L={bw})"
+    c = res.diagnostics["driscoll_kraay_dof_correction"]
+    plm = res.diagnostics["driscoll_kraay_plm_hc0"]["x_int"]
+    assert c > 1 and res.std_errors["x_int"] == pytest.approx(plm * c**0.5)
     assert res.treated_clusters == {"x_int": 3} and not res.inconclusive
+
+
+def test_fixed_b_reference_is_wider_than_normal_and_converges() -> None:
+    from scipy import stats
+
+    from tsinsurance.panel.inference import dk_pvalue, fixed_b_reference
+
+    short = np.quantile(fixed_b_reference(36, 3), 0.95)
+    long_ = np.quantile(fixed_b_reference(1000, 0), 0.95)
+    assert short > stats.t.ppf(0.95, 35) + 0.1  # sesgo del HAC con T corto
+    assert long_ == pytest.approx(stats.norm.ppf(0.95), abs=0.04)
+    p_two = dk_pvalue(2.0, 36, bandwidth=3)
+    assert p_two == pytest.approx(2 * min(dk_pvalue(2.0, 36, "greater", 3), 0.5), rel=1e-9)
+    assert dk_pvalue(2.0, 36, bandwidth=3) > dk_pvalue(2.0, 36)
 
 
 def test_single_treated_cluster_is_inconclusive() -> None:

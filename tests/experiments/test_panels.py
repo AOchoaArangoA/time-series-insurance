@@ -92,7 +92,7 @@ def test_recovers_differential_effect(pdir: Path) -> None:
     row = run.rows[0]
     assert not row.inconclusive and row.treated_clusters == 3
     assert row.estimate < 0 and row.p_one_sided < 0.05
-    assert row.p_distribution.startswith("t(") and row.wcr_p_one_sided is not None
+    assert row.p_distribution.startswith("fixed-b(") and row.wcr_p_one_sided is not None
     # Con TWFE, el efecto común de SPREAD queda absorbido por los efectos de tiempo.
     assert "SPREAD" not in run.params
 

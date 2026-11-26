@@ -1,0 +1,60 @@
+# Panel sectores × meses con efectos fijos de dos vías (spec 006, US5; demostración).
+#
+# Pregunta: ¿los sectores sensibles a tasas y los defensivos reaccionan de forma DIFERENCIAL,
+# en el mes siguiente, a los cambios del Tesoro a 10 años y del VIX conocidos al cierre de mes?
+#
+# - Con efectos de tiempo, el efecto común de las variables macro queda absorbido: sólo se
+#   identifican las interacciones x_t × D_i (efecto diferencial; Facure, cap. 14).
+# - G₁ ≥ 2 en cada característica (revisión B2): "tasas" = XLF, XLRE, XLU (XLRE empieza en
+#   2015, así que en la calibración G₁ = 2) y "defensivo" = XLP, XLU, XLV.
+# - Reclasificación GICS (M4): en 2016 Real Estate salió de Financials (XLRE) y en 2018
+#   Communication Services (XLC) tomó parte de Tecnología y Consumo discrecional. Las
+#   composiciones de XLF, XLK y XLY cambian en esas fechas; la característica es la del
+#   sector actual, no la histórica.
+# - El periodo posterior a 2014 de estos ETFs ya se miró en los experimentos previos de esta
+#   carpeta: la validación será exploratoria por periodo visto (se espera y se reporta).
+
+[experiment]
+id = "sectores-gics-panel"
+title = "Panel sectorial: sensibilidad diferencial a tasas y al VIX (TWFE, Driscoll-Kraay)"
+author = "agente (Claude) a pedido del usuario"
+hypothesis = """
+H1: tras una subida del Tesoro a 10 años en el mes t, los sectores sensibles a tasas
+(XLF, XLRE, XLU) rinden MENOS que los demás en el mes t+1.
+H2: tras una subida del VIX en el mes t, los sectores defensivos (XLP, XLU, XLV) rinden MÁS
+que los demás en el mes t+1.
+Expectativa previa: efectos pequeños o nulos con un mes de rezago (la reacción contemporánea
+es más plausible que la predictiva).
+"""
+registry = "../registry.jsonl"
+
+[data]
+bundle = "data"
+assets = ["XLB", "XLC", "XLE", "XLF", "XLI", "XLK", "XLP", "XLRE", "XLU", "XLV", "XLY"]
+start = "1999-01-01"
+end = "2026-10-31"
+
+[validation]
+alpha = 0.05
+seed = 17
+train_end = "2014-12-31"
+
+[[panels]]
+name = "tasas_vix"
+units = ["XLB", "XLC", "XLE", "XLF", "XLI", "XLK", "XLP", "XLRE", "XLU", "XLV", "XLY"]
+regressors = ["^TNX", "^VIX"]
+transforms = { "^TNX" = "diff", "^VIX" = "diff" }
+characteristics = { tasas = ["XLF", "XLRE", "XLU"], defensivo = ["XLP", "XLU", "XLV"] }
+interactions = [["^TNX", "tasas"], ["^VIX", "defensivo"]]
+estimator = "twfe"
+cov = "driscoll_kraay"
+bootstrap_draws = 9999
+min_months = 36
+hypotheses = [
+  { coef = "^TNX:tasas", sign = "-" },
+  { coef = "^VIX:defensivo", sign = "+" },
+]
+justification = """
+Duración y apalancamiento de los sectores regulados y de bienes raíces (H1); huida a la calidad
+hacia sectores de demanda inelástica (H2). Hipótesis y signos fijados antes de estimar el panel.
+"""

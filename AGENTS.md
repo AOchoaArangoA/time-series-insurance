@@ -123,7 +123,7 @@ value = [20.0, 25.0]                 # cada umbral es una prueba
 justification = "referencia o razón previa"   # obligatoria; sin ella es exploratorio
 
 [[declared_prior_tests]]             # lo probado FUERA de la bitácora: cuenta en N y en "ya visto"
-kind = "portfolio"                   # portfolio | regime | signal
+kind = "portfolio"                   # portfolio | regime | signal | panel
 n_tests = 4
 universe = ["XLB", "XLE", "XLF", "XLK"]
 period_start = "1999-01-01"
@@ -132,9 +132,33 @@ script_sha256 = "..."
 ```
 
 Benchmark de una cartera: igual ponderado de los elegibles, con los mismos costos y
-rebalanceo mensual. La memoria de pruebas es por universo parecido (Jaccard ≥ 0,5). En
-la validación, estrategias y regímenes son familias de Holm separadas (0,8α y 0,2α).
+rebalanceo mensual. La memoria de pruebas es por universo parecido (Jaccard ≥ 0,5).
 Metodología: `docs/methodology/carteras-y-regimenes.md`.
+
+## Paneles (spec 006; extra `pip install "tsinsurance[panel]"`)
+
+```toml
+[[panels]]                           # unidades × meses → exceso de retorno del mes siguiente
+name = "tasas_vix"
+units = ["XLB", "XLE", "XLF", "XLP", "XLU", "XLV"]
+regressors = ["^TNX", "^VIX"]
+transforms = { "^TNX" = "diff", "^VIX" = "diff" }
+characteristics = { tasas = ["XLF", "XLU"], defensivo = ["XLP", "XLU", "XLV"] }  # G₁ ≥ 2
+interactions = [["^TNX", "tasas"], ["^VIX", "defensivo"]]
+estimator = "twfe"                   # pooled | fe | twfe | fd | re
+cov = "driscoll_kraay"               # principal; el wild bootstrap es sólo sensibilidad
+hypotheses = [{ coef = "^TNX:tasas", sign = "-" }]   # pre-registradas con signo
+justification = "razón previa"
+```
+
+Con efectos de tiempo, los regresores comunes quedan absorbidos: sólo se prueban las
+interacciones (efectos diferenciales). La validación re-estima con los meses posteriores
+al corte y reporta el efecto mínimo detectable. Fuera de los experimentos:
+`tsinsurance.panel.fit_panel`, `panel_diagnostics`, `mundlak_test`, `diff_in_diff`.
+Metodología: `docs/methodology/panel.md`.
+
+**Reparto de α en la validación**: estrategias 0,7α, regímenes 0,15α y paneles 0,15α,
+renormalizado entre las familias presentes y congelado en `frozen.alpha_split`.
 
 ## `result.json` (versión 1.2)
 

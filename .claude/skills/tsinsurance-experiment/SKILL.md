@@ -31,7 +31,9 @@ Sigue `AGENTS.md` (raíz del repositorio). Resumen operativo:
    - modelos econométricos: reporta cuadrante + marcas (exploratorio, no concluyente,
      diagnósticos no superados), R² fuera de muestra y la prueba económica.
 5b. **Carteras y regímenes.** Para rotaciones o pesos entre activos usa
-   `[[portfolios]]`; para estados del ciclo, `[[regimes]]` (con `justification`). Si antes
+   `[[portfolios]]`; para estados del ciclo, `[[regimes]]` (con `justification`); para
+   efectos diferenciales entre unidades (sectores × meses), `[[panels]]` con hipótesis
+   pre-registradas con signo y características con G₁ ≥ 2 (`docs/methodology/panel.md`). Si antes
    probaste algo fuera de la bitácora (un script o un notebook), decláralo con
    `[[declared_prior_tests]]`: si no lo haces, el ajuste por pruebas múltiples queda
    subestimado.

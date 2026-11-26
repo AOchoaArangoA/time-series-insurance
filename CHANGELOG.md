@@ -25,6 +25,28 @@ semántico.
   registradas antes de esta versión no tienen huella: sus claves no coinciden con las
   nuevas, así que re-ejecutarlas cuenta como pruebas adicionales (conservador, FR-013).
 
+- Spec 006 (datos de panel; extra opcional `[panel]` con `linearmodels`):
+  - `tsinsurance.panel.fit_panel`: MCO agrupado, efectos fijos, dos vías, primeras
+    diferencias y efectos aleatorios; regresores absorbidos, G₁ y supuestos causales;
+  - Driscoll-Kraay propio (igual a `plm::vcovSCC`) con corrección por grados de libertad y
+    valores p fixed-b, calibrados por Monte Carlo (el t(T−1) previsto sobre-rechazaba con
+    T = 36); wild cluster bootstrap restringido como sensibilidad;
+  - Mundlak/CRE y Hausman; diagnósticos de Wooldridge, CD de Pesaran, estacionariedad,
+    ARCH, CUSUM y persistencia tipo Stambaugh;
+  - diferencias en diferencias con estudio de evento, prueba de tendencias previas,
+    permutación con una sola unidad tratada y advertencia de adopción escalonada;
+  - bloques `[[panels]]` en experimentos con dos fases, memoria por universo parecido y
+    efecto mínimo detectable.
+
+### Cambiado
+
+- Reparto de α entre familias de la validación: estrategias 0,7α, regímenes 0,15α y
+  paneles 0,15α, **renormalizado** entre las familias presentes y congelado en
+  `frozen.alpha_split` (antes 0,8α / 0,2α fijo en el código, aunque sólo hubiera
+  regímenes). Las calibraciones anteriores conservan su reparto.
+
+### Agregado (continuación)
+
 - Spec 005:
   - ideas de cartera (`[[portfolios]]`) con benchmark igual ponderado de los elegibles,
     rebalanceo mensual y memoria por universo parecido (Jaccard ≥ 0,5);

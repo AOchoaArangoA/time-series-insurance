@@ -188,3 +188,33 @@ modelos econométricos de series.
     efecto fijo. Se advierte y la demostración permite cortar en 2018-10 o marcarlo.
 - **M5 — RE Swamy-Arora** en panel desbalanceado: la comparación con `plm` usa una
   tolerancia de 1e-4 y se documenta la diferencia de implementación.
+
+## R9. Hallazgo del Monte Carlo de SC-004 (implementación, 2026-11-26)
+
+El diseño (B2) suponía que Driscoll-Kraay con valores críticos t(T−1) tendría un tamaño
+conservador. La simulación de SC-004 lo refutó: N = 11, factor común, regresor φ = 0,95 e
+interacción con G₁ ∈ {2, 5}, con 1 000 réplicas por celda.
+
+| T | G₁ | t(T−1), sin corrección | fixed-b | fixed-b + corrección de grados de libertad |
+|---|---|---|---|---|
+| 36 | 2 | 9,7 % | 6,2 % | 6,5 % |
+| 36 | 5 | 8,7 % | 8,5 % | 7,4 % |
+| 300 | 2 | 5,2 % | 5,7 % | 5,0 % |
+| 300 | 5 | 7,1 % | 5,8 % | 6,4 % |
+
+(Tamaño unilateral superior al 5 %. Las dos últimas columnas tienen 600 y 800 réplicas.)
+
+Con L = 0 el tamaño era 4-7 %, lo que ubica la causa en dos sesgos:
+
+- el HAC está sesgado hacia abajo cuando L/T no es despreciable (fixed-b);
+- se ignoran los N + T − 1 parámetros que absorben los efectos fijos.
+
+**Decisión:**
+
+- el error DK se multiplica por √c, con c = n / (n − N − (T−1)·[efectos de tiempo] − k);
+- el valor p usa la referencia fixed-b, simulada con el mismo T y L (Kiefer y Vogelsang
+  2005; Vogelsang 2012), con 19 999 extracciones y una semilla fija;
+- `driscoll_kraay()` conserva la convención de plm (HC0) para las pruebas de referencia.
+
+SC-004 se verifica con esta inferencia (`tests/simulation/test_panel_size.py`), con una
+banda de 3 % a 7 % ± 1,96 errores de Monte Carlo.

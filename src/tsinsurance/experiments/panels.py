@@ -11,7 +11,8 @@ absorbido).
 
 Cada hipótesis pre-registrada (coeficiente, signo) se prueba unilateralmente:
 
-- **principal**: Driscoll-Kraay con t(T−1) (revisión B2) o el tipo de error declarado;
+- **principal**: Driscoll-Kraay con corrección por grados de libertad y referencia
+  fixed-b (revisión B2 y Monte Carlo de SC-004) o el tipo de error declarado;
 - **sensibilidad**: wild cluster bootstrap restringido por unidad (no válido con factor
   común; sólo se reporta);
 - **G₁ < 2** en una interacción ⇒ no concluyente (Conley y Taber 2011).
@@ -64,7 +65,10 @@ def build_panel(
     rf = bundle.risk_free()
     pieces = []
     for unit in spec.units:
-        px = bundle.assets([unit])[unit].loc[start:end].dropna()
+        try:
+            px = bundle.assets([unit])[unit].loc[start:end].dropna()
+        except KeyError:  # sin datos hasta el corte (p. ej. un ETF lanzado después)
+            continue
         if px.empty:
             continue
         dates = monthly_decision_dates(px)
@@ -144,13 +148,14 @@ class PanelRun:
     bandwidth: int | None = None
 
 
-def _one_sided(t: float, sign: str, n_periods: int, dk: bool) -> float:
+def _one_sided(t: float, sign: str, n_periods: int, bandwidth: int | None) -> float:
     if not np.isfinite(t):
         return float("nan")
-    s = t if sign == "+" else -t
-    if dk:
-        return float(stats.t.sf(s, max(n_periods - 1, 1)))
-    return float(stats.norm.sf(s))
+    if bandwidth is not None:
+        from tsinsurance.panel.inference import dk_pvalue
+
+        return dk_pvalue(t, n_periods, "greater" if sign == "+" else "less", bandwidth=bandwidth)
+    return float(stats.norm.sf(t if sign == "+" else -t))
 
 
 def analyze_panel(
@@ -177,6 +182,9 @@ def analyze_panel(
     # Fin del mes OBJETIVO del último resultado.
     eval_end = str((frame.index.get_level_values(1).max() + pd.offsets.MonthEnd(1)).date())
     warnings: list[str] = []
+    missing = sorted(set(spec.units) - set(frame.index.get_level_values(0)))
+    if missing:
+        warnings.append(f"Unidades sin datos en esta ventana: {missing}")
     short = n_periods < spec.min_months
     if short:
         warnings.append(f"Sólo {n_periods} meses (< {spec.min_months}): no concluyente.")
@@ -185,6 +193,7 @@ def analyze_panel(
     )
     warnings += res.warnings
     dk = spec.cov == "driscoll_kraay" and spec.estimator in ("fe", "twfe")
+    bw_used = int(res.diagnostics.get("bandwidth_driscoll_kraay", 0))
     rows = []
     for h in spec.hypotheses:
         reason = ""
@@ -201,7 +210,7 @@ def analyze_panel(
             t = float(res.tstats[h.coef])
         else:
             est = se = t = float("nan")
-        p1 = float("nan") if reason else _one_sided(t, h.sign, n_periods, dk)
+        p1 = float("nan") if reason else _one_sided(t, h.sign, n_periods, bw_used if dk else None)
         wcr: float | None = None
         if not reason and spec.estimator in ("fe", "twfe") and n_entities >= 3:
             keep = [c for c in cols if c not in res.absorbed]
@@ -227,7 +236,7 @@ def analyze_panel(
                 se=se,
                 t=t,
                 p_one_sided=p1,
-                p_distribution=f"t({n_periods - 1})" if dk else "normal",
+                p_distribution=res.pvalue_distribution if dk else "normal",
                 wcr_p_one_sided=wcr,
                 treated_clusters=g1,
                 inconclusive=bool(reason),
