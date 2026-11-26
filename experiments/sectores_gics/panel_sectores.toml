@@ -30,7 +30,10 @@ registry = "../registry.jsonl"
 
 [data]
 bundle = "data"
-assets = ["XLB", "XLC", "XLE", "XLF", "XLI", "XLK", "XLP", "XLRE", "XLU", "XLV", "XLY"]
+# Activos con datos antes del corte (XLC y XLRE nacen después de 2014). Las unidades del
+# panel se declaran en [[panels]].units: las que no tienen datos en una fase se omiten y
+# se advierte.
+assets = ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY"]
 start = "1999-01-01"
 end = "2026-10-31"
 
