@@ -103,8 +103,8 @@ def test_short_rate_mc_declares_measures() -> None:
 
 
 def test_short_rate_mc_with_regimes_requires_q_and_r0() -> None:
-    from tsinsurance.errors import DataValidationError
     from tests.stochastics.test_regimes import _two_regimes
+    from tsinsurance.errors import DataValidationError
 
     r, _ = _two_regimes(800, 1)
     fit = MarkovShortRate.fit(r, search_reps=2)

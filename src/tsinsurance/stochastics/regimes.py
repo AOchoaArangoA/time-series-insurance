@@ -28,6 +28,7 @@ from __future__ import annotations
 import math
 import warnings as _warnings
 from dataclasses import dataclass, field
+
 import numpy as np
 import pandas as pd
 
@@ -95,7 +96,7 @@ class RegimeFit(ResultMixin):
 
     @property
     def prefers_regimes(self) -> dict[str, bool]:
-        """¿AIC y BIC prefieren k regímenes sobre uno?"""
+        """Si AIC y BIC prefieren k regímenes sobre uno."""
         return {"aic": self.aic < self.aic_one_regime, "bic": self.bic < self.bic_one_regime}
 
     def summary(self) -> str:
@@ -200,7 +201,7 @@ class MarkovShortRate:
             switching_exog=True,
             switching_variance=True,
         )
-        np.random.seed(seed)  # statsmodels usa el generador global en search_reps
+        np.random.seed(seed)  # noqa: NPY002 - search_reps de statsmodels usa el generador global
         with _warnings.catch_warnings():
             _warnings.simplefilter("ignore")
             res = model.fit(search_reps=search_reps, disp=False)

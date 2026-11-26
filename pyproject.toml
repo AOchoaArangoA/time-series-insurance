@@ -64,6 +64,8 @@ convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D", "N803", "N806"]
+# `Scenarios.values` es un campo del contrato (ndarray), no `DataFrame.values`.
+"tests/simulation_engine/**" = ["D", "PD011"]
 # Notación econométrica estándar (X, F, A matrices).
 "src/tsinsurance/backtest/econometric.py" = ["N803", "N806"]
 
