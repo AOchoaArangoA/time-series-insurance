@@ -1,0 +1,63 @@
+# Receta: nodos del Tesoro de EE. UU. de Yahoo (CBOE): 13 semanas, 5, 10 y 30 años.
+#   tsinsurance bundle fetch recipe.toml data
+# Los datos de Yahoo no son redistribuibles: ./data no se versiona.
+# Convenciones (spec 007, I2): ^IRX es tasa de DESCUENTO act/360 de la letra a 91 días;
+# ^FVX, ^TNX y ^TYX son rendimientos PAR semestrales. El bono a 30 años no se emitió entre
+# 2002 y 2006: ^TYX en ese periodo es un rendimiento interpolado por el emisor (M2).
+
+[bundle]
+name = "tesoro_riesgo"
+description = "Nodos del Tesoro de EE. UU. (CBOE vía Yahoo): ^IRX, ^FVX, ^TNX y ^TYX"
+
+[[fetch]]
+source = "yahoo"
+ids = ["^IRX", "^FVX", "^TNX", "^TYX"]
+start = "1998-12-01"
+end = "2026-10-31"
+  [fetch.options]
+  kind = "rate"
+  unit = "percent"
+  [[fetch.series]]
+  id = "^IRX"
+  role = "risk_free"
+  description = "T-bill 13 semanas (CBOE), tasa de descuento en %"
+  release_lag = "1B"
+  rf_convention = "dtb3_discount"
+  tenor_years = 0.25
+  rate_type = "discount"
+  compounding = "discount_act360"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "^FVX"
+  role = "exogenous"
+  description = "Rendimiento par del Tesoro a 5 años (CBOE), en %"
+  release_lag = "1B"
+  point_in_time = true
+  tenor_years = 5.0
+  rate_type = "par"
+  compounding = "semiannual"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "^TNX"
+  role = "exogenous"
+  description = "Rendimiento par del Tesoro a 10 años (CBOE), en %"
+  release_lag = "1B"
+  point_in_time = true
+  tenor_years = 10.0
+  rate_type = "par"
+  compounding = "semiannual"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false
+  [[fetch.series]]
+  id = "^TYX"
+  role = "exogenous"
+  description = "Rendimiento par del Tesoro a 30 años (CBOE), en %; 2002-2006 sin emisión"
+  release_lag = "1B"
+  point_in_time = true
+  tenor_years = 30.0
+  rate_type = "par"
+  compounding = "semiannual"
+  license = "Yahoo Finance: uso personal, no redistribuible"
+  redistributable = false

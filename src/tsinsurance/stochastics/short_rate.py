@@ -387,6 +387,11 @@ class ShortRateFit(ResultMixin):
         self, *, alpha: float = 0.05, horizon: int = 21, min_train: int = 750, step: int = 21
     ) -> ShortRateDiagnostics:
         """Diagnósticos FR-001b (B3) sobre los datos del ajuste."""
+        if not self.identified:
+            raise TSInsuranceError(
+                "κ no identificado (φ̂ ≥ 1): no hay residuos del modelo que diagnosticar; "
+                "la serie se comporta como un paseo aleatorio en la muestra."
+            )
         return _diagnostics(self, alpha=alpha, horizon=horizon, min_train=min_train, step=step)
 
 

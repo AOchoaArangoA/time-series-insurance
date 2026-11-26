@@ -140,6 +140,12 @@ def fit_factors(
             float(np.var(np.outer(f[:, j], load[:, j]), axis=0).sum() / total) for j in range(k)
         )
         labels = ("nivel", "pendiente", "curvatura")[:k]
+        fitted = f @ load.T
+        r2 = 1 - float(np.var(x - fitted, axis=0).sum()) / total
+        warnings.append(
+            f"Las cargas de Nelson-Siegel no son ortogonales: las varianzas por factor no son "
+            f"aditivas (su suma puede superar 100 %). R² conjunto = {r2:.1%}."
+        )
         warnings.append(
             f"λ fija = {lam} (meses⁻¹): no se optimiza (frontera con el paquete de curvas)."
         )

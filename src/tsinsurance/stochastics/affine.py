@@ -296,6 +296,11 @@ def calibrate_q(
         bounds = ([1e-4, -0.5], [50.0, 0.5])
     sol = optimize.least_squares(resid, x0, bounds=bounds, x_scale="jac")
     pq = pq_from(sol.x)
+    if mode == "free" and np.any(np.isclose(sol.x, bounds[0]) | np.isclose(sol.x, bounds[1])):
+        notes.append(
+            f"Parámetros en la cota de la búsqueda ({np.round(sol.x, 4).tolist()}): la curva "
+            "no identifica κ_ℚ y θ_ℚ por separado (casi un paseo aleatorio bajo ℚ)."
+        )
     res = sol.fun.reshape(obs.shape)
     rmse = {c: float(np.sqrt(np.mean(res[:, j] ** 2)) * 1e4) for j, c in enumerate(cols)}
     lam = lam_se = None

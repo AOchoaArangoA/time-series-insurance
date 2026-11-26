@@ -75,7 +75,7 @@ contracts/python-api.md. **Tests**: primero.
 
 - [X] T015 Extensión aditiva de `rate_nodes` (`rate_type`, `compounding`) y campos
   `tenor_years`, `rate_type` y `compounding` en el manifiesto (I7).
-- [ ] T016 [US7] `experiments/tesoro_riesgo/`:
+- [X] T016 [US7] `experiments/tesoro_riesgo/`:
   - receta Yahoo (^IRX, ^FVX, ^TNX, ^TYX), verificando ^TYX en 2002-2006 (M2);
   - script de demostración con re-estimación mensual;
   - README.
