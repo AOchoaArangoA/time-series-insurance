@@ -1,0 +1,21 @@
+{
+  "r_version": "R version 4.3.3 (2024-02-29)",
+  "plm_version": "2.6.7",
+  "input": "plm_input.csv",
+  "fe_coef": 1.00019473048146,
+  "fe_se_unadjusted": 0.0491197476147652,
+  "fe_se_scc_hc0_lag3": 0.048888041446363,
+  "fe_se_cluster_hc1": 0.0421739651221559,
+  "twfe_coef": 0.818248243333415,
+  "twfe_se_scc_hc0_lag3": 0.0262562355218816,
+  "re_coef": 1.31670568548098,
+  "re_theta": 0,
+  "pesaran_cd": 21.7025294000749,
+  "pesaran_cd_p": 1.94182127076559e-104,
+  "wooldridge_ar_F": 2.12847605441181,
+  "wooldridge_ar_p": 0.145069732398698,
+  "wooldridge_fd_F": 24.5907786372907,
+  "wooldridge_fd_p": 9.10627087965488e-07,
+  "hausman_chisq": 261.257391154312,
+  "hausman_p": 9.12929816680283e-59
+}

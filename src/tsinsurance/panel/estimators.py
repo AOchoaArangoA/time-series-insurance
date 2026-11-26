@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 
 from tsinsurance.errors import DataValidationError
+from tsinsurance.panel.inference import dk_pvalue, driscoll_kraay, treated_clusters
 from tsinsurance.results import ResultMixin
 
 __all__ = [
@@ -103,6 +104,9 @@ class PanelResult(ResultMixin):
     warnings: list[str] = field(default_factory=list)
     diagnostics: dict[str, Any] = field(default_factory=dict)
     re_components: dict[str, float] = field(default_factory=dict)
+    treated_clusters: dict[str, int] = field(default_factory=dict)
+    inconclusive: list[str] = field(default_factory=list)
+    pvalue_distribution: str = "normal"
 
     def summary(self) -> str:
         """Resumen legible."""
@@ -242,10 +246,9 @@ def fit_panel(
             "(tamaño mayor al nominal). Use Driscoll-Kraay o el wild cluster bootstrap."
         )
         if estimator not in ("fd", "re"):
-            alt = model.fit(cov_type="kernel", kernel="bartlett", bandwidth=bw)
-            diagnostics["driscoll_kraay_std_errors"] = {
-                k: float(v) for k, v in alt.std_errors.items()
-            }
+            diagnostics["driscoll_kraay_std_errors"] = driscoll_kraay(
+                df, y, keep, time_effects=time_fx, maxlag=bw
+            )
     if low:
         warnings.append(
             f"Poca variación within (< {LOW_WITHIN_RATIO:.0%} de la total) en {low}: "
@@ -253,6 +256,36 @@ def fit_panel(
         )
     if absorbed:
         warnings.append(f"Regresores absorbidos y excluidos: {sorted(absorbed)}")
+    # G₁ de las interacciones (B2): regresores nulos en alguna unidad completa.
+    treated: dict[str, int] = {}
+    inconclusive: list[str] = []
+    for col in keep:
+        g1 = treated_clusters(df, col)
+        if g1 < n_entities:
+            treated[col] = g1
+            if g1 < 2:
+                inconclusive.append(col)
+    if inconclusive:
+        warnings.append(
+            f"Interacciones con menos de 2 unidades tratadas (G₁ < 2) en {inconclusive}: "
+            "ni los errores agrupados ni el wild bootstrap son válidos; NO CONCLUYENTE "
+            "(Conley y Taber 2011)."
+        )
+    params = {k: float(v) for k, v in res.params.items()}
+    std_errors = {k: float(v) for k, v in res.std_errors.items()}
+    tstats = {k: float(v) for k, v in res.tstats.items()}
+    pvalues = {k: float(v) for k, v in res.pvalues.items()}
+    dist = "normal"
+    if cov == "driscoll_kraay" and estimator in ("fe", "twfe"):
+        # Driscoll-Kraay propio (convención plm::vcovSCC HC0) con t(T−1) (revisión B2, M1).
+        dk = driscoll_kraay(df, y, keep, time_effects=time_fx, maxlag=bw)
+        std_errors = dk
+        tstats = {k: params[k] / dk[k] if dk[k] > 0 else float("nan") for k in keep}
+        pvalues = {k: dk_pvalue(tstats[k], n_periods) for k in keep}
+        dist = f"t({n_periods - 1})"
+    elif cov == "driscoll_kraay":
+        pvalues = {k: dk_pvalue(t, n_periods) for k, t in tstats.items()}
+        dist = f"t({n_periods - 1})"
     re_comp: dict[str, float] = {}
     if estimator == "re":
         vd = res.variance_decomposition
@@ -272,10 +305,10 @@ def fit_panel(
     return PanelResult(
         estimator=estimator,
         cov_type=cov,
-        params={k: float(v) for k, v in res.params.items()},
-        std_errors={k: float(v) for k, v in res.std_errors.items()},
-        tstats={k: float(v) for k, v in res.tstats.items()},
-        pvalues={k: float(v) for k, v in res.pvalues.items()},
+        params=params,
+        std_errors=std_errors,
+        tstats=tstats,
+        pvalues=pvalues,
         nobs=int(res.nobs),
         n_entities=n_entities,
         n_periods=n_periods,
@@ -286,4 +319,7 @@ def fit_panel(
         warnings=warnings,
         diagnostics=diagnostics,
         re_components=re_comp,
+        treated_clusters=treated,
+        inconclusive=inconclusive,
+        pvalue_distribution=dist,
     )
