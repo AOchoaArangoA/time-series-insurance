@@ -157,6 +157,28 @@ al corte y reporta el efecto mínimo detectable. Fuera de los experimentos:
 `tsinsurance.panel.fit_panel`, `panel_diagnostics`, `mundlak_test`, `diff_in_diff`.
 Metodología: `docs/methodology/panel.md`.
 
+## Procesos estocásticos y riesgo de tasas (spec 007)
+
+Medición, no decisiones (las reglas que usen estas salidas van por `[[ideas]]`):
+
+```python
+from tsinsurance.stochastics import VasicekP, NodeCurve, calibrate_q, RateQuote, q_params
+from tsinsurance.simulation import fit_factors, filtered_historical, factor_mc, short_rate_mc
+from tsinsurance.sensitivities import FixedBond, BondPortfolio, measures, approximate
+from tsinsurance.portfolio_risk import var_es, backtest_var, stress, immunize
+
+fit = VasicekP.fit(r_continua, dt=1/252)          # IC bootstrap; mira fit.warnings y fit.diagnostics()
+curve = NodeCurve.from_arrays([0.25, 5, 10, 30], ceros_continuos)   # mínima, no producción
+sens = measures(cartera, curve)                    # PV, DV01, KRD (Σ = Fisher-Weil), convexidad
+sc = filtered_historical(niveles_nodos, horizon=10) # o historical / factor_mc / short_rate_mc
+riesgo = var_es(-ΔPV_por_escenario)                # VaR/ES con IC
+```
+
+Advertencias: κ suele no estar identificado en datos reales (φ̂ ≥ 1); la medida ℚ se
+declara en `Scenarios.pricing_measure`; las probabilidades de régimen con parámetros de
+toda la muestra son pseudo-filtradas. Demostración: `experiments/tesoro_riesgo/`.
+Metodología: `docs/methodology/procesos-estocasticos.md`.
+
 **Reparto de α en la validación**: estrategias 0,7α, regímenes 0,15α y paneles 0,15α,
 renormalizado entre las familias presentes y congelado en `frozen.alpha_split`.
 

@@ -256,6 +256,16 @@ fixed-b, p del wild bootstrap, G₁, diagnósticos y Mundlak) y `validation.pane
 familias de Holm usan el α congelado en `calibration.frozen.alpha_split`. Metodología:
 `docs/methodology/panel.md`.
 
+**Riesgo de tasas** (spec 007; API de Python, sin bloque de experimento):
+`tsinsurance.stochastics` (Vasicek/CIR bajo ℙ, regímenes, valoración afín ℚ y λ),
+`tsinsurance.simulation` (factores y escenarios con `state_measure`/`pricing_measure`),
+`tsinsurance.sensitivities` (KRD, duración de Fisher-Weil, Δ/ΔΓ, atribución) y
+`tsinsurance.portfolio_risk` (VaR/ES con IC, Kupiec/Christoffersen/duraciones/Z2,
+estrés, inmunización). Todos los resultados son dataclasses inmutables con `summary()` y
+`to_dict()`. Las curvas de producción entran por la interfaz `Curve` (paquete hermano).
+Metodología: `docs/methodology/procesos-estocasticos.md`; ejemplo completo:
+`experiments/tesoro_riesgo/demo.py`.
+
 Señales incluidas: `sma_crossover` (`fast`, `slow`), `tsmom` (`lookback`, `skip`),
 `ewma_vol_target` (`target`, `lam`), `tsmom_vol_target` (`lookback`, `skip`, `target`).
 

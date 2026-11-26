@@ -40,6 +40,23 @@ semántico.
   - bloques `[[panels]]` en experimentos con dos fases, memoria por universo parecido y
     efecto mínimo detectable.
 
+- Spec 007 (procesos estocásticos, MVP):
+  - `stochastics`: Vasicek y CIR bajo ℙ con MV y simulación exactas, IC por bootstrap
+    paramétrico básico (θ con κ corregido por sesgo), *jackknife* y diagnósticos;
+    regímenes de Markov ordenados por σ con filtro de Hamilton de parámetros fijos;
+    cupón cero cerrado (Vasicek, CIR), Hull-White r = x + α(t), calibración ℚ con λ;
+    interfaz `Curve` y `NodeCurve` mínima;
+  - `simulation`: PCA y Diebold-Li (λ fija), escenarios histórico, histórico filtrado,
+    Monte Carlo de factores y de la tasa corta (ℙ/ℚ declaradas), variable de control
+    exacta y antitéticas;
+  - `sensitivities`: bonos de flujos fijos, KRD analíticas (Σ = Fisher-Weil), convexidad,
+    hessiana por nodos, Δ/Γ por factor, ΔΓ frente a revaluación completa, atribución;
+  - `portfolio_risk`: VaR/ES con IC, Kupiec, Christoffersen, duraciones, Z2, estrés,
+    escenarios por régimen e inmunización;
+  - contrato `rate_nodes` aditivo (`rate_type`, `discount_act360`) y campos de nodo
+    opcionales en el manifiesto sin cambiar huellas;
+  - demostración `experiments/tesoro_riesgo/`.
+
 ### Cambiado
 
 - Reparto de α entre familias de la validación: estrategias 0,7α, regímenes 0,15α y

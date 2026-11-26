@@ -291,3 +291,25 @@ El plan agrega:
 - el benchmark de pronóstico (paseo aleatorio con DM).
 
 `contracts/python-api.md` se agrega en esta corrección.
+
+## R10. Hallazgos de la implementación (2026-11-26)
+
+- **Intervalos de κ y θ.** El IC percentil del bootstrap paramétrico hereda el sesgo de
+  κ̂. En SC-001, con 500 réplicas y κT ≈ 5, la cobertura era de 49 % para κ y 74 % para θ.
+  - Se adopta el intervalo **básico** (Hall 1992). Para θ se re-simula con κ corregido por
+    el sesgo del bootstrap, κ̃ = 2κ̂ − media(κ*), porque var(θ̂) ∝ σ²/(κ²T).
+  - Cobertura resultante: κ 92,8 %, θ 87 %, σ 93,8 %.
+  - SC-001 exige σ ∈ [92 %, 98 %] y un mínimo de 85 % para κ y θ (κT < 50).
+- **Datos reales.**
+  - Desde 2009 φ̂ ≥ 1 en ^IRX: κ no está identificado.
+  - `diagnostics()` rechaza un ajuste no identificado con un mensaje claro.
+  - La demostración usa 1998-2026 y lo reporta.
+- **Diebold-Li.** Las varianzas por factor no son aditivas (las cargas no son
+  ortogonales; en los datos sumaban 175 %). Se reporta el R² conjunto.
+- **Calibración ℚ libre.** El óptimo queda en la cota (κ_ℚ ≈ 0, θ_ℚ en el límite): la
+  curva no identifica κ_ℚ y θ_ℚ por separado. Se advierte; el modo `lambda` es el
+  principal.
+- **SC-007.** Tamaño de Kupiec 6,4 %, duraciones 4,0 %; potencia de 100 % contra σ × 0,7
+  y de 64 % contra σ × 0,9.
+- **SC-008.** La demostración corre en ≈ 30 s, con re-estimación mensual de las
+  sensibilidades en el backtesting.
