@@ -50,6 +50,7 @@ __all__ = [
     "line_hash",
     "prior_information_ratios",
     "jaccard",
+    "prior_panel_tests",
     "prior_portfolio_trials",
     "prior_regime_variants",
     "prior_specifications",
@@ -584,3 +585,38 @@ def prior_regime_variants(
         ):
             declared += int(r.get("n_tests_per_asset", r.get("n_tests", 0)))
     return len(variants) + declared
+
+
+def prior_panel_tests(
+    rows: Iterable[Mapping[str, Any]],
+    units: Iterable[str],
+    *,
+    dependent: str,
+    exclude_variant: Mapping[str, Any] | None = None,
+) -> int:
+    """Pruebas previas de paneles con la misma variable dependiente y universo parecido.
+
+    Clave de memoria (revisión I3): (variable dependiente, universo con Jaccard ≥ 0,5).
+    Cada (variante, coeficiente con signo) distinto ya registrado es una prueba previa;
+    la variante que se prueba ahora no cuenta. Se suman las pruebas declaradas fuera de la
+    bitácora con ``kind = "panel"``.
+    """
+    uni = list(units)
+    current = _canonical(exclude_variant) if exclude_variant is not None else None
+    seen: set[tuple[str, str, str]] = set()
+    declared = 0
+    for r in rows:
+        kind = r.get("kind")
+        if kind == "declared_prior" and r.get("declared_kind") == "panel":
+            if jaccard(r.get("universe", []) or r.get("assets", []), uni) >= JACCARD_MIN:
+                declared += int(r.get("n_tests", 0))
+            continue
+        if kind != "panel" or r.get("dependent") != dependent:
+            continue
+        if jaccard(r.get("universe", []), uni) < JACCARD_MIN:
+            continue
+        v = _canonical(r.get("variant"))
+        if v == current:
+            continue
+        seen.add((v, str(r.get("coef")), str(r.get("sign"))))
+    return len(seen) + declared

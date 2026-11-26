@@ -155,13 +155,19 @@ def test_validation_has_separate_regime_family(experiment_file: Path) -> None:
     experiment_file.write_text(EXPERIMENT + REGIME)
     cal = run_experiment(experiment_file)
     frozen = cal.result["calibration"]["frozen"]
+    # Reparto 0,7 / 0,15 renormalizado sin paneles (spec 006, B1); suma α.
     assert frozen["alpha_split"] == {
-        "strategies": pytest.approx(0.04),
-        "regimes": pytest.approx(0.01),
+        "strategies": pytest.approx(0.05 * 0.7 / 0.85),
+        "regimes": pytest.approx(0.05 * 0.15 / 0.85),
     }
     v = validate_experiment(experiment_file, cal.run_id).result
     assert v["assumptions"]["regime_family"] == frozen["regime_family"]
-    assert "0,8α" in v["assumptions"]["multiple_testing"]
+    assert v["assumptions"]["alpha_split"] == frozen["alpha_split"]
+    assert all(
+        r["alpha_family"] == pytest.approx(frozen["alpha_split"]["regimes"])
+        for rows in v["validation"]["regimes"].values()
+        for r in rows
+    )
 
 
 def test_spread_memory_key_is_order_invariant() -> None:

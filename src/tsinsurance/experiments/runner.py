@@ -68,7 +68,12 @@ from tsinsurance.experiments.registry import (
     verify_registry,
 )
 from tsinsurance.experiments.signals import SignalFn, get_signal
-from tsinsurance.experiments.spec import EconometricSpec, ExperimentSpec, load_experiment
+from tsinsurance.experiments.spec import (
+    EconometricSpec,
+    ExperimentSpec,
+    alpha_split,
+    load_experiment,
+)
 from tsinsurance.results import to_jsonable
 
 __all__ = ["ExperimentResult", "run_experiment"]
@@ -218,19 +223,36 @@ def _frozen(
         + [f"cartera:{n}" for n in portfolios]
     )
     regime_family = [h["label"] for v in regimes.values() for h in v["selected"]]
+    panels = {
+        n: {"spec": v["spec"], "hypotheses": v["validated"], "calibration": v["calibration"]}
+        for n, v in result.get("panels", {}).items()
+    }
+    panel_family = [h["label"] for v in panels.values() for h in v["hypotheses"]]
     return {
         "ideas": ideas,
         "econometric": econ,
         "portfolios": portfolios,
         "regimes": regimes,
         "regime_family": regime_family,
-        "alpha_split": {"strategies": 0.8 * spec.alpha, "regimes": 0.2 * spec.alpha},
+        "panels": panels,
+        "panel_family": panel_family,
+        "alpha_split": _alpha_split(spec),
         "package_version": __version__,
         "bundle_as_of_sha256": bundle.as_of_sha256,
         "execution": _execution_identity(spec.execution),
         "alpha": spec.alpha,
         "family": family,
     }
+
+
+def _alpha_split(spec: ExperimentSpec) -> dict[str, float]:
+    """Reparto de α entre las familias presentes en el experimento (revisión B1)."""
+    return alpha_split(
+        spec.alpha,
+        strategies=bool(spec.ideas or spec.econometric or spec.portfolios),
+        regimes=bool(spec.regimes),
+        panels=bool(spec.panels),
+    )
 
 
 def _se_hac(x: pd.Series) -> float | None:
@@ -446,6 +468,7 @@ def _run_locked(
         "econometric": {},
         "portfolios": {},
         "regimes": {},
+        "panels": {},
     }
     report = [
         f"# Experimento {spec.id}",
@@ -676,6 +699,11 @@ def _run_locked(
         report += extra_report
         lines += [{**common, **ln} for ln in extra_lines]
         reasons += extra_reasons
+    if spec.panels:
+        p_report, p_lines, p_reasons = _panels(spec, bundle, history, base_identity, result)
+        report += p_report
+        lines += [{**common, **ln} for ln in p_lines]
+        reasons += p_reasons
 
     # Fase de calibración (spec 004, US2): se FIJAN las configuraciones; la validación se
     # abre después, explícitamente, con `tsinsurance experiment validate`.
@@ -920,7 +948,7 @@ def _portfolios_and_regimes(
             "",
         ]
 
-    alpha_r = 0.2 * spec.alpha
+    alpha_r = _alpha_split(spec).get("regimes", 0.0)
     all_rows = []
     for rs in spec.regimes:
         if not rs.justification:
@@ -1021,4 +1049,142 @@ def _portfolios_and_regimes(
                 )
             )
         report += ["", f"- Seleccionadas para la validación: {len(selected)}", ""]
+    return report, lines, reasons
+
+
+def _panels(
+    spec: ExperimentSpec,
+    bundle: Bundle,
+    history: list[dict[str, Any]],
+    base_identity: Mapping[str, Any],
+    result: dict[str, Any],
+) -> tuple[list[str], list[dict[str, Any]], list[str]]:
+    """Calibración de paneles predictivos (spec 006, US3).
+
+    Las hipótesis están pre-registradas con su signo: no se seleccionan; todas las
+    concluyentes pasan a la validación única. El Holm de la calibración suma las pruebas
+    previas con la misma memoria (variable dependiente, universo con Jaccard ≥ 0,5).
+    """
+    from tsinsurance.experiments.panels import Y, analyze_panel
+    from tsinsurance.experiments.regimes import holm_extended
+    from tsinsurance.experiments.registry import prior_panel_tests
+
+    report: list[str] = []
+    lines: list[dict[str, Any]] = []
+    reasons: list[str] = []
+    alpha_p = _alpha_split(spec).get("panels", spec.alpha)
+    result.setdefault("panels", {})
+    for ps in spec.panels:
+        if not ps.justification:
+            reasons.append(f"panel '{ps.name}' sin justificación previa de sus hipótesis")
+        for v in ps.regressors:
+            vs = bundle.spec(v)
+            if vs.role == "exogenous" and not vs.point_in_time:
+                reasons.append(f"panel '{ps.name}' usa variables no punto-en-el-tiempo ({v})")
+        run = analyze_panel(bundle, ps, start=spec.start, end=spec.end, seed=spec.seed)
+        if not run.diagnostics_passed:
+            reasons.append(f"diagnósticos del panel '{ps.name}' no superados")
+        prior = prior_panel_tests(history, ps.units, dependent=Y, exclude_variant=ps.variant)
+        valid = [r for r in run.rows if not r.inconclusive]
+        adjusted = holm_extended([r.p_one_sided for r in valid], prior) if valid else []
+        holm_by = {r.label: p for r, p in zip(valid, adjusted, strict=True)}
+        validated = [
+            {
+                "label": r.label,
+                "coef": r.coef,
+                "sign": r.sign,
+                "estimate_calibration": r.estimate,
+                "se_calibration": r.se,
+                "n_periods_calibration": r.n_periods,
+            }
+            for r in valid
+        ]
+        spec_dict = dataclasses.asdict(ps)
+        result["panels"][ps.name] = {
+            "spec": spec_dict,
+            "universe_id": ps.universe_id,
+            "variant": ps.variant,
+            "dependent": Y,
+            "rows": [
+                {**dataclasses.asdict(r), "label": r.label, "p_holm": holm_by.get(r.label)}
+                for r in run.rows
+            ],
+            "params": run.params,
+            "std_errors": run.std_errors,
+            "diagnostics": run.diagnostics,
+            "diagnostics_passed": run.diagnostics_passed,
+            "fe_vs_re": run.fe_vs_re,
+            "warnings": run.warnings,
+            "prior_tests_in_holm": prior,
+            "alpha_family": alpha_p,
+            "validated": validated,
+            "calibration": {
+                "bandwidth_rule": "floor(4·(T/100)^(2/9))" if ps.bandwidth is None else None,
+                "bandwidth_calibration": run.bandwidth,
+                "bootstrap_draws": ps.bootstrap_draws,
+                "seed": spec.seed,
+            },
+        }
+        for r in run.rows:
+            lines.append(
+                {
+                    "kind": "panel",
+                    "key": trial_key(
+                        kind="panel",
+                        universe=ps.universe_id,
+                        variant=ps.variant,
+                        coef=r.coef,
+                        **base_identity,
+                    ),
+                    "asset": ps.universe_id,
+                    "universe": sorted(ps.units),
+                    "panel": ps.name,
+                    "dependent": Y,
+                    "variant": ps.variant,
+                    "coef": r.coef,
+                    "sign": r.sign,
+                    "estimate": None if r.inconclusive else r.estimate,
+                    "t": None if r.inconclusive else r.t,
+                    "p": None if r.inconclusive else r.p_one_sided,
+                    "eval_start": r.eval_start,
+                    "eval_end": r.eval_end,
+                    "n_obs": r.n_periods * r.n_entities,
+                }
+            )
+        report += [
+            f"## Panel `{ps.name}` ({ps.estimator.upper()}, errores {ps.cov}, "
+            f"{len(ps.units)} unidades)",
+            "",
+            f"- Variable dependiente: exceso de retorno del mes siguiente · justificación: "
+            f"{ps.justification or 'NINGUNA (exploratorio)'}",
+            f"- Pruebas previas en el Holm (misma memoria): {prior} · α de la familia de "
+            f"paneles = {alpha_p:.4f} · diagnósticos "
+            f"{'superados' if run.diagnostics_passed else 'NO superados'}",
+            "",
+            "| Hipótesis | Estimación | ee | t | p unilateral | p WCR (sensibilidad) | G₁ "
+            "| p Holm |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+        for r in run.rows:
+            if r.inconclusive:
+                report.append(f"| {r.coef} {r.sign} | no concluyente: {r.reason} | | | | | | |")
+                continue
+            wcr = f"{r.wcr_p_one_sided:.3f}" if r.wcr_p_one_sided is not None else "n/d"
+            report.append(
+                f"| {r.coef} {r.sign} | {r.estimate:+.4f} | {r.se:.4f} | {r.t:+.2f} | "
+                f"{r.p_one_sided:.3f} ({r.p_distribution}) | {wcr} | "
+                f"{r.treated_clusters if r.treated_clusters is not None else '—'} | "
+                f"{holm_by[r.label]:.3f} |"
+            )
+        report.append("")
+        if run.fe_vs_re.get("recommendation"):
+            report += [f"- FE frente a RE (Mundlak): {run.fe_vs_re['recommendation']}", ""]
+        report += [f"- Advertencia: {w}" for w in run.warnings]
+        report += [
+            "",
+            "- Lectura causal: los efectos fijos de unidad quitan confusores constantes en el "
+            "tiempo, no los que cambian ni la causalidad inversa (Facure, cap. 14); las "
+            "interacciones estiman efectos diferenciales.",
+            "",
+        ]
     return report, lines, reasons

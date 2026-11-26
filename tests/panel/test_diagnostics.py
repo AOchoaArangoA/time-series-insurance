@@ -65,3 +65,13 @@ def test_panel_diagnostics_flags_persistent_correlated_regressor() -> None:
 def test_time_effects_warning_on_cd() -> None:
     d = panel_diagnostics(_panel(), "y", ["x"], time_effects=True)
     assert any("Juodis" in w for w in d.warnings)
+
+
+def test_cusum_detects_break_in_relationship() -> None:
+    stable = panel_diagnostics(_panel(), "y", ["x"])
+    assert stable.stability["pvalue"] > 0.01
+    df = _panel(t=200)
+    t_idx = df.index.get_level_values(1)
+    df = df.assign(y=df["y"] + np.where(t_idx >= 100, 3.0, 0.0))
+    broken = panel_diagnostics(df, "y", ["x"])
+    assert broken.stability["pvalue"] < 0.01 and not broken.passed

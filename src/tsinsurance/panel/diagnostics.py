@@ -9,6 +9,8 @@
 - **Estacionariedad** (ADF + KPSS con la regla jerárquica del paquete) de los regresores
   y de y por unidad.
 - **ARCH-LM** por unidad sobre los residuos.
+- **Estabilidad**: CUSUM de los residuos OLS (Ploberger y Krämer 1992) sobre la serie
+  apilada por periodo (media transversal de los residuos *within*).
 - **Persistencia** de los regresores: AR(1) y correlación de sus innovaciones con los
   residuos. Un regresor predeterminado y persistente con innovaciones correlacionadas
   sesga el estimador within en O(1/T): es un sesgo tipo Stambaugh en panel (Hjalmarsson
@@ -99,6 +101,7 @@ class PanelDiagnostics(ResultMixin):
     stationarity: dict[str, Any]
     arch: dict[str, float]
     persistence: dict[str, dict[str, float]]
+    stability: dict[str, float] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     passed: bool = True
 
@@ -168,6 +171,18 @@ def panel_diagnostics(
     if arch_p and sum(p < alpha for p in arch_p.values()) > len(arch_p) / 2:
         warnings.append("ARCH en los residuos de la mayoría de las unidades.")
         passed = False
+    stability: dict[str, float] = {}
+    by_period = resid.groupby(level=1).mean()
+    if len(by_period) >= 20:
+        from statsmodels.stats.diagnostic import breaks_cusumolsresid
+
+        stat, pval, _ = breaks_cusumolsresid(by_period.to_numpy(), ddof=len(x))
+        stability = {"cusum": float(stat), "pvalue": float(pval)}
+        if pval < alpha:
+            passed = False
+            warnings.append(
+                "Inestabilidad de los parámetros (CUSUM de los residuos apilados por periodo)."
+            )
     persistence: dict[str, dict[str, float]] = {}
     for col in x:
         xs = df[col].groupby(level=1).mean()
@@ -195,6 +210,7 @@ def panel_diagnostics(
         stationarity=station,
         arch=arch_p,
         persistence=persistence,
+        stability=stability,
         warnings=warnings,
         passed=passed,
     )

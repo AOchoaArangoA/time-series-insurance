@@ -137,7 +137,7 @@ def _seen_after(rows: list[dict[str, Any]], asset: str, cut: str, exclude_run: s
         if (
             kind in ("signal", "econometric", "regime")
             and r.get("asset") == asset
-            or kind == "portfolio"
+            or kind in ("portfolio", "panel")
             and (asset == r.get("asset") or asset in r.get("universe", []))
         ):
             if after_cut:
@@ -154,6 +154,54 @@ def _seen_after(rows: list[dict[str, Any]], asset: str, cut: str, exclude_run: s
             elif asset in assets_by_run_idea.get((str(r.get("run_id")), str(r.get("idea"))), set()):
                 seen.append(label)
     return sorted(set(seen))
+
+
+def _validate_panels(
+    full: Any, spec: Any, frozen_panels: dict[str, Any], cut: str
+) -> tuple[dict[str, list[dict[str, Any]]], list[dict[str, Any]]]:
+    """Re-estima cada panel sólo con los meses posteriores al corte (revisión I4).
+
+    Se conservan el estimador, el tipo de error, el ancho de banda declarado (o su regla),
+    B y la semilla congelados. Cada hipótesis se prueba unilateralmente en el signo
+    pre-registrado, y se reporta el efecto mínimo detectable ex ante.
+    """
+    from tsinsurance.experiments.panels import analyze_panel, mde
+    from tsinsurance.experiments.spec import panel_spec_from_dict
+
+    out: dict[str, list[dict[str, Any]]] = {}
+    fam: list[dict[str, Any]] = []
+    for name, v in frozen_panels.items():
+        if not v["hypotheses"]:
+            continue
+        pspec = panel_spec_from_dict(v["spec"])
+        wanted = {(h["coef"], h["sign"]): h for h in v["hypotheses"]}
+        pspec = dataclasses.replace(
+            pspec, hypotheses=[h for h in pspec.hypotheses if (h.coef, h.sign) in wanted]
+        )
+        run = analyze_panel(
+            full,
+            pspec,
+            start=spec.start,
+            end=spec.end,
+            after=cut,
+            seed=int(v["calibration"]["seed"]),
+            with_diagnostics=False,
+        )
+        rows = []
+        for r in run.rows:
+            h = wanted[(r.coef, r.sign)]
+            m = mde(float(h["se_calibration"]), int(h["n_periods_calibration"]), r.n_periods)
+            row = {
+                **dataclasses.asdict(r),
+                "label": r.label,
+                "estimate_calibration": h["estimate_calibration"],
+                "mde": m,
+                "low_power": bool(np.isfinite(m) and abs(h["estimate_calibration"]) < m),
+            }
+            rows.append(row)
+            fam.append({"id": r.label, "p": None if r.inconclusive else r.p_one_sided, "row": row})
+        out[name] = rows
+    return out, fam
 
 
 def _active_ir_test(
@@ -318,6 +366,7 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
         | {a for v in frozen_ports.values() for a in v["universe"]}
         | {v["universe_id"] for v in frozen_ports.values()}
         | {h["asset"] for v in frozen_regs.values() for h in v["selected"]}
+        | {u for v in frozen.get("panels", {}).values() for u in v["spec"]["units"]}
     )
     seen = {a: _seen_after(rows, a, cut, calibration_run_id) for a in family_assets}
     for a, who in seen.items():
@@ -474,10 +523,19 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             reg_hyp.append({"id": h["label"], "p": p1, "row": row})
         regs_out[name] = out_rows
 
-    # Holm por familia con α pre-declarado (FR-009b): estrategias 0,8α y regímenes 0,2α.
-    alpha_s, alpha_r = 0.8 * spec.alpha, 0.2 * spec.alpha
+    panels_out, panel_hyp = _validate_panels(full, spec, frozen.get("panels", {}), cut)
+
+    # Holm por familia con el α CONGELADO en la calibración (revisión B1 de la spec 006).
+    # Las calibraciones anteriores sin paneles guardaron estrategias 0,8α y regímenes 0,2α.
+    split = frozen.get("alpha_split") or {
+        "strategies": 0.8 * spec.alpha,
+        "regimes": 0.2 * spec.alpha,
+    }
+    alpha_s = float(split.get("strategies", 0.0))
+    alpha_r = float(split.get("regimes", 0.0))
+    alpha_p = float(split.get("panels", 0.0))
     significant = []
-    for fam, a in ((hyp, alpha_s), (reg_hyp, alpha_r)):
+    for fam, a in ((hyp, alpha_s), (reg_hyp, alpha_r), (panel_hyp, alpha_p)):
         ps = [h["p"] if h["p"] is not None and np.isfinite(h["p"]) else 1.0 for h in fam]
         for h, ph in zip(fam, holm(ps) if ps else [], strict=True):
             h["row"]["p_holm"] = ph
@@ -545,6 +603,22 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
                     "oos_start": cut,
                 }
             )
+    for name, rows_ in panels_out.items():
+        units = sorted(frozen["panels"][name]["spec"]["units"])
+        uid = "P:" + "+".join(units)
+        for pr in rows_:
+            lines.append(
+                {
+                    **common,
+                    "kind": "validation",
+                    "key": trial_key(kind="validation", asset=uid, oos_start=cut, coef=pr["coef"]),
+                    "asset": uid,
+                    "universe": units,
+                    "panel": name,
+                    "coef": pr["coef"],
+                    "oos_start": cut,
+                }
+            )
     written = append_trials(spec.registry, lines)
 
     state = (
@@ -573,7 +647,9 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             "train_end": cut,
             "family": [h["id"] for h in hyp],
             "regime_family": [h["id"] for h in reg_hyp],
-            "multiple_testing": "Holm por familia pre-registrada: estrategias 0,8α, regímenes 0,2α",
+            "panel_family": [h["id"] for h in panel_hyp],
+            "alpha_split": split,
+            "multiple_testing": "Holm por familia con el reparto de α congelado en la calibración",
             "p_vs_cash": "unilateral con EE HAC del Sharpe",
             "timing_test": (
                 "IR de r − e_cal·b (mismo estadístico que la calibración), unilateral, EE HAC"
@@ -584,6 +660,7 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
             "econometric": econ_out,
             "portfolios": ports_out,
             "regimes": regs_out,
+            "panels": panels_out,
         },
         "status": {
             "exploratory_reasons": reasons,
@@ -635,6 +712,24 @@ def _validate_locked(  # noqa: C901 - flujo lineal de precondiciones y evaluaci�
                 f"- {r['label']}: dif. {r['diff_ann']:+.1%} · p unilateral "
                 f"{r['p_one_sided']:.3f} · Holm {r['p_holm']:.3f} · meses "
                 f"{r['months_on']}/{r['months_off']}"
+            )
+        report.append("")
+    for name, rows_ in panels_out.items():
+        report += [
+            f"## Panel `{name}` (re-estimado sólo con los meses posteriores a {cut})",
+            "",
+        ]
+        for pr in rows_:
+            if pr["inconclusive"]:
+                report.append(f"- {pr['label']}: no concluyente ({pr['reason']})")
+                continue
+            wcr = pr["wcr_p_one_sided"]
+            report.append(
+                f"- {pr['label']}: estimación {pr['estimate']:+.4f} (calibración "
+                f"{pr['estimate_calibration']:+.4f}) · p unilateral {pr['p_one_sided']:.3f} "
+                f"({pr['p_distribution']}) · Holm {pr['p_holm']:.3f} · WCR "
+                f"{'n/d' if wcr is None else f'{wcr:.3f}'} · efecto mínimo detectable "
+                f"{pr['mde']:.4f}" + (" (POCA POTENCIA)" if pr["low_power"] else "")
             )
         report.append("")
     for name, r in econ_out.items():
