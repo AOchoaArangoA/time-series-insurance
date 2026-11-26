@@ -75,11 +75,11 @@ primero (Principio VI).
 
 ## Phase 5: Monte Carlo y demostración
 
-- [ ] T012 [P] Monte Carlo en `tests/simulation/test_panel_size.py` (`slow`): SC-001,
+- [X] T012 [P] Monte Carlo en `tests/simulation/test_panel_size.py` (`slow`): SC-001,
   SC-003 (≥ 2 000 réplicas), SC-004 (G₁ ∈ {1, 2, 5}, T ∈ {36, 300}, regresor persistente)
   y SC-005.
-- [ ] T013 [US5] `experiments/sectores_gics/panel_sectores.toml`, con características
+- [X] T013 [US5] `experiments/sectores_gics/panel_sectores.toml`, con características
   "financiero o sensible a tasas" y "defensivo" (G₁ ≥ 2); advertencia por la
   reclasificación GICS de 2018 (M4).
-- [ ] T014 `docs/methodology/panel.md`, más AGENTS, manual, SKILL y CHANGELOG.
+- [X] T014 `docs/methodology/panel.md`, más AGENTS, manual, SKILL y CHANGELOG.
 - [ ] T015 Revisión de implementación con `econometrics-reviewer` y suite completa.

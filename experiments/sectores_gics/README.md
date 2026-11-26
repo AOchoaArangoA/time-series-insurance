@@ -63,3 +63,35 @@ cada tipo de régimen. Es conservador (m de Holm mayor).
 >
 > Las conclusiones no cambian (sin evidencia; periodo ya visto), pero las cifras exactas de
 > esas dos ejecuciones corresponden al código anterior. Se conservan como registro.
+
+## Panel sectorial con efectos fijos de dos vías (spec 006, `panel_sectores.toml`)
+
+Pregunta: ¿los sectores **sensibles a tasas** (XLF, XLRE, XLU) y los **defensivos** (XLP,
+XLU, XLV) reaccionan de forma **diferencial**, en el mes siguiente, a los cambios del
+Tesoro a 10 años y del VIX? Con efectos de tiempo, los efectos comunes de las variables
+macro quedan absorbidos: sólo se identifican las interacciones (efecto diferencial;
+Facure, cap. 14).
+
+- Inferencia principal: t de Driscoll-Kraay con corrección por grados de libertad y wild
+  bootstrap por bloques de periodos (B = 9 999).
+- Sensibilidad: wild cluster bootstrap por sector, que no es válido con el factor de
+  mercado común.
+- G₁ ≥ 2 en cada característica. XLRE y XLC nacen después de 2014: en la calibración,
+  G₁ = 2 para "tasas".
+- Reclasificación GICS de 2016 y 2018: la característica es la del sector actual.
+
+| Hipótesis | Calibración 1999-2014 | Validación 2015-2026 |
+|---|---|---|
+| ^TNX:tasas (signo −) | +0,0018, p = 0,59 (WCR 0,72) | +0,0075, p = 0,72; MDE 0,031 (poca potencia) |
+| ^VIX:defensivo (signo +) | +0,0008, p = 0,13 (WCR **0,016**) | +0,0002, p = 0,36; MDE 0,0022 (poca potencia) |
+
+- Calibración `20261126T213427Z-c8ae74` y validación `20261126T213440Z-c8ae74-val`.
+- Ambas son **EXPLORATORIAS**:
+  - los diagnósticos no se superan (ARCH en la mayoría de los sectores, dependencia
+    transversal fuerte);
+  - el periodo 2015-2026 ya se había visto en los experimentos anteriores de esta
+    carpeta; la herramienta lo detecta por sector.
+- **Lectura**: no hay evidencia de sensibilidad diferencial con un mes de rezago.
+- El caso del VIX muestra por qué el WCR es sólo una sensibilidad: con el factor común
+  de mercado, el WCR por sector da p = 0,016, mientras que DK con bootstrap por periodos
+  da 0,13. El primero ignora la dependencia entre sectores.
