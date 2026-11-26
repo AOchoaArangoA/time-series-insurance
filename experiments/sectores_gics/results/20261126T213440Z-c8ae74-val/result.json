@@ -1,0 +1,193 @@
+{
+  "assumptions": {
+    "alpha": 0.05,
+    "alpha_split": {
+      "panels": 0.05
+    },
+    "execution": "retraso=1 barra(s), costo=5.0 pb, deslizamiento=0.0 pb, rebalanceo=every_bar, bruto máx.=1.0, cortos=no, financiación=rf+0.0 pb",
+    "family": [],
+    "multiple_testing": "Holm por familia con el reparto de α congelado en la calibración",
+    "p_vs_cash": "unilateral con EE HAC del Sharpe",
+    "panel_family": [
+      "panel:tasas_vix:^TNX:tasas-",
+      "panel:tasas_vix:^VIX:defensivo+"
+    ],
+    "regime_family": [],
+    "timing_test": "IR de r − e_cal·b (mismo estadístico que la calibración), unilateral, EE HAC",
+    "train_end": "2014-12-31"
+  },
+  "calibration_run_id": "20261126T213427Z-c8ae74",
+  "experiment": {
+    "file": "/home/user/time-series-insurance/experiments/sectores_gics/panel_sectores.toml",
+    "id": "sectores-gics-panel",
+    "sha256": "c8ae741ad94904e56a16f9b39f35093b248486871bec6fc86d44b135ede38b7b"
+  },
+  "phase": "validation",
+  "provenance": {
+    "bundle": {
+      "as_of_sha256": "c79a5069c869497bddb9b72a8e9f27baa92f333d7132639daf774b2597471ba8",
+      "sha256": "e60a270bf66bc25b6618a9dc08e1db1acf188981aa219883d64c81cb1e4016bc"
+    },
+    "git": {
+      "commit": "9ba1326ce18e399a4c3348f4bc058c5d7b754cec",
+      "dirty": false
+    },
+    "package_version": "0.2.0",
+    "python": "3.13.18",
+    "registry": "/home/user/time-series-insurance/experiments/registry.jsonl",
+    "registry_relpath": "../../../registry.jsonl",
+    "run_id": "20261126T213440Z-c8ae74-val",
+    "seed": 17,
+    "started_at": "2026-11-26T21:34:40+00:00"
+  },
+  "registry_head": {
+    "last_hash": "a6b3d291e39dc67b7972f503886a1e0ff588f0e95f1ec37328178ea8129da544",
+    "n_lines": 187
+  },
+  "registry_head_before": {
+    "last_hash": "9a40f507c526cfec14b2b8d9d3372f3e647d9603649fbf3750e25b96ecf5eaa5",
+    "n_lines": 185
+  },
+  "result_version": "1.2",
+  "status": {
+    "exploratory_reasons": [
+      "calibración: diagnósticos del panel 'tasas_vix' no superados",
+      "periodo posterior a 2014-12-31 de XLB ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (20261117T201350Z-2133a5-val), sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLC ya visto en: sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLE ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (20261117T201350Z-2133a5-val), sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLF ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (20261117T201350Z-2133a5-val), sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLI ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (20261117T201350Z-2133a5-val), sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLK ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (20261117T201350Z-2133a5-val), sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLP ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (20261117T201350Z-2133a5-val), sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLRE ya visto en: sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLU ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (20261117T201350Z-2133a5-val), sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLV ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (20261117T201350Z-2133a5-val), sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]",
+      "periodo posterior a 2014-12-31 de XLY ya visto en: sectores-gics-ciclo (20261117T192634Z-fc940b), sectores-gics-rotacion-regimenes (20261117T201350Z-2133a5-val), sectores-gics-rotacion-regimenes [declarada fuera de la bitácora]"
+    ],
+    "lines_registered": 2,
+    "out_of_sample": "abierta",
+    "significant_after_holm": []
+  },
+  "validation": {
+    "econometric": {},
+    "ideas": {},
+    "panel_diagnostics": {
+      "tasas_vix": {
+        "arch_units_rejecting": 4,
+        "cross_section": {
+          "CD": 48.1644220695,
+          "pairs": 55.0,
+          "pvalue": 0.0
+        },
+        "passed": true,
+        "persistence": {
+          "^TNX:tasas": {
+            "innovation_corr": 0.0087524894,
+            "interaction": true,
+            "rho": 0.0619290091
+          },
+          "^VIX:defensivo": {
+            "innovation_corr": -0.0357935141,
+            "interaction": true,
+            "rho": -0.2233577322
+          }
+        },
+        "serial": {
+          "F": 0.1507990975,
+          "coef": -0.4945904685,
+          "pvalue": 0.7059118271
+        },
+        "stationarity": {
+          "^TNX:tasas": {
+            "conclusion": "I(0)",
+            "integration_order": 0,
+            "rule": "Regla confirmatoria jerárquica en cada diferencia d: (1) si ADF y PP (H0: raíz unitaria) rechazan, la serie es estacionaria en d; si además KPSS (H0: estacionariedad) rechaza se registra la discrepancia. (2) Si ADF y PP no rechazan y KPSS rechaza, hay raíz unitaria: se diferencia y se repite. (3) Si ADF y PP no rechazan y KPSS tampoco, los datos no son informativos (inconcluso). (4) Si ADF y PP discrepan, inconcluso. Deterministas de la serie original en d=0 y solo constante en las diferencias."
+          },
+          "^VIX:defensivo": {
+            "conclusion": "I(0)",
+            "integration_order": 0,
+            "rule": "Regla confirmatoria jerárquica en cada diferencia d: (1) si ADF y PP (H0: raíz unitaria) rechazan, la serie es estacionaria en d; si además KPSS (H0: estacionariedad) rechaza se registra la discrepancia. (2) Si ADF y PP no rechazan y KPSS rechaza, hay raíz unitaria: se diferencia y se repite. (3) Si ADF y PP no rechazan y KPSS tampoco, los datos no son informativos (inconcluso). (4) Si ADF y PP discrepan, inconcluso. Deterministas de la serie original en d=0 y solo constante en las diferencias."
+          },
+          "__y_by_unit__": {
+            "XLB": 0,
+            "XLC": 0,
+            "XLE": 0,
+            "XLF": 0,
+            "XLI": 0,
+            "XLK": 0,
+            "XLP": 0,
+            "XLRE": 0,
+            "XLU": 0,
+            "XLV": 0,
+            "XLY": 0
+          }
+        },
+        "warnings": [
+          "Regresores absorbidos y excluidos: ['^TNX', '^VIX']",
+          "Coeficiente ^TNX:tasas inestable (Nyblom-Hansen p = 0.039).",
+          "Dependencia transversal fuerte (CD de Pesaran): los errores agrupados por unidad no son válidos; use Driscoll-Kraay o efectos de tiempo.",
+          "Con efectos de tiempo, la CD clásica no es válida (Juodis y Reese 2022); se reporta la CD sin efectos de tiempo."
+        ]
+      }
+    },
+    "panel_prior_tests_in_holm": 0,
+    "panels": {
+      "tasas_vix": [
+        {
+          "alpha_family": 0.05,
+          "coef": "^TNX:tasas",
+          "estimate": 0.0075117829,
+          "estimate_calibration": 0.0018204737,
+          "eval_end": "2026-10-31",
+          "eval_start": "2014-12-31",
+          "fixed_b_p_one_sided": 0.72735,
+          "inconclusive": false,
+          "label": "panel:tasas_vix:^TNX:tasas-",
+          "low_power": true,
+          "mde": 0.0308181456,
+          "n_entities": 11,
+          "n_periods": 142,
+          "p_distribution": "wild bootstrap DK (rademacher, bloques de 5 periodos; B = 9999)",
+          "p_holm": 0.7181,
+          "p_one_sided": 0.7181,
+          "panel": "tasas_vix",
+          "reason": "",
+          "se": 0.0121005318,
+          "sign": "-",
+          "stability_pvalue": 0.0389980501,
+          "t": 0.6207812158,
+          "treated_clusters": 3,
+          "wcr_p_one_sided": 0.8530273438
+        },
+        {
+          "alpha_family": 0.05,
+          "coef": "^VIX:defensivo",
+          "estimate": 0.0002336545,
+          "estimate_calibration": 0.0007810862,
+          "eval_end": "2026-10-31",
+          "eval_start": "2014-12-31",
+          "fixed_b_p_one_sided": 0.3546,
+          "inconclusive": false,
+          "label": "panel:tasas_vix:^VIX:defensivo+",
+          "low_power": true,
+          "mde": 0.0021812395,
+          "n_entities": 11,
+          "n_periods": 142,
+          "p_distribution": "wild bootstrap DK (rademacher, bloques de 5 periodos; B = 9999)",
+          "p_holm": 0.7162,
+          "p_one_sided": 0.3581,
+          "panel": "tasas_vix",
+          "reason": "",
+          "se": 0.0006215285,
+          "sign": "+",
+          "stability_pvalue": 0.7178141093,
+          "t": 0.3759353055,
+          "treated_clusters": 3,
+          "wcr_p_one_sided": 0.1284179688
+        }
+      ]
+    },
+    "portfolios": {},
+    "regimes": {}
+  }
+}
