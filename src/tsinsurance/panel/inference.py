@@ -171,7 +171,7 @@ def wild_cluster_bootstrap(
     df = frame[[y, *x]].dropna()
     dm = _demean(df, [y, *x], time_effects)
     groups = pd.factorize(df.index.get_level_values(0))[0]
-    g_count = int(groups.max() + 1)
+    g_count = len(np.unique(groups))
     if g_count < 3:
         raise DataValidationError("El WCR necesita al menos 3 unidades.")
     xv = dm[list(x)].to_numpy()
@@ -264,7 +264,8 @@ def mundlak_test(
         tdum.index = df.index
         parts.append(tdum)
         # Medias por unidad de las dummies de tiempo (desbalanceo; Wooldridge 2021).
-        if df.groupby(level=0).size().nunique() > 1:
+        sizes = df.groupby(level=0).size()
+        if bool((sizes != sizes.iloc[0]).any()):
             parts.append(tdum.groupby(level=0).transform("mean").add_suffix("__mean_i"))
     design = sm.add_constant(pd.concat(parts, axis=1))
     design = design.loc[:, design.std() > 0].assign(const=1.0)
