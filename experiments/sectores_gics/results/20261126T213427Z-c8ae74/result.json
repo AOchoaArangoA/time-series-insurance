@@ -1,0 +1,462 @@
+{
+  "assumptions": {
+    "alpha": 0.05,
+    "asset_start": {
+      "XLB": "1999-01-04",
+      "XLE": "1999-01-04",
+      "XLF": "1999-01-04",
+      "XLI": "1999-01-04",
+      "XLK": "1999-01-04",
+      "XLP": "1999-01-04",
+      "XLU": "1999-01-04",
+      "XLV": "1999-01-04",
+      "XLY": "1999-01-04"
+    },
+    "execution": "retraso=1 barra(s), costo=5.0 pb, deslizamiento=0.0 pb, rebalanceo=every_bar, bruto máx.=1.0, cortos=no, financiación=rf+0.0 pb",
+    "risk_free": [
+      "^IRX"
+    ],
+    "selection_window_end": "2014-12-31",
+    "train_end": "2014-12-31",
+    "window": [
+      "1999-01-04",
+      "2014-12-31"
+    ]
+  },
+  "calibration": {
+    "frozen": {
+      "alpha": 0.05,
+      "alpha_split": {
+        "panels": 0.05
+      },
+      "bundle_as_of_sha256": "c79a5069c869497bddb9b72a8e9f27baa92f333d7132639daf774b2597471ba8",
+      "econometric": {},
+      "execution": {
+        "allow_short": false,
+        "cost_bps": 5.0,
+        "default_cost_bps": 5.0,
+        "financing_spread_bps": 0.0,
+        "lag": 1,
+        "max_gross": 1.0,
+        "periods_per_year": null,
+        "rebalance": "every_bar",
+        "slippage_bps": 0.0
+      },
+      "family": [],
+      "ideas": {},
+      "package_version": "0.2.0",
+      "panel_family": [
+        "panel:tasas_vix:^TNX:tasas-",
+        "panel:tasas_vix:^VIX:defensivo+"
+      ],
+      "panels": {
+        "tasas_vix": {
+          "calibration": {
+            "bandwidth_calibration": 4,
+            "bandwidth_rule": "floor(4·(T/100)^(2/9))",
+            "bootstrap_draws": 9999,
+            "seed": 17
+          },
+          "hypotheses": [
+            {
+              "coef": "^TNX:tasas",
+              "estimate_calibration": 0.0018204737,
+              "label": "panel:tasas_vix:^TNX:tasas-",
+              "n_periods_calibration": 190,
+              "se_calibration": 0.0095097705,
+              "sign": "-"
+            },
+            {
+              "coef": "^VIX:defensivo",
+              "estimate_calibration": 0.0007810862,
+              "label": "panel:tasas_vix:^VIX:defensivo+",
+              "n_periods_calibration": 190,
+              "se_calibration": 0.0006730803,
+              "sign": "+"
+            }
+          ],
+          "prior_tests_in_holm": 0,
+          "spec": {
+            "bandwidth": null,
+            "bootstrap_draws": 9999,
+            "characteristics": {
+              "defensivo": [
+                "XLP",
+                "XLU",
+                "XLV"
+              ],
+              "tasas": [
+                "XLF",
+                "XLRE",
+                "XLU"
+              ]
+            },
+            "cov": "driscoll_kraay",
+            "estimator": "twfe",
+            "hypotheses": [
+              {
+                "coef": "^TNX:tasas",
+                "sign": "-"
+              },
+              {
+                "coef": "^VIX:defensivo",
+                "sign": "+"
+              }
+            ],
+            "interactions": [
+              [
+                "^TNX",
+                "tasas"
+              ],
+              [
+                "^VIX",
+                "defensivo"
+              ]
+            ],
+            "justification": "Duración y apalancamiento de los sectores regulados y de bienes raíces (H1); huida a la calidad\nhacia sectores de demanda inelástica (H2). Hipótesis y signos fijados antes de estimar el panel.",
+            "min_months": 36,
+            "name": "tasas_vix",
+            "regressors": [
+              "^TNX",
+              "^VIX"
+            ],
+            "transforms": {
+              "^TNX": "diff",
+              "^VIX": "diff"
+            },
+            "units": [
+              "XLB",
+              "XLC",
+              "XLE",
+              "XLF",
+              "XLI",
+              "XLK",
+              "XLP",
+              "XLRE",
+              "XLU",
+              "XLV",
+              "XLY"
+            ]
+          }
+        }
+      },
+      "portfolios": {},
+      "regime_family": [],
+      "regimes": {}
+    },
+    "frozen_sha256": "340eb77ff7dd77380cf1b7152585e16d7b73eb369145dbf61ad8aef0850f9f7f",
+    "train_end": "2014-12-31",
+    "validate_with": "tsinsurance experiment validate /home/user/time-series-insurance/experiments/sectores_gics/panel_sectores.toml --calibration 20261126T213427Z-c8ae74"
+  },
+  "econometric": {},
+  "experiment": {
+    "author": "agente (Claude) a pedido del usuario",
+    "file": "/home/user/time-series-insurance/experiments/sectores_gics/panel_sectores.toml",
+    "hypothesis": "H1: tras una subida del Tesoro a 10 años en el mes t, los sectores sensibles a tasas\n(XLF, XLRE, XLU) rinden MENOS que los demás en el mes t+1.\nH2: tras una subida del VIX en el mes t, los sectores defensivos (XLP, XLU, XLV) rinden MÁS\nque los demás en el mes t+1.\nExpectativa previa: efectos pequeños o nulos con un mes de rezago (la reacción contemporánea\nes más plausible que la predictiva).\n",
+    "id": "sectores-gics-panel",
+    "sha256": "c8ae741ad94904e56a16f9b39f35093b248486871bec6fc86d44b135ede38b7b",
+    "title": "Panel sectorial: sensibilidad diferencial a tasas y al VIX (TWFE, Driscoll-Kraay)"
+  },
+  "ideas": {},
+  "panels": {
+    "tasas_vix": {
+      "alpha_family": 0.05,
+      "calibration": {
+        "bandwidth_calibration": 4,
+        "bandwidth_rule": "floor(4·(T/100)^(2/9))",
+        "bootstrap_draws": 9999,
+        "seed": 17
+      },
+      "dependent": "y_next",
+      "diagnostics": {
+        "arch_units_rejecting": 6,
+        "cross_section": {
+          "CD": 45.0499728413,
+          "pairs": 36.0,
+          "pvalue": 0.0
+        },
+        "persistence": {
+          "^TNX:tasas": {
+            "innovation_corr": 0.0253452575,
+            "interaction": true,
+            "rho": 0.013723093
+          },
+          "^VIX:defensivo": {
+            "innovation_corr": -0.0002238668,
+            "interaction": true,
+            "rho": -0.0187797947
+          }
+        },
+        "serial": {
+          "F": 3.4020562729,
+          "coef": -0.4582503873,
+          "pvalue": 0.1023418981
+        },
+        "stationarity": {
+          "^TNX:tasas": {
+            "conclusion": "I(0)",
+            "integration_order": 0,
+            "rule": "Regla confirmatoria jerárquica en cada diferencia d: (1) si ADF y PP (H0: raíz unitaria) rechazan, la serie es estacionaria en d; si además KPSS (H0: estacionariedad) rechaza se registra la discrepancia. (2) Si ADF y PP no rechazan y KPSS rechaza, hay raíz unitaria: se diferencia y se repite. (3) Si ADF y PP no rechazan y KPSS tampoco, los datos no son informativos (inconcluso). (4) Si ADF y PP discrepan, inconcluso. Deterministas de la serie original en d=0 y solo constante en las diferencias."
+          },
+          "^VIX:defensivo": {
+            "conclusion": "I(0)",
+            "integration_order": 0,
+            "rule": "Regla confirmatoria jerárquica en cada diferencia d: (1) si ADF y PP (H0: raíz unitaria) rechazan, la serie es estacionaria en d; si además KPSS (H0: estacionariedad) rechaza se registra la discrepancia. (2) Si ADF y PP no rechazan y KPSS rechaza, hay raíz unitaria: se diferencia y se repite. (3) Si ADF y PP no rechazan y KPSS tampoco, los datos no son informativos (inconcluso). (4) Si ADF y PP discrepan, inconcluso. Deterministas de la serie original en d=0 y solo constante en las diferencias."
+          },
+          "__y_by_unit__": {
+            "XLB": 0,
+            "XLE": 0,
+            "XLF": 0,
+            "XLI": 0,
+            "XLK": 0,
+            "XLP": 0,
+            "XLU": 0,
+            "XLV": 0,
+            "XLY": 0
+          }
+        }
+      },
+      "diagnostics_passed": false,
+      "fe_vs_re": {},
+      "params": {
+        "^TNX:tasas": 0.0018204737,
+        "^VIX:defensivo": 0.0007810862
+      },
+      "prior_tests_in_holm": 0,
+      "rows": [
+        {
+          "coef": "^TNX:tasas",
+          "estimate": 0.0018204737,
+          "eval_end": "2014-12-31",
+          "eval_start": "1999-02-28",
+          "fixed_b_p_one_sided": 0.5765,
+          "inconclusive": false,
+          "label": "panel:tasas_vix:^TNX:tasas-",
+          "n_entities": 9,
+          "n_periods": 190,
+          "p_distribution": "wild bootstrap DK (rademacher, bloques de 5 periodos; B = 9999)",
+          "p_holm": 0.5861,
+          "p_one_sided": 0.5861,
+          "panel": "tasas_vix",
+          "reason": "",
+          "se": 0.0095097705,
+          "sign": "-",
+          "stability_pvalue": 0.0777961102,
+          "t": 0.1914319223,
+          "treated_clusters": 2,
+          "wcr_p_one_sided": 0.72265625
+        },
+        {
+          "coef": "^VIX:defensivo",
+          "estimate": 0.0007810862,
+          "eval_end": "2014-12-31",
+          "eval_start": "1999-02-28",
+          "fixed_b_p_one_sided": 0.1305,
+          "inconclusive": false,
+          "label": "panel:tasas_vix:^VIX:defensivo+",
+          "n_entities": 9,
+          "n_periods": 190,
+          "p_distribution": "wild bootstrap DK (rademacher, bloques de 5 periodos; B = 9999)",
+          "p_holm": 0.2624,
+          "p_one_sided": 0.1312,
+          "panel": "tasas_vix",
+          "reason": "",
+          "se": 0.0006730803,
+          "sign": "+",
+          "stability_pvalue": 0.8283085846,
+          "t": 1.1604650988,
+          "treated_clusters": 3,
+          "wcr_p_one_sided": 0.015625
+        }
+      ],
+      "spec": {
+        "bandwidth": null,
+        "bootstrap_draws": 9999,
+        "characteristics": {
+          "defensivo": [
+            "XLP",
+            "XLU",
+            "XLV"
+          ],
+          "tasas": [
+            "XLF",
+            "XLRE",
+            "XLU"
+          ]
+        },
+        "cov": "driscoll_kraay",
+        "estimator": "twfe",
+        "hypotheses": [
+          {
+            "coef": "^TNX:tasas",
+            "sign": "-"
+          },
+          {
+            "coef": "^VIX:defensivo",
+            "sign": "+"
+          }
+        ],
+        "interactions": [
+          [
+            "^TNX",
+            "tasas"
+          ],
+          [
+            "^VIX",
+            "defensivo"
+          ]
+        ],
+        "justification": "Duración y apalancamiento de los sectores regulados y de bienes raíces (H1); huida a la calidad\nhacia sectores de demanda inelástica (H2). Hipótesis y signos fijados antes de estimar el panel.",
+        "min_months": 36,
+        "name": "tasas_vix",
+        "regressors": [
+          "^TNX",
+          "^VIX"
+        ],
+        "transforms": {
+          "^TNX": "diff",
+          "^VIX": "diff"
+        },
+        "units": [
+          "XLB",
+          "XLC",
+          "XLE",
+          "XLF",
+          "XLI",
+          "XLK",
+          "XLP",
+          "XLRE",
+          "XLU",
+          "XLV",
+          "XLY"
+        ]
+      },
+      "std_errors": {
+        "^TNX:tasas": 0.0095097705,
+        "^VIX:defensivo": 0.0006730803
+      },
+      "universe_id": "P:XLB+XLC+XLE+XLF+XLI+XLK+XLP+XLRE+XLU+XLV+XLY",
+      "validated": [
+        {
+          "coef": "^TNX:tasas",
+          "estimate_calibration": 0.0018204737,
+          "label": "panel:tasas_vix:^TNX:tasas-",
+          "n_periods_calibration": 190,
+          "se_calibration": 0.0095097705,
+          "sign": "-"
+        },
+        {
+          "coef": "^VIX:defensivo",
+          "estimate_calibration": 0.0007810862,
+          "label": "panel:tasas_vix:^VIX:defensivo+",
+          "n_periods_calibration": 190,
+          "se_calibration": 0.0006730803,
+          "sign": "+"
+        }
+      ],
+      "variant": {
+        "bandwidth": null,
+        "cov": "driscoll_kraay",
+        "estimator": "twfe",
+        "hypotheses": [
+          [
+            "^TNX:tasas",
+            "-"
+          ],
+          [
+            "^VIX:defensivo",
+            "+"
+          ]
+        ],
+        "interactions": [
+          [
+            "^TNX",
+            "tasas",
+            [
+              "XLF",
+              "XLRE",
+              "XLU"
+            ]
+          ],
+          [
+            "^VIX",
+            "defensivo",
+            [
+              "XLP",
+              "XLU",
+              "XLV"
+            ]
+          ]
+        ],
+        "regressors": [
+          "^TNX",
+          "^VIX"
+        ],
+        "transforms": {
+          "^TNX": "diff",
+          "^VIX": "diff"
+        }
+      },
+      "warnings": [
+        "Unidades sin datos en esta ventana: ['XLC', 'XLRE']",
+        "Regresores absorbidos y excluidos: ['^TNX', '^VIX']",
+        "WCR de ^TNX:tasas con G₁ = 2: poco confiable (MacKinnon y Webb 2017).",
+        "Dependencia transversal fuerte (CD de Pesaran): los errores agrupados por unidad no son válidos; use Driscoll-Kraay o efectos de tiempo.",
+        "Con efectos de tiempo, la CD clásica no es válida (Juodis y Reese 2022); se reporta la CD sin efectos de tiempo.",
+        "ARCH en los residuos de la mayoría de las unidades."
+      ]
+    }
+  },
+  "phase": "calibration",
+  "portfolios": {},
+  "provenance": {
+    "bundle": {
+      "name": "sectores_gics",
+      "path": "/home/user/time-series-insurance/experiments/sectores_gics/data",
+      "quality_warnings": [],
+      "sha256": "e60a270bf66bc25b6618a9dc08e1db1acf188981aa219883d64c81cb1e4016bc"
+    },
+    "git": {
+      "commit": "c71eae63f3241536c4ecadb6218f7b6b1c4a6a35",
+      "dirty": false
+    },
+    "package_version": "0.2.0",
+    "prior_trials_by_asset": {
+      "U:XLB+XLE+XLF+XLI+XLK+XLP+XLU+XLV+XLY": 4,
+      "XLB": 8,
+      "XLE": 8,
+      "XLF": 8,
+      "XLI": 8,
+      "XLK": 8,
+      "XLP": 8,
+      "XLU": 8,
+      "XLV": 8,
+      "XLY": 8
+    },
+    "python": "3.13.18",
+    "registry": "/home/user/time-series-insurance/experiments/registry.jsonl",
+    "registry_relpath": "../../../registry.jsonl",
+    "run_id": "20261126T213427Z-c8ae74",
+    "seed": 17,
+    "started_at": "2026-11-26T21:34:27+00:00"
+  },
+  "regimes": {},
+  "registry_head": {
+    "last_hash": "9a40f507c526cfec14b2b8d9d3372f3e647d9603649fbf3750e25b96ecf5eaa5",
+    "n_lines": 185
+  },
+  "registry_head_before": {
+    "last_hash": "5b78baa92feac17ddfa5fc81e31ec860a4b6cfe7c2d69fdebbcd913c7f09ed8e",
+    "n_lines": 181
+  },
+  "result_version": "1.2",
+  "status": {
+    "econometric_quadrants": {},
+    "exploratory_reasons": [
+      "diagnósticos del panel 'tasas_vix' no superados"
+    ],
+    "lines_registered": 4,
+    "out_of_sample": "pendiente",
+    "significant_by_idea": {}
+  }
+}
