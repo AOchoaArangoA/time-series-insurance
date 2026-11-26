@@ -163,7 +163,7 @@ def absorbed_regressors(
 
 
 def _bandwidth(n_periods: int) -> int:
-    return max(1, math.floor(4 * (n_periods / 100) ** (2 / 9)))
+    return max(1, int(math.floor(4 * (n_periods / 100) ** (2 / 9))))
 
 
 def fit_panel(
